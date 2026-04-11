@@ -1365,6 +1365,7 @@
         "bytesPerSecond": "B/秒",
         "cpuLabel": "CPU:",
         "cpuModelLabel": "CPU モデル:",
+        "cpuCoresValue": "{count} コア",
         "diskLabel": "ディスク:",
         "errorPrefix": "エラー:",
         "gigaBytes": "GB",
@@ -1587,6 +1588,7 @@
           "selectServerTitle": "接続するサーバーを選択",
           "showTransferProgressTooltip": "転送進捗の表示/非表示",
           "newTerminalTooltip": "現在のサーバーに新しいターミナルを追加",
+          "closeConnectionGroupTooltip": "{name} の端末をすべて閉じる ({count} 件)",
           "openConnectionPickerTooltip": "別のサーバーを選択",
           "terminalBadge": "端末 {index}"
       },

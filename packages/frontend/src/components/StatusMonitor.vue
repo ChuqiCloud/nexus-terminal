@@ -36,7 +36,10 @@
 
         <div class="status-item grid grid-cols-[auto_1fr] items-center gap-3">
           <label class="font-semibold text-text-secondary text-left whitespace-nowrap">{{ t('statusMonitor.cpuModelLabel') }}</label>
-          <span class="cpu-model-value truncate text-left" :title="displayCpuModel">{{ displayCpuModel }}</span>
+          <div class="cpu-spec-block text-left">
+            <span class="cpu-model-value truncate" :title="displayCpuModel">{{ displayCpuModel }}</span>
+            <span class="cpu-core-badge">{{ displayCpuCores }}</span>
+          </div>
         </div>
 
         <div class="status-item grid grid-cols-[auto_1fr] items-center gap-3">
@@ -245,12 +248,16 @@ const displaySwapPercent = computed(() => currentServerStatus.value?.swapPercent
 const currentStatusError = computed<string | null>(() => currentSessionState.value?.statusMonitorManager?.statusError?.value ?? null);
 
 const cachedCpuModel = ref<string | null>(null);
+const cachedCpuCores = ref<number | null>(null);
 const cachedOsName = ref<string | null>(null);
 
 watch(currentServerStatus, newData => {
   if (!newData) return;
   if (newData.cpuModel) {
     cachedCpuModel.value = newData.cpuModel;
+  }
+  if (typeof newData.cpuCores === 'number' && Number.isFinite(newData.cpuCores)) {
+    cachedCpuCores.value = newData.cpuCores;
   }
   if (newData.osName) {
     cachedOsName.value = newData.osName;
@@ -266,6 +273,14 @@ watch(() => props.activeSessionId, async (newId, oldId) => {
 });
 
 const displayCpuModel = computed(() => (currentServerStatus.value?.cpuModel ?? cachedCpuModel.value) || t('statusMonitor.notAvailable'));
+const displayCpuCores = computed(() => {
+  const cpuCores = currentServerStatus.value?.cpuCores ?? cachedCpuCores.value;
+  if (typeof cpuCores !== 'number' || !Number.isFinite(cpuCores)) {
+    return t('statusMonitor.notAvailable');
+  }
+
+  return t('statusMonitor.cpuCoresValue', { count: Math.round(cpuCores) });
+});
 const displayOsName = computed(() => (currentServerStatus.value?.osName ?? cachedOsName.value) || t('statusMonitor.notAvailable'));
 
 const formatBytesPerSecond = (bytes?: number): string => {
@@ -434,6 +449,36 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   border-radius: 14px;
   padding: 14px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  container-type: inline-size;
+}
+
+.cpu-spec-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cpu-model-value {
+  display: block;
+  width: 100%;
+}
+
+.cpu-core-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(96, 165, 250, 0.26);
+  background: rgba(37, 99, 235, 0.14);
+  color: #dbeafe;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .status-card__header {
@@ -530,6 +575,7 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 10px;
   padding: 8px 10px;
+  min-width: 0;
 }
 
 .memory-stat__label,
@@ -537,6 +583,7 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
   font-size: 12px;
   color: var(--text-secondary-color, #9ca3af);
 }
@@ -550,6 +597,7 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   font-weight: 700;
   color: #f8fafc;
   line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 
 .memory-stat__dot {
@@ -654,6 +702,11 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   align-items: center;
 }
 
+.disk-table__header > span,
+.disk-table__row > span {
+  min-width: 0;
+}
+
 .disk-table__header {
   color: var(--text-secondary-color, #9ca3af);
   font-size: 12px;
@@ -686,6 +739,67 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   background: rgba(34, 197, 94, 0.08);
   color: #dcfce7;
   border: 1px solid rgba(34, 197, 94, 0.18);
+}
+
+@container (max-width: 320px) {
+  .status-card__header {
+    flex-wrap: wrap;
+  }
+
+  .memory-card__content,
+  .disk-card__body {
+    grid-template-columns: 1fr;
+  }
+
+  .memory-ring,
+  .disk-usage-tube {
+    justify-self: center;
+  }
+
+  .memory-stats-grid,
+  .disk-rate-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .memory-stat__value,
+  .disk-rate-card__value {
+    font-size: 18px;
+  }
+
+  .disk-meta-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .disk-table__header,
+  .disk-table__row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 250px) {
+  .status-card {
+    padding: 12px;
+  }
+
+  .status-card__badge {
+    white-space: normal;
+  }
+
+  .memory-stat__value,
+  .disk-rate-card__value {
+    font-size: 16px;
+  }
+
+  .disk-table__header,
+  .disk-table__row {
+    grid-template-columns: 1fr;
+  }
+
+  .disk-mount-pill,
+  .disk-percent-pill {
+    width: 100%;
+  }
 }
 
 @media (max-width: 640px) {

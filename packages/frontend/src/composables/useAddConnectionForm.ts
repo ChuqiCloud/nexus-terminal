@@ -278,7 +278,18 @@ export function useAddConnectionForm(props: AddConnectionFormProps, emit: AddCon
 
   // Helper function to parse a single script line using minimist
 
-  
+  const stripWrappedQuotes = (value: string): string => {
+    if (value.length >= 2) {
+      const firstChar = value[0];
+      const lastChar = value[value.length - 1];
+      if ((firstChar === '"' || firstChar === '\'') && firstChar === lastChar) {
+        return value.slice(1, -1);
+      }
+    }
+
+    return value;
+  };
+
   const parseScriptLine = (line: string): { type: 'SSH' | 'RDP' | 'VNC', userHostPort: string, name: string, password: string | null, keyName: string | null, proxyName: string | null, tags: string[], note: string | null, error?: string } => {
     line = line.trim();
     if (!line) {
@@ -309,8 +320,8 @@ export function useAddConnectionForm(props: AddConnectionFormProps, emit: AddCon
     let note: string | null = null;
 
     // 4. Parse optionsString
-    // Regex to split by space, respecting quotes
-    const args = optionsString.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
+    // Regex to split by space, respecting both single and double quotes
+    const args = optionsString.match(/"[^"]*"|'[^']*'|[^\s]+/g) || [];
     let i = 0;
     while (i < args.length) {
       const arg = args[i];
@@ -322,7 +333,7 @@ export function useAddConnectionForm(props: AddConnectionFormProps, emit: AddCon
           // Handle -tags, which can be followed by zero or more tags
           tags = [];
           while (i < args.length && !args[i].startsWith('-')) {
-            tags.push(args[i].replace(/^"|"$/g, '')); // Remove surrounding quotes
+            tags.push(stripWrappedQuotes(args[i]));
             i++;
           }
           // No need to i++ here, the next loop iteration or outer loop handles it
@@ -333,14 +344,14 @@ export function useAddConnectionForm(props: AddConnectionFormProps, emit: AddCon
             noteParts.push(args[i]);
             i++;
           }
-          note = noteParts.join(' ').replace(/^"|"$/g, ''); // Join parts and remove quotes
+          note = stripWrappedQuotes(noteParts.join(' '));
           break; // Exit the outer loop as note consumes the rest
         } else if (i >= args.length) {
            // All other options require a value
            return { type, userHostPort: userHostPortPart, name, password, keyName, proxyName, tags, note, error: t('connections.form.scriptErrorMissingValueForKey', { key: arg }) };
         } else {
            // Handle options that require a single value
-           const value = args[i].replace(/^"|"$/g, ''); // Remove surrounding quotes
+           const value = stripWrappedQuotes(args[i]);
            switch (key) {
              case 'type':
                const typeValue = value.toUpperCase();

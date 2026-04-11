@@ -1,6 +1,7 @@
 // 类型定义：用于服务器状态监控数据 (从 useStatusMonitor 迁移)
 export interface ServerStatus {
     cpuPercent?: number;
+    cpuCores?: number;
     memPercent?: number;
     memUsed?: number; // MB
     memTotal?: number; // MB

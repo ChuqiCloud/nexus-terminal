@@ -42,7 +42,7 @@ let lastResizeObserverWidth = 0;
 let lastResizeObserverHeight = 0;
 const RESIZE_THRESHOLD = 0.5; // px
 const BOTTOM_STICK_THRESHOLD = 2;
-let lastKnownViewportLine = 0;
+let lastKnownDistanceFromBottom = 0;
 let lastKnownShouldStickToBottom = true;
 
 
@@ -95,7 +95,7 @@ const debounce = (func: Function, delay: number) => {
 };
 
 type TerminalViewportSnapshot = {
-  viewportLine: number;
+  distanceFromBottom: number;
   shouldStickToBottom: boolean;
 };
 
@@ -103,30 +103,38 @@ const getViewportSnapshot = (term: Terminal): TerminalViewportSnapshot => {
   const buffer = term.buffer.active;
   const maxScrollLine = Math.max(0, buffer.baseY);
   const viewportLine = Math.max(0, Math.min(buffer.viewportY, maxScrollLine));
+  // Keep a relative offset from the live bottom so hidden terminals can recover
+  // the same reading position even if logs keep appending while inactive.
+  const distanceFromBottom = Math.max(0, maxScrollLine - viewportLine);
 
   return {
-    viewportLine,
-    shouldStickToBottom: maxScrollLine - viewportLine <= BOTTOM_STICK_THRESHOLD,
+    distanceFromBottom,
+    shouldStickToBottom: distanceFromBottom <= BOTTOM_STICK_THRESHOLD,
   };
 };
 
 const syncViewportTracking = (term: Terminal): TerminalViewportSnapshot => {
   const snapshot = getViewportSnapshot(term);
-  lastKnownViewportLine = snapshot.viewportLine;
+  lastKnownDistanceFromBottom = snapshot.distanceFromBottom;
   lastKnownShouldStickToBottom = snapshot.shouldStickToBottom;
   return snapshot;
 };
 
 const restoreViewportSnapshot = (term: Terminal, snapshot?: TerminalViewportSnapshot) => {
   const effectiveSnapshot = snapshot ?? {
-    viewportLine: lastKnownViewportLine,
+    distanceFromBottom: lastKnownDistanceFromBottom,
     shouldStickToBottom: lastKnownShouldStickToBottom,
   };
+  const maxScrollLine = Math.max(0, term.buffer.active.baseY);
 
   if (effectiveSnapshot.shouldStickToBottom) {
     term.scrollToBottom();
   } else {
-    const targetLine = Math.min(effectiveSnapshot.viewportLine, Math.max(0, term.buffer.active.baseY));
+    const targetDistanceFromBottom = Math.min(
+      Math.max(0, effectiveSnapshot.distanceFromBottom),
+      maxScrollLine,
+    );
+    const targetLine = Math.max(0, maxScrollLine - targetDistanceFromBottom);
     term.scrollToLine(targetLine);
   }
 
@@ -418,7 +426,7 @@ onMounted(() => {
                 // --- Become Active ---
                 console.log(`[Terminal ${props.sessionId}] Becoming active. Observing element and fitting.`);
                 const activationViewportSnapshot = {
-                    viewportLine: lastKnownViewportLine,
+                    distanceFromBottom: lastKnownDistanceFromBottom,
                     shouldStickToBottom: lastKnownShouldStickToBottom,
                 };
                 // Start observing

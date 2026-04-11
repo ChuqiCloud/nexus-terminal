@@ -111,10 +111,12 @@
                             v-for="(cmd) in groupData.commands"
                             :key="cmd.id"
                             :data-command-id="cmd.id"
+                            :title="cmd.command"
                             class="group flex justify-between items-center mb-1 cursor-pointer rounded-md hover:bg-primary/10 transition-colors duration-150"
                             :style="{ padding: isCompactMode ? `calc(0.1rem * var(--qc-row-size-multiplier)) calc(0.75rem * var(--qc-row-size-multiplier))` : `calc(0.625rem * var(--qc-row-size-multiplier)) calc(0.75rem * var(--qc-row-size-multiplier))` }"
                             :class="{ 'bg-primary/20 font-medium': isCommandSelected(cmd.id) }"
-                            @click="executeCommand(cmd)"
+                            @click="selectCommand(cmd.id)"
+                            @dblclick="executeCommand(cmd)"
                             @contextmenu.prevent="showQuickCommandContextMenu($event, cmd)"
                         >
                             <!-- Command Info -->
@@ -157,10 +159,12 @@
                     v-for="(cmd) in flatFilteredCommands"
                     :key="cmd.id"
                     :data-command-id="cmd.id"
+                    :title="cmd.command"
                     class="group flex justify-between items-center mb-1 cursor-pointer rounded-md hover:bg-primary/10 transition-colors duration-150"
                     :style="{ padding: isCompactMode ? `calc(0.1rem * var(--qc-row-size-multiplier)) calc(0.75rem * var(--qc-row-size-multiplier))` : `calc(0.625rem * var(--qc-row-size-multiplier)) calc(0.75rem * var(--qc-row-size-multiplier))` }"
                     :class="{ 'bg-primary/20 font-medium': isCommandSelected(cmd.id) }"
-                    @click="executeCommand(cmd)"
+                    @click="selectCommand(cmd.id)"
+                    @dblclick="executeCommand(cmd)"
                     @contextmenu.prevent="showQuickCommandContextMenu($event, cmd)"
                 >
                     <!-- Command Info -->
@@ -390,6 +394,10 @@ const isCommandSelected = (commandId: number): boolean => {
         return false;
     }
     return flatVisibleCommands.value[storeSelectedIndex.value].id === commandId;
+};
+
+const selectCommand = (commandId: number) => {
+    storeSelectedIndex.value = flatVisibleCommands.value.findIndex((cmd) => cmd.id === commandId);
 };
 
 

@@ -7,6 +7,9 @@
 
 | 时间戳 | 名称 | 类型 | 涉及模块 | 决策 | 结果 |
 |--------|------|------|---------|------|------|
+| 202604120705 | terminal-scroll-viewport-restore-fix | - | - | - | ✅完成 |
+| 202604120656 | ssh-group-close-and-script-input-sanitize | implementation | frontend | ssh-group-close-and-script-input-sanitize#D001 | ✅完成 |
+| 202604120656 | server-status-cpu-core-display | - | - | - | ✅完成 |
 | 202603300204 | global-server-quick-search | - | - | - | ✅完成 |
 | 202603300206 | workspace-workbench-top-tabs | implementation | frontend | workspace-workbench-top-tabs#D001 | ✅完成 |
 | 202603292139 | terminal-server-internal-tabs | - | - | - | ✅完成 |
@@ -43,6 +46,9 @@
 | 202603251200 | workspace-workbench-monitor | implementation | frontend, backend | workspace-workbench-monitor#D001 | ✅完成 |
 
 ## 按月归档
+
+### 2026-04
+- [202604120656_ssh-group-close-and-script-input-sanitize](./2026-04/202604120656_ssh-group-close-and-script-input-sanitize/) - 为 SSH 服务器组头补充整组关闭按钮，并修正脚本模式对单/双引号包裹值的保存行为
 
 ### 2026-03
 - [202603300206_workspace-workbench-top-tabs](./2026-03/202603300206_workspace-workbench-top-tabs/) - 将 Workbench 的导航从左侧竖排 icon rail 调整为 `Workbench` header 上方的横向纯图标栏

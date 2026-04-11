@@ -5,6 +5,7 @@ import { settingsService } from '../settings/settings.service';
 
 interface ServerStatus {
     cpuPercent?: number;
+    cpuCores?: number;
     memPercent?: number;
     memUsed?: number; // MB
     memTotal?: number; // MB
@@ -120,21 +121,7 @@ export class StatusMonitorService {
                 status.osName = nameMatch ? nameMatch[1] : (osReleaseOutput.match(/^NAME="?([^"]+)"?/m)?.[1] ?? 'Unknown');
             } catch (err) { /* noop */ }
 
-            try {
-                let cpuModelOutput = '';
-                try {
-                    cpuModelOutput = await this.executeSshCommand(sshClient, "cat /proc/cpuinfo | grep 'model name' | head -n 1");
-                    status.cpuModel = cpuModelOutput.match(/model name\s*:\s*(.*)/i)?.[1].trim();
-                } catch (procErr) {
-                    cpuModelOutput = await this.executeSshCommand(sshClient, "lscpu | grep 'Model name:'");
-                    status.cpuModel = cpuModelOutput.match(/Model name:\s+(.*)/)?.[1].trim();
-                }
-                if (!status.cpuModel) {
-                    status.cpuModel = 'Unknown';
-                }
-            } catch (err) {
-                status.cpuModel = 'Unknown';
-            }
+            await this.collectCpuStatus(sshClient, status);
 
             await this.collectMemoryStatus(sshClient, status);
             await this.collectDiskStatus(sshClient, sessionId, timestamp, status);
@@ -181,6 +168,62 @@ export class StatusMonitorService {
         }
 
         return status as ServerStatus;
+    }
+
+    private async collectCpuStatus(sshClient: Client, status: Partial<ServerStatus>): Promise<void> {
+        try {
+            let cpuModelOutput = '';
+            try {
+                cpuModelOutput = await this.executeSshCommand(sshClient, "cat /proc/cpuinfo | grep 'model name' | head -n 1");
+                status.cpuModel = cpuModelOutput.match(/model name\s*:\s*(.*)/i)?.[1].trim();
+            } catch (procErr) {
+                cpuModelOutput = await this.executeSshCommand(sshClient, "lscpu | grep 'Model name:'");
+                status.cpuModel = cpuModelOutput.match(/Model name:\s+(.*)/)?.[1].trim();
+            }
+        } catch (err) {
+            status.cpuModel = undefined;
+        }
+
+        if (!status.cpuModel) {
+            status.cpuModel = 'Unknown';
+        }
+
+        status.cpuCores = await this.resolveCpuCoreCount(sshClient);
+    }
+
+    private async resolveCpuCoreCount(sshClient: Client): Promise<number | undefined> {
+        const parseCpuCount = (raw?: string): number | undefined => {
+            if (!raw) {
+                return undefined;
+            }
+
+            const match = raw.match(/(\d+)/);
+            if (!match) {
+                return undefined;
+            }
+
+            const value = parseInt(match[1], 10);
+            return Number.isInteger(value) && value > 0 ? value : undefined;
+        };
+
+        const commands = [
+            'nproc',
+            'getconf _NPROCESSORS_ONLN',
+            "grep -c '^processor' /proc/cpuinfo",
+            "lscpu | grep '^CPU(s):'",
+        ];
+
+        for (const command of commands) {
+            try {
+                const output = await this.executeSshCommand(sshClient, command);
+                const cpuCount = parseCpuCount(output);
+                if (cpuCount !== undefined) {
+                    return cpuCount;
+                }
+            } catch (err) { /* noop */ }
+        }
+
+        return undefined;
     }
 
     private async collectMemoryStatus(sshClient: Client, status: Partial<ServerStatus>): Promise<void> {

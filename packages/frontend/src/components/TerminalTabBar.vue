@@ -58,6 +58,16 @@ const closeSession = (event: MouseEvent, sessionId: string) => {
   emitWorkspaceEvent('session:close', { sessionId });
 };
 
+const closeConnectionGroup = (event: MouseEvent, connectionId: string) => {
+  event.preventDefault();
+  event.stopPropagation();
+
+  const sessionIds = getConnectionSessions(connectionId).map((session) => session.sessionId);
+  sessionIds.forEach((sessionId) => {
+    emitWorkspaceEvent('session:close', { sessionId });
+  });
+};
+
 // --- 本地状态 ---
 const sessionStore = useSessionStore(); // Session store 保持不变
 const showConnectionListPopup = ref(false); // 连接列表弹出状态
@@ -534,34 +544,49 @@ onBeforeUnmount(() => {
             :class="['flex h-full flex-shrink-0 items-stretch py-1', isGroupStart(index) ? 'pl-1' : 'pl-0']"
             @dragstart="handleDragStart"
           >
-            <button
+            <div
               v-if="isSshConnection(session.connectionId)"
-              type="button"
               :class="[
-                'group flex h-full items-center gap-2 rounded-md border px-3 text-left transition-all duration-150',
+                'group flex h-full items-center rounded-md border px-3 transition-all duration-150',
                 session.connectionId === activeConnectionId
                   ? 'border-primary/60 bg-primary/10 text-foreground shadow-[0_0_0_1px_rgba(34,197,94,0.18)]'
                   : 'border-border/70 bg-header/80 text-text-secondary shadow-[0_0_0_1px_rgba(0,0,0,0.08)] hover:bg-border hover:text-foreground',
               ]"
               :title="getTopLevelItemTitle(session)"
-              @click="activateTopLevelItem(session)"
               @contextmenu.prevent="showTopLevelContextMenu($event, session)"
             >
-              <i class="fas fa-server text-[11px] text-primary/80"></i>
-              <span class="max-w-[180px] truncate text-xs font-semibold tracking-wide">
-                {{ session.connectionName }}
-              </span>
-              <span
-                :class="[
-                  'rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
-                  session.connectionId === activeConnectionId
-                    ? 'bg-primary/15 text-foreground/90'
-                    : 'bg-black/20 text-text-secondary group-hover:text-foreground',
-                ]"
+              <button
+                type="button"
+                class="flex min-w-0 flex-1 items-center gap-2 text-left"
+                @click="activateTopLevelItem(session)"
               >
-                {{ getConnectionSessionCount(session.connectionId) }}
-              </span>
-            </button>
+                <i class="fas fa-server text-[11px] text-primary/80"></i>
+                <span class="max-w-[180px] truncate text-xs font-semibold tracking-wide">
+                  {{ session.connectionName }}
+                </span>
+                <span
+                  :class="[
+                    'rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
+                    session.connectionId === activeConnectionId
+                      ? 'bg-primary/15 text-foreground/90'
+                      : 'bg-black/20 text-text-secondary group-hover:text-foreground',
+                  ]"
+                >
+                  {{ getConnectionSessionCount(session.connectionId) }}
+                </span>
+              </button>
+              <button
+                type="button"
+                class="ml-2 rounded-full p-0.5 text-text-secondary opacity-0 transition-opacity duration-150 hover:bg-header hover:text-foreground group-hover:opacity-100"
+                :class="{ 'text-foreground': session.connectionId === activeConnectionId }"
+                :title="t('terminalTabBar.closeConnectionGroupTooltip', { name: session.connectionName, count: getConnectionSessionCount(session.connectionId) })"
+                @click="closeConnectionGroup($event, session.connectionId)"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             <div
               v-else
               :class="[

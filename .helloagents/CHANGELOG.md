@@ -2,12 +2,17 @@
 
 ## [Unreleased]
 
+- **[frontend]**: 修复持续日志输出时切换终端后的 viewport 恢复偏移问题，改为按距底部偏移恢复滚动位置，避免重新激活后无法继续向下滚到最底部 — by yinjianm
+  - 方案: [202604120705_terminal-scroll-viewport-restore-fix](archive/2026-04/202604120705_terminal-scroll-viewport-restore-fix/)
+
 - 2026-03-25：初始化 `.helloagents/` 知识库骨架与首批模块文档，不代表源码功能变更。
 - 2026-03-25：新增 GHCR Docker 发布 workflow，并将 `docker-compose.yml` 的三个业务镜像切换到 `ghcr.io/micah123321/*`。
 - 2026-03-25：`/workspace` 默认布局改为“左侧 Workbench + 中央视终端 + 右侧状态监控”，并在状态监控中新增开机累计上下行流量展示。
 - 2026-03-25：继续微调 `/workspace` Workbench，新增默认“快捷指令”标签、调整三栏宽度到更接近 xterminal 参考图，并修复终端区域鼠标悬停时指针异常消失的问题。
 
 ### 修复
+- **[frontend]**: 为 SSH 服务器组头补充整组关闭按钮，并修正脚本模式对单/双引号包裹值的保存行为 — by yinjianm
+  - 方案: [202604120656_ssh-group-close-and-script-input-sanitize](archive/2026-04/202604120656_ssh-group-close-and-script-input-sanitize/)
 - **[frontend]**: 将 `/workspace` Workbench 的导航从左侧竖排 icon rail 调整为 `Workbench` header 上方的横向纯图标栏，保留原有四面板切换逻辑与信息头部层级 — by yinjianm
   - 方案: [202603300206_workspace-workbench-top-tabs](archive/2026-03/202603300206_workspace-workbench-top-tabs/)
 - **[frontend]**: 将 `/workspace` 的 SSH 多终端展示从顶部组头胶囊改为“顶部只切服务器、终端面板内部切换同服务器多个终端”，修正服务器与终端的视觉层级 - by yinjianm
@@ -38,6 +43,9 @@
   - 方案: [202603250614_terminal-ansi-color-effects](archive/2026-03/202603250614_terminal-ansi-color-effects/)
 
 ### 快速修改
+- **[frontend]**: 修复右侧状态监控在窄侧栏下的内存/磁盘卡片字体重叠问题，改为基于卡片容器宽度自适应折列与缩字 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/StatusMonitor.vue:446-452,572-600,697-707,744-802
 - **[frontend]**: 将“添加新连接”弹窗的脚本模式开关上移到基本信息之前，并在脚本导入时自动忽略空格、空行与 Markdown 代码围栏行 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/AddConnectionForm.vue, packages/frontend/src/composables/useAddConnectionForm.ts
@@ -64,6 +72,10 @@
   - 文件: packages/frontend/src/components/AddEditQuickCommandForm.vue:9,184-185,242-245
 
 ### 新增
+- **[frontend]**: 在 `/workspace` 状态监控的 CPU 型号下方新增 CPU 核心数 badge，直接显示后端推送的服务器核数规格 — by yinjianm
+  - 方案: [202604120656_server-status-cpu-core-display](archive/2026-04/202604120656_server-status-cpu-core-display/)
+- **[backend]**: 扩展 `StatusMonitorService` 的 CPU 规格采集链路，新增 `cpuCores` 字段并通过多级回退命令获取逻辑核心数 — by yinjianm
+  - 方案: [202604120656_server-status-cpu-core-display](archive/2026-04/202604120656_server-status-cpu-core-display/)
 - **[frontend]**: 为已登录页面新增 `Ctrl+Shift+F` 全局服务器快捷检索面板，支持模糊搜索并直接复用既有 SSH / RDP / VNC 连接链路 — by yinjianm
   - 方案: [202603300204_global-server-quick-search](archive/2026-03/202603300204_global-server-quick-search/)
 - **[frontend]**: 为文件管理器补齐“上传文件夹”入口，选择目录后会先在浏览器端打包为 zip，再上传并自动触发远端解压 — by yinjianm
