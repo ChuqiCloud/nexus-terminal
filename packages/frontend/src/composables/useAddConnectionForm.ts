@@ -286,9 +286,9 @@ export function useAddConnectionForm(props: AddConnectionFormProps, emit: AddCon
     }
 
     // 1. Extract user@host:port
-    const firstSpaceIndex = line.indexOf(' ');
-    const userHostPortPart = firstSpaceIndex === -1 ? line : line.substring(0, firstSpaceIndex);
-    const optionsString = firstSpaceIndex === -1 ? '' : line.substring(firstSpaceIndex + 1).trim();
+    const firstWhitespaceIndex = line.search(/\s/);
+    const userHostPortPart = firstWhitespaceIndex === -1 ? line : line.substring(0, firstWhitespaceIndex);
+    const optionsString = firstWhitespaceIndex === -1 ? '' : line.substring(firstWhitespaceIndex).trim();
 
     // 2. Validate user@host:port (allow user@host without port)
     const userHostPortRegex = /^([^@\s]+)@([^:\s]+)(?::([0-9]+))?$/;
@@ -398,9 +398,24 @@ export function useAddConnectionForm(props: AddConnectionFormProps, emit: AddCon
     return { type, userHostPort: userHostPortPart, name, password, keyName, proxyName, tags, note };
   };
 
+  const normalizeScriptModeInput = (rawInput: string): { cleanedText: string; lines: string[] } => {
+    const lines = rawInput
+      .replace(/\r\n?/g, '\n')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0 && !line.startsWith('```'));
+
+    return {
+      cleanedText: lines.join('\n'),
+      lines,
+    };
+  };
+
   // 处理表单提交
   const handleScriptModeSubmit = async () => {
-    const lines = scriptInputText.value.split('\n').filter(line => line.trim() !== '');
+    const normalizedScriptInput = normalizeScriptModeInput(scriptInputText.value);
+    const lines = normalizedScriptInput.lines;
+    scriptInputText.value = normalizedScriptInput.cleanedText;
 
     if (lines.length === 0) {
       uiNotificationsStore.showError(t('connections.form.scriptModeEmpty', '脚本输入不能为空。'));

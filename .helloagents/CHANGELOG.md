@@ -38,6 +38,9 @@
   - 方案: [202603250614_terminal-ansi-color-effects](archive/2026-03/202603250614_terminal-ansi-color-effects/)
 
 ### 快速修改
+- **[frontend]**: 将“添加新连接”弹窗的脚本模式开关上移到基本信息之前，并在脚本导入时自动忽略空格、空行与 Markdown 代码围栏行 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/AddConnectionForm.vue, packages/frontend/src/composables/useAddConnectionForm.ts
 - **[workspace-root]**: 将双语 README 的仓库、发布与下载链接统一切到 `Micah123321/nexus-terminal`，移除 Ko-fi，并补充源项目指向 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: README.md, doc/README_EN.md

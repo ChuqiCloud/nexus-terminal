@@ -104,6 +104,44 @@ const handleHostIconMouseLeave = () => {
       <h3 class="text-xl font-semibold text-center mb-6 flex-shrink-0">{{ formTitle }}</h3> <!-- Title -->
       <form @submit.prevent="handleSubmit" class="flex-grow overflow-y-auto pr-2 space-y-6"> <!-- Form with scroll and spacing -->
 
+        <!-- Script Mode Section Toggle -->
+        <div v-if="!isEditMode" class="space-y-4 p-4 border border-border rounded-md bg-header/30">
+          <div class="flex justify-between items-center">
+            <h4 class="text-base font-semibold">{{ t('connections.form.sectionScriptMode', '脚本模式') }}</h4>
+            <button
+              type="button"
+              @click="isScriptModeActive = !isScriptModeActive"
+              :class="[
+                'relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary',
+                isScriptModeActive ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'
+              ]"
+              role="switch"
+              :aria-checked="isScriptModeActive"
+            >
+              <span
+                aria-hidden="true"
+                :class="[
+                  'pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200',
+                  isScriptModeActive ? 'translate-x-5' : 'translate-x-0'
+                ]"
+              ></span>
+            </button>
+          </div>
+          <div v-if="isScriptModeActive" class="mt-4">
+            <textarea
+              id="conn-script-input"
+              v-model="scriptInputText"
+              rows="10"
+              wrap="off"
+              class="w-full px-3 py-2 border border-border rounded-md shadow-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+              :placeholder="t('connections.form.scriptModePlaceholder')"
+            ></textarea>
+            <p class="mt-1 text-xs text-text-secondary whitespace-pre-line">
+              {{ scriptModeFormatInfo }}
+            </p>
+          </div>
+        </div>
+
         <!-- Regular Form Sections (conditionally rendered) -->
         <template v-if="!isScriptModeActive">
           <AddConnectionFormBasicInfo :form-data="formData" />
@@ -125,44 +163,6 @@ const handleHostIconMouseLeave = () => {
             @delete-tag="handleDeleteTag"
           />
         </template>
-       
-        <!-- Script Mode Section Toggle -->
-       <div v-if="!isEditMode" class="space-y-4 p-4 border border-border rounded-md bg-header/30 mt-6">
-         <div class="flex justify-between items-center">
-           <h4 class="text-base font-semibold">{{ t('connections.form.sectionScriptMode', '脚本模式') }}</h4>
-           <button
-             type="button"
-             @click="isScriptModeActive = !isScriptModeActive"
-             :class="[
-               'relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary',
-               isScriptModeActive ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'
-             ]"
-             role="switch"
-             :aria-checked="isScriptModeActive"
-           >
-             <span
-               aria-hidden="true"
-               :class="[
-                 'pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition ease-in-out duration-200',
-                 isScriptModeActive ? 'translate-x-5' : 'translate-x-0'
-               ]"
-             ></span>
-           </button>
-         </div>
-         <div v-if="isScriptModeActive" class="mt-4">
-           <textarea
-             id="conn-script-input"
-             v-model="scriptInputText"
-             rows="10"
-             wrap="off"
-             class="w-full px-3 py-2 border border-border rounded-md shadow-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-             :placeholder="t('connections.form.scriptModePlaceholder')"
-           ></textarea>
-           <p class="mt-1 text-xs text-text-secondary whitespace-pre-line">
-             {{ scriptModeFormatInfo }}
-           </p>
-         </div>
-       </div>
 
        <!-- Error message DIV removed -->
 
