@@ -45,6 +45,9 @@
   - 方案: [202603250614_terminal-ansi-color-effects](archive/2026-03/202603250614_terminal-ansi-color-effects/)
 
 ### 快速修改
+- **[frontend]**: 取消连接管理页在“批量修改”模式下对单行“连接 / 更多”按钮的禁用，保留批量选择同时允许继续操作单台服务器 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/views/ConnectionsView.vue
 - **[frontend]**: 修复右侧状态监控在窄侧栏下的内存/磁盘卡片字体重叠问题，改为基于卡片容器宽度自适应折列与缩字 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/StatusMonitor.vue:446-452,572-600,697-707,744-802

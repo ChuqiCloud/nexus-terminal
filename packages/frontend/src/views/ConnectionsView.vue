@@ -1591,8 +1591,7 @@ onBeforeUnmount(() => {
                     <div class="flex flex-wrap justify-start xl:justify-end gap-2 relative">
                       <button
                         @click.stop="connectTo(conn)"
-                        :disabled="isBatchEditMode"
-                        class="px-4 py-2 rounded-lg bg-button text-button-text border border-button hover:bg-button-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2 text-sm font-medium"
+                        class="px-4 py-2 rounded-lg bg-button text-button-text border border-button hover:bg-button-hover transition-colors inline-flex items-center gap-2 text-sm font-medium"
                       >
                         <i class="fas fa-arrow-right-to-bracket"></i>
                         <span>{{ t('connections.actions.connect', '连接') }}</span>
@@ -1601,8 +1600,7 @@ onBeforeUnmount(() => {
                       <div class="relative">
                         <button
                           @click.stop="toggleMoreMenu(conn.id)"
-                          :disabled="isBatchEditMode"
-                          class="px-3 py-2 rounded-lg border border-border bg-background text-foreground hover:bg-border transition-colors inline-flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                          class="px-3 py-2 rounded-lg border border-border bg-background text-foreground hover:bg-border transition-colors inline-flex items-center gap-2 text-sm"
                         >
                           <i class="fas fa-ellipsis"></i>
                           <span>{{ t('common.more', '更多') }}</span>
