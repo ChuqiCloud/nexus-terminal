@@ -225,6 +225,28 @@
       "successMessage": "选中的连接已成功删除。",
       "errorMessage": "批量删除连接失败: {error}"
     },
+    "tagManagement": {
+      "openButton": "标签管理",
+      "title": "批量标签管理",
+      "searchPlaceholder": "搜索标签名称...",
+      "emptyTitle": "暂无可管理标签",
+      "emptyDescription": "创建标签后即可在这里批量删除或清理。",
+      "emptySearch": "没有匹配的标签。",
+      "selectionSummary": "已选择 {tagCount} 个标签，命中 {connectionCount} 台服务器",
+      "selectAll": "全选",
+      "deselectAll": "取消全选",
+      "invertSelection": "反选",
+      "affectedConnections": "{count} 台服务器",
+      "deleteConnectionsLabel": "删除标签时一并删除标签下的所有服务器",
+      "deleteConnectionsHint": "关闭后仅删除标签本身，原服务器会保留并归入“未标记”。",
+      "deleteButton": "删除选中标签",
+      "noSelection": "请先选择至少一个标签。",
+      "confirmDeleteKeepConnections": "确定删除选中的 {tagCount} 个标签吗？关联服务器将保留并归入“未标记”。",
+      "confirmDeleteWithConnections": "确定删除选中的 {tagCount} 个标签及其命中的 {connectionCount} 台服务器吗？此操作不可撤销。",
+      "successKeepConnections": "已删除 {tagCount} 个标签，{connectionCount} 台服务器已归入“未标记”。",
+      "successWithConnections": "已删除 {tagCount} 个标签，并同步删除 {deletedConnectionsCount} 台服务器。",
+      "errorDelete": "批量删除标签失败: {error}"
+    },
     "actions": {
       "testAllFiltered":"测试全部",
       "connect": "连接",

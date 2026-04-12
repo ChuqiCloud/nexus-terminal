@@ -134,6 +134,28 @@
             "successMessage": "選択した接続は正常に削除されました。",
             "errorMessage": "接続の一括削除に失敗しました: {error}"
         },
+        "tagManagement": {
+            "openButton": "タグ管理",
+            "title": "タグ一括管理",
+            "searchPlaceholder": "タグ名を検索...",
+            "emptyTitle": "管理できるタグがありません",
+            "emptyDescription": "タグを作成すると、ここで一括削除や整理ができます。",
+            "emptySearch": "一致するタグがありません。",
+            "selectionSummary": "{tagCount} 個のタグを選択中、{connectionCount} 台のサーバーに影響します",
+            "selectAll": "すべて選択",
+            "deselectAll": "選択解除",
+            "invertSelection": "選択を反転",
+            "affectedConnections": "{count} 台のサーバー",
+            "deleteConnectionsLabel": "タグ削除時に、そのタグ配下のサーバーも削除する",
+            "deleteConnectionsHint": "オフの場合はタグのみ削除され、サーバーは「タグなし」に残ります。",
+            "deleteButton": "選択したタグを削除",
+            "noSelection": "まず少なくとも1つのタグを選択してください。",
+            "confirmDeleteKeepConnections": "選択した {tagCount} 個のタグを削除しますか？関連サーバーは保持され、「タグなし」に移動します。",
+            "confirmDeleteWithConnections": "選択した {tagCount} 個のタグと、影響を受ける {connectionCount} 台のサーバーを削除しますか？この操作は元に戻せません。",
+            "successKeepConnections": "{tagCount} 個のタグを削除し、{connectionCount} 台のサーバーを「タグなし」に移動しました。",
+            "successWithConnections": "{tagCount} 個のタグを削除し、あわせて {deletedConnectionsCount} 台のサーバーも削除しました。",
+            "errorDelete": "タグの一括削除に失敗しました: {error}"
+        },
         "actions": {
             "testAllFiltered":"すべてテスト",
             "connect": "接続",

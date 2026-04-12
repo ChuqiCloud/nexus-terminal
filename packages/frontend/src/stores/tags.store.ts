@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import apiClient from '../utils/apiClient'; // 使用统一的 apiClient
+import { useConnectionsStore } from './connections.store';
 
 // 定义标签信息接口
 export interface TagInfo {
@@ -10,10 +11,20 @@ export interface TagInfo {
     updated_at: number;
 }
 
+export interface TagBatchDeleteSummary {
+    deleted_tag_ids: number[];
+    deleted_tags_count: number;
+    affected_connection_ids: number[];
+    affected_connections_count: number;
+    deleted_connections_count: number;
+    delete_connections: boolean;
+}
+
 export const useTagsStore = defineStore('tags', () => {
     const tags = ref<TagInfo[]>([]);
     const isLoading = ref(false);
     const error = ref<string | null>(null);
+    const connectionsStore = useConnectionsStore();
 
     // 获取标签列表 (带缓存)
     async function fetchTags() {
@@ -62,6 +73,15 @@ export const useTagsStore = defineStore('tags', () => {
         }
     }
 
+    async function refreshRelatedConnectionData() {
+        localStorage.removeItem('tagsCache');
+        localStorage.removeItem('connectionsCache');
+        await Promise.all([
+            fetchTags(),
+            connectionsStore.fetchConnections(),
+        ]);
+    }
+
     // 添加新标签 (添加后清除缓存)
     async function addTag(name: string): Promise<TagInfo | null> { // 修改返回类型
         isLoading.value = true;
@@ -103,18 +123,30 @@ export const useTagsStore = defineStore('tags', () => {
 
     // 删除标签
     async function deleteTag(id: number): Promise<boolean> {
+        const summary = await deleteTagsBatch([id], false);
+        return Boolean(summary && summary.deleted_tags_count > 0);
+    }
+
+    async function deleteTagsBatch(tagIds: number[], deleteConnections: boolean): Promise<TagBatchDeleteSummary | null> {
+        const normalizedTagIds = Array.from(new Set(tagIds.filter((tagId) => Number.isInteger(tagId) && tagId > 0)));
+        if (normalizedTagIds.length === 0) {
+            error.value = '至少需要选择一个标签';
+            return null;
+        }
+
         isLoading.value = true;
         error.value = null;
         try {
-            await apiClient.delete(`/tags/${id}`); // 使用 apiClient 并移除 base URL
-            // 删除成功后，清除缓存并重新获取
-            localStorage.removeItem('tagsCache');
-            await fetchTags();
-            return true;
+            const response = await apiClient.post<{ message: string; summary: TagBatchDeleteSummary }>('/tags/bulk-delete', {
+                tag_ids: normalizedTagIds,
+                delete_connections: deleteConnections,
+            });
+            await refreshRelatedConnectionData();
+            return response.data.summary;
         } catch (err: any) {
-            console.error('Failed to delete tag:', err);
-            error.value = err.response?.data?.message || err.message || '删除标签失败';
-            return false;
+            console.error('Failed to batch delete tags:', err);
+            error.value = err.response?.data?.message || err.message || '批量删除标签失败';
+            return null;
         } finally {
             isLoading.value = false;
         }
@@ -128,18 +160,7 @@ export const useTagsStore = defineStore('tags', () => {
             // 假设后端 API 端点是 PUT /api/tags/:tagId/connections
             await apiClient.put(`/tags/${tagId}/connections`, { connection_ids: connectionIds });
             // 更新成功后，清除相关缓存并重新获取数据以确保一致性
-            localStorage.removeItem('tagsCache'); // 清除标签缓存
-            localStorage.removeItem('connectionsCache'); // 清除连接缓存，因为连接的 tag_ids 可能已更改
-
-            await fetchTags(); // 重新获取标签
-            // 可能还需要通知 connectionsStore 重新获取连接，或者在这里直接调用
-            // (这取决于您希望如何管理 store 间的依赖和数据同步)
-            // 例如: const connectionsStore = useConnectionsStore(); await connectionsStore.fetchConnections();
-            // 为简单起见，这里假设调用者会处理连接列表的刷新，或者依赖于后续的自动刷新机制。
-            // 或者，更健壮的做法是在此 action 成功后，让 connectionsStore 也刷新。
-            // 但为了减少此处的直接依赖，暂时只刷新 tagsStore。
-            // WorkspaceConnectionList 在模态框保存成功后会重新 fetchConnections。
-
+            await refreshRelatedConnectionData();
             return true;
         } catch (err: any) {
             console.error(`Failed to update connections for tag ${tagId}:`, err);
@@ -158,6 +179,7 @@ export const useTagsStore = defineStore('tags', () => {
         addTag,
         updateTag,
         deleteTag,
+        deleteTagsBatch,
         updateTagConnections, // 暴露新的 action
     };
 });

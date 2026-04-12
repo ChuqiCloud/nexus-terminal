@@ -6,6 +6,7 @@ import {
     getTagById,
     updateTag,
     deleteTag,
+    bulkDeleteTags,
     updateTagConnections // +++ 导入新的控制器方法 +++
 } from './tags.controller';
 
@@ -16,6 +17,7 @@ router.use(isAuthenticated);
 
 // 定义标签相关的路由
 router.post('/', createTag);       // POST /api/v1/tags - 创建新标签
+router.post('/bulk-delete', bulkDeleteTags); // POST /api/v1/tags/bulk-delete - 批量删除标签
 router.get('/', getTags);         // GET /api/v1/tags - 获取标签列表
 router.get('/:id', getTagById);   // GET /api/v1/tags/:id - 获取单个标签
 router.put('/:id', updateTag);     // PUT /api/v1/tags/:id - 更新标签

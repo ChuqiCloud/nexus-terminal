@@ -10,6 +10,19 @@ export interface TagData {
     updated_at: number;
 }
 
+export interface BatchDeleteTagsSummary {
+    deleted_tag_ids: number[];
+    deleted_tags_count: number;
+    affected_connection_ids: number[];
+    affected_connections_count: number;
+    deleted_connections_count: number;
+    delete_connections: boolean;
+}
+
+const buildInClause = (count: number): string => {
+    return new Array(count).fill('?').join(', ');
+};
+
 /**
  * 获取所有标签
  */
@@ -84,14 +97,93 @@ export const updateTag = async (id: number, name: string): Promise<boolean> => {
  * 删除标签
  */
 export const deleteTag = async (id: number): Promise<boolean> => {
-    const sql = `DELETE FROM tags WHERE id = ?`;
+    const summary = await deleteTagsBatch([id], false);
+    return summary.deleted_tags_count > 0;
+};
+
+/**
+ * 批量删除标签，并根据策略可选地同时删除关联连接。
+ */
+export const deleteTagsBatch = async (tagIds: number[], deleteConnections: boolean): Promise<BatchDeleteTagsSummary> => {
+    const normalizedTagIds = Array.from(new Set(tagIds.filter((tagId) => Number.isInteger(tagId) && tagId > 0)));
+    if (normalizedTagIds.length === 0) {
+        return {
+            deleted_tag_ids: [],
+            deleted_tags_count: 0,
+            affected_connection_ids: [],
+            affected_connections_count: 0,
+            deleted_connections_count: 0,
+            delete_connections: Boolean(deleteConnections),
+        };
+    }
+
+    const db = await getDbInstance();
     try {
-        const db = await getDbInstance();
-        const result = await runDb(db, sql, [id]);
-        return result.changes > 0;
+        await runDb(db, 'BEGIN TRANSACTION');
+
+        const tagPlaceholders = buildInClause(normalizedTagIds.length);
+        const existingTags = await allDb<{ id: number }>(
+            db,
+            `SELECT id FROM tags WHERE id IN (${tagPlaceholders}) ORDER BY id ASC`,
+            normalizedTagIds,
+        );
+        const existingTagIds = existingTags.map((row) => row.id);
+
+        if (existingTagIds.length === 0) {
+            await runDb(db, 'COMMIT');
+            return {
+                deleted_tag_ids: [],
+                deleted_tags_count: 0,
+                affected_connection_ids: [],
+                affected_connections_count: 0,
+                deleted_connections_count: 0,
+                delete_connections: Boolean(deleteConnections),
+            };
+        }
+
+        const existingTagPlaceholders = buildInClause(existingTagIds.length);
+        const affectedConnections = await allDb<{ connection_id: number }>(
+            db,
+            `SELECT DISTINCT connection_id FROM connection_tags WHERE tag_id IN (${existingTagPlaceholders}) ORDER BY connection_id ASC`,
+            existingTagIds,
+        );
+        const affectedConnectionIds = affectedConnections.map((row) => row.connection_id);
+
+        let deletedConnectionsCount = 0;
+        if (deleteConnections && affectedConnectionIds.length > 0) {
+            const connectionPlaceholders = buildInClause(affectedConnectionIds.length);
+            const deleteConnectionsResult = await runDb(
+                db,
+                `DELETE FROM connections WHERE id IN (${connectionPlaceholders})`,
+                affectedConnectionIds,
+            );
+            deletedConnectionsCount = deleteConnectionsResult.changes ?? 0;
+        }
+
+        const deleteTagsResult = await runDb(
+            db,
+            `DELETE FROM tags WHERE id IN (${existingTagPlaceholders})`,
+            existingTagIds,
+        );
+
+        await runDb(db, 'COMMIT');
+
+        return {
+            deleted_tag_ids: existingTagIds,
+            deleted_tags_count: deleteTagsResult.changes ?? 0,
+            affected_connection_ids: affectedConnectionIds,
+            affected_connections_count: affectedConnectionIds.length,
+            deleted_connections_count: deletedConnectionsCount,
+            delete_connections: Boolean(deleteConnections),
+        };
     } catch (err: any) {
-        console.error(`[仓库] 删除标签 ${id} 时出错:`, err.message);
-        throw new Error('删除标签失败');
+        try {
+            await runDb(db, 'ROLLBACK');
+        } catch (rollbackError: any) {
+            console.error('[仓库] 批量删除标签回滚失败:', rollbackError.message);
+        }
+        console.error(`[仓库] 批量删除标签时出错:`, err.message);
+        throw new Error(`批量删除标签失败: ${err.message}`);
     }
 };
 

@@ -2,6 +2,7 @@ import * as TagRepository from '../tags/tag.repository';
 
 // Re-export or define types
 export interface TagData extends TagRepository.TagData {}
+export interface BatchDeleteTagsSummary extends TagRepository.BatchDeleteTagsSummary {}
 
 /**
  * 获取所有标签
@@ -74,6 +75,18 @@ export const updateTag = async (id: number, name: string): Promise<TagData | nul
  */
 export const deleteTag = async (id: number): Promise<boolean> => {
     return TagRepository.deleteTag(id);
+};
+
+/**
+ * 批量删除标签，并根据策略决定是否删除关联连接。
+ */
+export const deleteTagsBatch = async (tagIds: number[], deleteConnections: boolean): Promise<BatchDeleteTagsSummary> => {
+    const normalizedTagIds = Array.from(new Set(tagIds.filter((tagId) => Number.isInteger(tagId) && tagId > 0)));
+    if (normalizedTagIds.length === 0) {
+        throw new Error('至少需要提供一个有效的标签 ID。');
+    }
+
+    return TagRepository.deleteTagsBatch(normalizedTagIds, Boolean(deleteConnections));
 };
 
 /**

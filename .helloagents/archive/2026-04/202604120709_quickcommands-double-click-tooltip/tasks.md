@@ -1,5 +1,7 @@
 # 任务清单: quickcommands-double-click-tooltip
 
+> **@status:** completed | 2026-04-12 07:22
+
 ```yaml
 @feature: quickcommands-double-click-tooltip
 @created: 2026-04-12

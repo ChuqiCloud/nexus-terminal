@@ -224,6 +224,28 @@
       "successMessage": "Selected connections have been successfully deleted.",
       "errorMessage": "Batch delete connections failed: {error}"
     },
+    "tagManagement": {
+      "openButton": "Tag Management",
+      "title": "Bulk Tag Management",
+      "searchPlaceholder": "Search tag names...",
+      "emptyTitle": "No tags to manage yet",
+      "emptyDescription": "Create tags first, then you can clean them up in bulk here.",
+      "emptySearch": "No matching tags.",
+      "selectionSummary": "{tagCount} tags selected, affecting {connectionCount} servers",
+      "selectAll": "Select All",
+      "deselectAll": "Deselect All",
+      "invertSelection": "Invert Selection",
+      "affectedConnections": "{count} servers",
+      "deleteConnectionsLabel": "Delete all servers under the selected tags as well",
+      "deleteConnectionsHint": "If disabled, only the tags are removed and the servers stay as Untagged.",
+      "deleteButton": "Delete Selected Tags",
+      "noSelection": "Select at least one tag first.",
+      "confirmDeleteKeepConnections": "Delete the selected {tagCount} tags? The related servers will be kept and moved to Untagged.",
+      "confirmDeleteWithConnections": "Delete the selected {tagCount} tags and the {connectionCount} affected servers? This cannot be undone.",
+      "successKeepConnections": "{tagCount} tags deleted. {connectionCount} servers were moved to Untagged.",
+      "successWithConnections": "{tagCount} tags deleted, and {deletedConnectionsCount} servers were deleted as well.",
+      "errorDelete": "Failed to batch delete tags: {error}"
+    },
     "actions": {
       "testAllFiltered":"Test All",
       "connect": "Connect",

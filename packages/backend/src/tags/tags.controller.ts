@@ -132,6 +132,44 @@ export const deleteTag = async (req: Request, res: Response): Promise<void> => {
 };
 
 /**
+ * 批量删除标签 (POST /api/v1/tags/bulk-delete)
+ */
+export const bulkDeleteTags = async (req: Request, res: Response): Promise<void> => {
+    const { tag_ids, delete_connections } = req.body;
+
+    if (!Array.isArray(tag_ids) || !tag_ids.every((id) => typeof id === 'number')) {
+        res.status(400).json({ message: 'tag_ids 必须是一个数字数组。' });
+        return;
+    }
+
+    if (delete_connections !== undefined && typeof delete_connections !== 'boolean') {
+        res.status(400).json({ message: 'delete_connections 必须是布尔值。' });
+        return;
+    }
+
+    try {
+        const summary = await TagService.deleteTagsBatch(tag_ids, Boolean(delete_connections));
+        if (summary.deleted_tags_count === 0) {
+            res.status(404).json({ message: '未找到可删除的标签。' });
+            return;
+        }
+
+        auditLogService.logAction('TAG_DELETED', {
+            mode: 'batch',
+            ...summary,
+        });
+        res.status(200).json({ message: '标签批量删除成功。', summary });
+    } catch (error: any) {
+        console.error('Controller: 批量删除标签时发生错误:', error);
+        if (error.message.includes('至少需要提供')) {
+            res.status(400).json({ message: error.message });
+        } else {
+            res.status(500).json({ message: error.message || '批量删除标签时发生内部服务器错误。' });
+        }
+    }
+};
+
+/**
  * 更新标签与连接的关联关系 (PUT /api/v1/tags/:id/connections)
  */
 export const updateTagConnections = async (req: Request, res: Response): Promise<void> => {

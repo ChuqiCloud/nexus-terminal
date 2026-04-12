@@ -11,6 +11,8 @@
 - 2026-03-25：继续微调 `/workspace` Workbench，新增默认“快捷指令”标签、调整三栏宽度到更接近 xterminal 参考图，并修复终端区域鼠标悬停时指针异常消失的问题。
 
 ### 修复
+- **[frontend]**: 将快捷命令列表项从单击立即执行改为单击选中、双击执行，并在 hover 时补充完整命令提示，降低误触执行概率 — by yinjianm
+  - 方案: [202604120709_quickcommands-double-click-tooltip](archive/2026-04/202604120709_quickcommands-double-click-tooltip/)
 - **[frontend]**: 为 SSH 服务器组头补充整组关闭按钮，并修正脚本模式对单/双引号包裹值的保存行为 — by yinjianm
   - 方案: [202604120656_ssh-group-close-and-script-input-sanitize](archive/2026-04/202604120656_ssh-group-close-and-script-input-sanitize/)
 - **[frontend]**: 将 `/workspace` Workbench 的导航从左侧竖排 icon rail 调整为 `Workbench` header 上方的横向纯图标栏，保留原有四面板切换逻辑与信息头部层级 — by yinjianm
@@ -72,6 +74,10 @@
   - 文件: packages/frontend/src/components/AddEditQuickCommandForm.vue:9,184-185,242-245
 
 ### 新增
+- **[frontend]**: 为连接管理页顶部工具条新增“标签管理”弹窗，支持按标签搜索、多选删除，并在删除时选择“仅删标签归入未标记”或“连带删除命中服务器” — by yinjianm
+  - 方案: [202604122248_connections-tag-batch-management](archive/2026-04/202604122248_connections-tag-batch-management/)
+- **[backend]**: 新增 `/api/v1/tags/bulk-delete` 批量标签删除接口，并用统一事务处理“删标签”与“删标签+删连接”两种策略 — by yinjianm
+  - 方案: [202604122248_connections-tag-batch-management](archive/2026-04/202604122248_connections-tag-batch-management/)
 - **[frontend]**: 在 `/workspace` 状态监控的 CPU 型号下方新增 CPU 核心数 badge，直接显示后端推送的服务器核数规格 — by yinjianm
   - 方案: [202604120656_server-status-cpu-core-display](archive/2026-04/202604120656_server-status-cpu-core-display/)
 - **[backend]**: 扩展 `StatusMonitorService` 的 CPU 规格采集链路，新增 `cpuCores` 字段并通过多级回退命令获取逻辑核心数 — by yinjianm

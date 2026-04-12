@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AddConnectionForm from '../components/AddConnectionForm.vue';
 import BatchEditConnectionForm from '../components/BatchEditConnectionForm.vue';
 import LoginCredentialManagementModal from '../components/LoginCredentialManagementModal.vue';
+import ManageConnectionTagsModal from '../components/ManageConnectionTagsModal.vue';
 import { useConnectionsStore } from '../stores/connections.store';
 import { useProxiesStore } from '../stores/proxies.store';
 import { useSessionStore } from '../stores/session.store';
@@ -97,6 +98,7 @@ const tagsSectionExpanded = ref(true);
 const showAddEditConnectionForm = ref(false);
 const connectionToEdit = ref<ConnectionInfo | null>(null);
 const showLoginCredentialManagement = ref(false);
+const showTagManagement = ref(false);
 
 const isBatchEditMode = ref(false);
 const selectedConnectionIdsForBatch = ref<Set<number>>(new Set());
@@ -398,6 +400,22 @@ const visibleTagTreeNodes = computed<TagTreeNode[]>(() => {
 
   appendVisibleNodes(filteredTagTreeNodes.value);
   return rows;
+});
+
+const availableScopeIds = computed(() => {
+  const ids = new Set<ScopeId>(['all', 'untagged']);
+
+  const walkNodes = (nodes: TagTreeNode[]) => {
+    nodes.forEach((node) => {
+      ids.add(node.id);
+      if (node.children.length > 0) {
+        walkNodes(node.children);
+      }
+    });
+  };
+
+  walkNodes(tagTreeNodes.value);
+  return ids;
 });
 
 const expandableTreeNodeIds = computed<ScopeId[]>(() => {
@@ -723,6 +741,16 @@ watch([selectedScope, activeTypeFilter, searchQuery], () => {
   }
 });
 
+watch(
+  tagTreeNodes,
+  () => {
+    if (!availableScopeIds.value.has(selectedScope.value)) {
+      selectedScope.value = 'all';
+    }
+  },
+  { deep: true },
+);
+
 const selectScope = (scopeId: ScopeId) => {
   selectedScope.value = scopeId;
 };
@@ -820,6 +848,13 @@ const handleConnectionModified = async () => {
   showAddEditConnectionForm.value = false;
   connectionToEdit.value = null;
   await connectionsStore.fetchConnections();
+};
+
+const handleTagsDeleted = () => {
+  showTagManagement.value = false;
+  if (!availableScopeIds.value.has(selectedScope.value)) {
+    selectedScope.value = 'all';
+  }
 };
 
 const toggleBatchEditMode = () => {
@@ -1289,6 +1324,14 @@ onBeforeUnmount(() => {
                     <span>{{ t('connections.addConnection', '新增连接') }}</span>
                   </button>
                   <button
+                    @click="showTagManagement = true"
+                    class="h-11 px-4 rounded-xl border border-border bg-background text-foreground hover:bg-border transition-colors inline-flex items-center gap-2"
+                    :title="t('connections.tagManagement.openButton', '标签管理')"
+                  >
+                    <i class="fas fa-tags"></i>
+                    <span>{{ t('connections.tagManagement.openButton', '标签管理') }}</span>
+                  </button>
+                  <button
                     @click="showLoginCredentialManagement = true"
                     class="h-11 px-4 rounded-xl border border-border bg-background text-foreground hover:bg-border transition-colors inline-flex items-center gap-2"
                     :title="t('connections.form.loginCredentialManager', '登录凭证')"
@@ -1631,6 +1674,13 @@ onBeforeUnmount(() => {
       <LoginCredentialManagementModal
         v-if="showLoginCredentialManagement"
         @close="showLoginCredentialManagement = false"
+      />
+
+      <ManageConnectionTagsModal
+        v-if="showTagManagement"
+        :visible="showTagManagement"
+        @update:visible="showTagManagement = $event"
+        @deleted="handleTagsDeleted"
       />
     </div>
   </div>
