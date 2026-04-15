@@ -61,6 +61,21 @@ export interface DockerContainer {
     Labels: Record<string, string>;
     stats?: DockerStats | null; // 可选的 stats 字段
 }
+
+export interface ProcessListRequest {
+  type: 'process:list';
+  payload?: {
+    limit?: number;
+  };
+}
+
+export interface ProcessSignalRequest {
+  type: 'process:signal';
+  payload: {
+    pid: number;
+    signal: 'TERM' | 'KILL';
+  };
+}
 // --- SSH Suspend Mode WebSocket Message Types ---
 
 // Client -> Server

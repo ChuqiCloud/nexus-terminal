@@ -1,4 +1,15 @@
 // 类型定义：用于服务器状态监控数据 (从 useStatusMonitor 迁移)
+export interface ProcessListItem {
+    pid: number;
+    user: string;
+    state: string;
+    cpu: number;
+    memPercent: number;
+    memMb: number;
+    startedAt: string;
+    command: string;
+}
+
 export interface ServerStatus {
     cpuPercent?: number;
     cpuCores?: number;
@@ -26,6 +37,12 @@ export interface ServerStatus {
     netTxTotalBytes?: number; // Bytes since boot
     netInterface?: string;
     osName?: string;
+    timezone?: string;
+    uptimeSeconds?: number;
+    processTotal?: number;
+    processRunning?: number;
+    processSleeping?: number;
+    topProcesses?: readonly ProcessListItem[];
 }
 
 // 可以根据需要添加其他与服务器或连接状态相关的类型

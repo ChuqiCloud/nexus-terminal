@@ -205,6 +205,52 @@
             </div>
           </div>
         </section>
+
+        <section class="monitor-card monitor-card--process">
+          <div class="monitor-card__header">
+            <div class="monitor-card__title-group">
+              <span class="monitor-card__icon monitor-card__icon--process">
+                <i class="fas fa-list-check"></i>
+              </span>
+              <div>
+                <h5 class="monitor-card__title">{{ t('statusMonitor.processManager.title') }}</h5>
+                <p class="monitor-card__subtitle">{{ t('statusMonitor.processManager.subtitle') }}</p>
+              </div>
+            </div>
+            <button class="monitor-action-button" type="button" @click="isProcessManagerVisible = true">
+              {{ t('statusMonitor.processManager.viewAll') }}
+            </button>
+          </div>
+
+          <div class="process-summary-grid">
+            <div class="process-summary-item">
+              <span class="process-summary-item__label">{{ t('statusMonitor.processManager.total') }}</span>
+              <span class="process-summary-item__value">{{ processTotalDisplay }}</span>
+            </div>
+            <div class="process-summary-item">
+              <span class="process-summary-item__label">{{ t('statusMonitor.processManager.running') }}</span>
+              <span class="process-summary-item__value">{{ processRunningDisplay }}</span>
+            </div>
+            <div class="process-summary-item">
+              <span class="process-summary-item__label">{{ t('statusMonitor.processManager.sleeping') }}</span>
+              <span class="process-summary-item__value">{{ processSleepingDisplay }}</span>
+            </div>
+          </div>
+
+          <div v-if="topProcessPreview.length > 0" class="process-preview-list">
+            <article v-for="item in topProcessPreview" :key="item.pid" class="process-preview-item">
+              <div class="process-preview-item__meta">
+                <span class="process-preview-item__pid">PID {{ item.pid }}</span>
+                <span class="process-preview-item__cpu">{{ item.cpu.toFixed(1) }}%</span>
+                <span class="process-preview-item__mem">{{ formatProcessMemory(item.memMb) }}</span>
+              </div>
+              <div class="process-preview-item__command" :title="item.command">{{ item.command }}</div>
+            </article>
+          </div>
+          <div v-else class="process-preview-empty">
+            {{ t('statusMonitor.processManager.empty') }}
+          </div>
+        </section>
       </div>
 
       <StatusCharts
@@ -213,6 +259,12 @@
         :active-session-id="activeSessionId"
       />
     </section>
+
+    <ProcessManagerModal
+      :is-visible="isProcessManagerVisible"
+      :session-id="activeSessionId"
+      @close="isProcessManagerVisible = false"
+    />
   </div>
 </template>
 
@@ -220,12 +272,13 @@
 import { computed, ref, watch, type CSSProperties, type PropType } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
+import ProcessManagerModal from './ProcessManagerModal.vue';
 import StatusCharts from './StatusCharts.vue';
 import { useSessionStore } from '../stores/session.store';
 import { useSettingsStore } from '../stores/settings.store';
 import { useConnectionsStore } from '../stores/connections.store';
 import { useUiNotificationsStore } from '../stores/uiNotifications.store';
-import type { ServerStatus } from '../types/server.types';
+import type { ProcessListItem, ServerStatus } from '../types/server.types';
 
 interface MonitorMetaItem {
   key: string;
@@ -241,6 +294,7 @@ const connectionsStore = useConnectionsStore();
 const uiNotificationsStore = useUiNotificationsStore();
 const { sessions } = storeToRefs(sessionStore);
 const { statusMonitorShowIpBoolean } = storeToRefs(settingsStore);
+const isProcessManagerVisible = ref(false);
 
 const props = defineProps({
   activeSessionId: {
@@ -265,6 +319,10 @@ const displaySwapPercent = computed(() => clampPercent(currentServerStatus.value
 const displayMemoryPercent = computed(() => clampPercent(currentServerStatus.value?.memPercent));
 const displayDiskPercent = computed(() => clampPercent(currentServerStatus.value?.diskPercent));
 const currentStatusError = computed<string | null>(() => currentSessionState.value?.statusMonitorManager?.statusError?.value ?? null);
+const timezoneDisplay = computed(() => currentServerStatus.value?.timezone || t('statusMonitor.notAvailable'));
+const processTotalDisplay = computed(() => currentServerStatus.value?.processTotal ?? 0);
+const processRunningDisplay = computed(() => currentServerStatus.value?.processRunning ?? 0);
+const processSleepingDisplay = computed(() => currentServerStatus.value?.processSleeping ?? 0);
 
 const cachedCpuModel = ref<string | null>(null);
 const cachedCpuCores = ref<number | null>(null);
@@ -338,6 +396,34 @@ const formatMemorySize = (mb?: number): string => {
     return `${mb.toFixed(1)} ${t('statusMonitor.megaBytes')}`;
   }
   return `${(mb / 1024).toFixed(1)} ${t('statusMonitor.gigaBytes')}`;
+};
+
+const formatUptime = (seconds?: number): string => {
+  if (seconds === undefined || seconds === null || !Number.isFinite(seconds) || seconds < 0) {
+    return t('statusMonitor.notAvailable');
+  }
+
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (days > 0) {
+    return `${days}${t('statusMonitor.uptimeDaySuffix')} ${hours}${t('statusMonitor.uptimeHourSuffix')}`;
+  }
+  if (hours > 0) {
+    return `${hours}${t('statusMonitor.uptimeHourSuffix')} ${minutes}${t('statusMonitor.uptimeMinuteSuffix')}`;
+  }
+  return `${minutes}${t('statusMonitor.uptimeMinuteSuffix')}`;
+};
+
+const formatProcessMemory = (mb?: number): string => {
+  if (mb === undefined || mb === null || !Number.isFinite(mb)) {
+    return t('statusMonitor.notAvailable');
+  }
+  if (mb < 1024) {
+    return `${mb.toFixed(1)} M`;
+  }
+  return `${(mb / 1024).toFixed(1)} G`;
 };
 
 const swapDisplay = computed(() => {
@@ -433,6 +519,9 @@ const totalTrafficDisplay = computed(() => {
   return `${totalDown} / ${totalUp}`;
 });
 
+const uptimeDisplay = computed(() => formatUptime(currentServerStatus.value?.uptimeSeconds));
+const topProcessPreview = computed<readonly ProcessListItem[]>(() => currentServerStatus.value?.topProcesses ?? []);
+
 const maxCurrentNetworkRate = computed(() => {
   const rxRate = currentServerStatus.value?.netRxRate ?? 0;
   const txRate = currentServerStatus.value?.netTxRate ?? 0;
@@ -450,6 +539,8 @@ const monitorMetaItems = computed<MonitorMetaItem[]>(() => {
   const items: MonitorMetaItem[] = [
     { key: 'cpu-model', label: t('statusMonitor.cpuModelLabel'), value: displayCpuModel.value },
     { key: 'cpu-cores', label: t('statusMonitor.cpuLabel'), value: displayCpuCores.value },
+    { key: 'timezone', label: t('statusMonitor.timezoneLabel'), value: timezoneDisplay.value },
+    { key: 'uptime', label: t('statusMonitor.uptimeLabel'), value: uptimeDisplay.value },
     { key: 'memory-total', label: t('statusMonitor.memoryCardTitle'), value: memoryTotalDisplay.value },
     { key: 'disk-mount', label: t('statusMonitor.diskMountLabel'), value: diskMountPointDisplay.value },
   ];
@@ -883,6 +974,10 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   color: #fbbf24;
 }
 
+.monitor-card__icon--process {
+  color: #fda4af;
+}
+
 .monitor-card__title {
   margin: 0;
   font-size: 15px;
@@ -1086,6 +1181,99 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   margin-top: 4px;
 }
 
+.monitor-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  border-radius: 10px;
+  border: 1px solid rgba(96, 165, 250, 0.22);
+  background: rgba(37, 99, 235, 0.18);
+  padding: 0 12px;
+  color: #dbeafe;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.process-summary-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.process-summary-item {
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px;
+}
+
+.process-summary-item__label {
+  display: block;
+  color: #8fa0b3;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.process-summary-item__value {
+  display: block;
+  margin-top: 6px;
+  color: #f8fbff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.process-preview-list {
+  display: grid;
+  gap: 8px;
+}
+
+.process-preview-item {
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px;
+}
+
+.process-preview-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: #9fb0bf;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.process-preview-item__cpu {
+  color: #bfdbfe;
+}
+
+.process-preview-item__mem {
+  color: #fde68a;
+}
+
+.process-preview-item__command {
+  margin-top: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #f8fbff;
+  font-size: 13px;
+}
+
+.process-preview-empty {
+  border-radius: 12px;
+  border: 1px dashed rgba(148, 163, 184, 0.16);
+  padding: 14px;
+  color: #8fa0b3;
+  font-size: 13px;
+  text-align: center;
+}
+
 @container (min-width: 560px) {
   .monitor-rail {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1127,6 +1315,10 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
     grid-column: auto;
   }
 
+  .monitor-card--process {
+    grid-column: 2 / span 2;
+  }
+
   .disk-info-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -1163,7 +1355,8 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
   .memory-stats-grid,
   .disk-rate-grid,
-  .disk-info-grid {
+  .disk-info-grid,
+  .process-summary-grid {
     grid-template-columns: 1fr;
   }
 }

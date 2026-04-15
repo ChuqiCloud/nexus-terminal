@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+- **[frontend]**: 将右侧状态监控继续收紧为更贴近服务器小屏的默认概览，并新增时区、运行时间、进程概览与“查看全部”独立进程管理弹窗 — by yinjianm
+  - 方案: [202604152147_status-monitor-process-manager-modal](archive/2026-04/202604152147_status-monitor-process-manager-modal/)
+- **[backend]**: 扩展状态监控采集时区、运行时间和轻量进程摘要，并为当前 SSH 会话新增 `process:list` / `process:signal` WebSocket 进程管理消息 — by yinjianm
+  - 方案: [202604152147_status-monitor-process-manager-modal](archive/2026-04/202604152147_status-monitor-process-manager-modal/)
+
+- **[frontend]**: 让全局服务器检索将标签名纳入本地模糊搜索评分，并保持标签匹配权重低于名称和主机、高于类型 - by yinjianm
+  - 方案: [202604152139_workspace-global-search-tag-fuzzy-search](archive/2026-04/202604152139_workspace-global-search-tag-fuzzy-search/)
+
 - **[frontend]**: 将工作区状态监控重构为更接近服务器监控小屏的深色响应式面板，统一头部信息条、资源监控条、内存/网络/磁盘卡片及 CPU/网络趋势图风格 — by yinjianm
   - 方案: [202604152109_status-monitor-responsive-remodel](archive/2026-04/202604152109_status-monitor-responsive-remodel/)
 

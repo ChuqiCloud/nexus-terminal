@@ -23,7 +23,9 @@ const inputRef = ref<HTMLInputElement | null>(null);
 const query = ref('');
 const selectedIndex = ref(0);
 
-const results = computed(() => searchConnections(props.connections, query.value, 8));
+const results = computed(() => searchConnections(props.connections, query.value, 8, {
+  getAdditionalFields: getConnectionTagNames,
+}));
 
 watch(results, async (nextResults) => {
   if (nextResults.length === 0) {

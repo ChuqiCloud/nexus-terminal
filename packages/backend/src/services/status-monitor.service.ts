@@ -31,6 +31,21 @@ interface ServerStatus {
     netInterface?: string;
     osName?: string;
     loadAvg?: number[];
+    timezone?: string;
+    uptimeSeconds?: number;
+    processTotal?: number;
+    processRunning?: number;
+    processSleeping?: number;
+    topProcesses?: Array<{
+        pid: number;
+        user: string;
+        state: string;
+        cpu: number;
+        memPercent: number;
+        memMb: number;
+        startedAt: string;
+        command: string;
+    }>;
     timestamp: number;
 }
 
@@ -50,6 +65,20 @@ interface DiskIoStats {
 
 const previousNetStats = new Map<string, { rx: number; tx: number; timestamp: number }>();
 const previousDiskStats = new Map<string, { device: string; readBytes: number; writeBytes: number; timestamp: number }>();
+const monthMap: Record<string, string> = {
+    Jan: '01',
+    Feb: '02',
+    Mar: '03',
+    Apr: '04',
+    May: '05',
+    Jun: '06',
+    Jul: '07',
+    Aug: '08',
+    Sep: '09',
+    Oct: '10',
+    Nov: '11',
+    Dec: '12',
+};
 
 export class StatusMonitorService {
     private clientStates: Map<string, ClientState>;
@@ -121,6 +150,8 @@ export class StatusMonitorService {
                 status.osName = nameMatch ? nameMatch[1] : (osReleaseOutput.match(/^NAME="?([^"]+)"?/m)?.[1] ?? 'Unknown');
             } catch (err) { /* noop */ }
 
+            await this.collectSystemTimeStatus(sshClient, status);
+
             await this.collectCpuStatus(sshClient, status);
 
             await this.collectMemoryStatus(sshClient, status);
@@ -163,6 +194,7 @@ export class StatusMonitorService {
             } catch (err) { /* noop */ }
 
             await this.collectNetworkStatus(sshClient, sessionId, timestamp, status);
+            await this.collectProcessSummary(sshClient, status);
         } catch (error) {
             console.error(`[StatusMonitor ${sessionId}] General error fetching server status:`, error);
         }
@@ -189,6 +221,27 @@ export class StatusMonitorService {
         }
 
         status.cpuCores = await this.resolveCpuCoreCount(sshClient);
+    }
+
+    private async collectSystemTimeStatus(sshClient: Client, status: Partial<ServerStatus>): Promise<void> {
+        try {
+            const [offsetOutput, timezoneOutput, uptimeOutput] = await Promise.all([
+                this.executeSshCommand(sshClient, `date +"%z"`),
+                this.executeSshCommand(sshClient, `date +"%Z"`),
+                this.executeSshCommand(sshClient, `cat /proc/uptime | awk '{print int($1)}'`),
+            ]);
+
+            const offset = offsetOutput.trim();
+            const timezone = timezoneOutput.trim();
+            if (offset || timezone) {
+                status.timezone = `${offset ? `GMT${offset}` : ''}${offset && timezone ? ' ' : ''}${timezone}`.trim();
+            }
+
+            const uptimeSeconds = parseInt(uptimeOutput.trim(), 10);
+            if (!isNaN(uptimeSeconds) && uptimeSeconds >= 0) {
+                status.uptimeSeconds = uptimeSeconds;
+            }
+        } catch (err) { /* noop */ }
     }
 
     private async resolveCpuCoreCount(sshClient: Client): Promise<number | undefined> {
@@ -438,6 +491,58 @@ export class StatusMonitorService {
             }
 
             previousNetStats.set(sessionId, { rx: currentRx, tx: currentTx, timestamp });
+        } catch (err) { /* noop */ }
+    }
+
+    private async collectProcessSummary(sshClient: Client, status: Partial<ServerStatus>): Promise<void> {
+        const processListCommand = `ps -eo pid=,user=,state=,pcpu=,pmem=,rss=,lstart=,args= --sort=-pcpu | awk 'NR<=5{cmd=""; for(i=12;i<=NF;i++) cmd=cmd (i==12?"":" ") $i; print $1 "\\t" $2 "\\t" $3 "\\t" $4 "\\t" $5 "\\t" $6 "\\t" $7 " " $8 " " $9 " " $10 " " $11 "\\t" cmd}'`;
+        const processSummaryCommand = `ps -eo state= | awk 'BEGIN{total=0; running=0; sleeping=0} {state=substr($1,1,1); total++; if(state=="R") running++; if(state=="S" || state=="D" || state=="I") sleeping++;} END {printf "%d\\t%d\\t%d", total, running, sleeping}'`;
+
+        try {
+            const [processListOutput, processSummaryOutput] = await Promise.all([
+                this.executeSshCommand(sshClient, processListCommand),
+                this.executeSshCommand(sshClient, processSummaryCommand),
+            ]);
+
+            const summaryParts = processSummaryOutput.trim().split('\t');
+            if (summaryParts.length >= 3) {
+                status.processTotal = parseInt(summaryParts[0], 10) || 0;
+                status.processRunning = parseInt(summaryParts[1], 10) || 0;
+                status.processSleeping = parseInt(summaryParts[2], 10) || 0;
+            }
+
+            status.topProcesses = processListOutput
+                .split('\n')
+                .map(line => line.trim())
+                .filter(Boolean)
+                .map(line => {
+                    const [pidText, user, state, cpuText, memPercentText, rssKbText, startedAtRaw, command] = line.split('\t');
+                    const pid = parseInt(pidText, 10);
+                    const cpu = parseFloat(cpuText);
+                    const memPercent = parseFloat(memPercentText);
+                    const rssKb = parseInt(rssKbText, 10);
+
+                    if (!Number.isInteger(pid) || !user || !state || Number.isNaN(cpu) || Number.isNaN(memPercent) || Number.isNaN(rssKb)) {
+                        return null;
+                    }
+
+                    const startedAtParts = startedAtRaw.trim().split(/\s+/);
+                    const month = monthMap[startedAtParts[1]] ?? startedAtParts[1];
+                    const day = (startedAtParts[2] ?? '').padStart(2, '0');
+                    const time = startedAtParts[3] ?? '';
+
+                    return {
+                        pid,
+                        user,
+                        state: state.slice(0, 1).toUpperCase(),
+                        cpu: Number(cpu.toFixed(1)),
+                        memPercent: Number(memPercent.toFixed(1)),
+                        memMb: Number((rssKb / 1024).toFixed(1)),
+                        startedAt: month && day && time ? `${month}-${day} ${time}` : startedAtRaw.trim(),
+                        command: command?.trim() || '-',
+                    };
+                })
+                .filter((item): item is NonNullable<typeof item> => item !== null);
         } catch (err) { /* noop */ }
     }
 

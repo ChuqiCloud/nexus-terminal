@@ -66,8 +66,8 @@
 
 ### 状态监控
 **条件**: 前端工作区通过 WebSocket 订阅服务器状态。  
-**行为**: `StatusMonitorService` 通过 SSH 读取 `free`、`df`、`/proc/stat` 与 `/proc/net/dev`，同时计算瞬时网速与默认网卡自开机以来的累计上下行字节数。  
-**结果**: 前端状态监控既能展示实时速率，也能展示“开机累计流量”，后续扩展监控字段时应优先复用现有 SSH 采集链路。
+**行为**: `StatusMonitorService` 通过 SSH 读取 `free`、`df`、`/proc/stat`、`/proc/net/dev`、`date` 与 `/proc/uptime`，同时计算瞬时网速与默认网卡自开机以来的累计上下行字节数，并在常规 `status_update` 中附带服务器时区、运行秒数和轻量级进程摘要（总数、运行中、休眠中、Top 进程预览）。  
+**结果**: 前端状态监控既能展示实时资源状态，也能直接展示服务器时区、运行时间和默认进程概览，而无需再为这些基础信息单独请求后端。
 
 ## 依赖关系
 
@@ -78,5 +78,5 @@
 
 ### 状态监控字段扩展
 **条件**: `StatusMonitorService` 为前端工作区持续轮询服务器状态。  
-**行为**: 当前状态采集链路除 `free`、`df`、`/proc/stat` 与 `/proc/net/dev` 外，还会补充解析 `memFree`、`memCached`、`diskAvailable`、`diskMountPoint`、`diskFsType`、`diskDevice`，并基于 `/proc/diskstats` 计算根设备的磁盘读写速率；CPU 规格信息则会先读取 CPU 型号，再通过 `nproc`、`getconf _NPROCESSORS_ONLN`、`grep -c '^processor' /proc/cpuinfo` 与 `lscpu` 多级回退获取 `cpuCores`；无法获取的字段均按 `undefined` 降级。  
-**结果**: 前端状态监控可以直接展示参考图风格的内存/磁盘卡片，并额外展示 CPU 核心数，而不需要再自行推导缓存、空闲、磁盘元信息或服务器 CPU 规格。
+**行为**: 当前状态采集链路除 `free`、`df`、`/proc/stat` 与 `/proc/net/dev` 外，还会补充解析 `memFree`、`memCached`、`diskAvailable`、`diskMountPoint`、`diskFsType`、`diskDevice`，并基于 `/proc/diskstats` 计算根设备的磁盘读写速率；CPU 规格信息则会先读取 CPU 型号，再通过 `nproc`、`getconf _NPROCESSORS_ONLN`、`grep -c '^processor' /proc/cpuinfo` 与 `lscpu` 多级回退获取 `cpuCores`；本轮还新增服务器时区、运行时间和默认进程摘要采集。与此同时，`websocket/connection.ts` 新增 `process:list` 与 `process:signal` 消息分发，后端会在当前活动 SSH 会话上下文中执行 `ps` 与 `kill` 指令，返回完整进程列表及结束/强制结束结果。  
+**结果**: 前端默认状态监控可以展示更完整的小屏监控信息，而“查看全部”进程管理 modal 也能沿同一 SSH 会话上下文安全复用进程查询与操作能力。

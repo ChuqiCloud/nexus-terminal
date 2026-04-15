@@ -42,6 +42,10 @@ import {
     handleDockerGetStats
 } from './handlers/docker.handler';
 import {
+    handleProcessList,
+    handleProcessSignal,
+} from './handlers/process.handler';
+import {
     handleSftpOperation,
     handleSftpUploadStart,
     handleSftpUploadChunk,
@@ -103,6 +107,12 @@ export function initializeConnectionHandler(wss: WebSocketServer, sshSuspendServ
                             break;
                         case 'docker:get_stats':
                             await handleDockerGetStats(ws, sessionId, payload);
+                            break;
+                        case 'process:list':
+                            await handleProcessList(ws, sessionId, payload);
+                            break;
+                        case 'process:signal':
+                            await handleProcessSignal(ws, sessionId, payload);
                             break;
                         
                         // SFTP Cases (generic operations)

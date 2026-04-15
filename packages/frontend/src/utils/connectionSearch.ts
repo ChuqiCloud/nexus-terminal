@@ -5,6 +5,10 @@ export interface ConnectionSearchResult {
   score: number;
 }
 
+export interface ConnectionSearchOptions {
+  getAdditionalFields?: (connection: ConnectionInfo) => Array<string | null | undefined>;
+}
+
 const normalize = (value: string | null | undefined): string => (value ?? '').trim().toLowerCase();
 
 const getDisplayName = (connection: ConnectionInfo): string => connection.name?.trim() || connection.host;
@@ -58,13 +62,22 @@ const getFieldScore = (text: string, query: string): number => {
   return Math.max(70, 180 - firstMatchIndex * 4 - gapPenalty * 3);
 };
 
-const scoreConnection = (connection: ConnectionInfo, query: string): number => {
+const scoreConnection = (
+  connection: ConnectionInfo,
+  query: string,
+  options?: ConnectionSearchOptions,
+): number => {
   const fields: Array<[string, number]> = [
     [normalize(connection.name), 40],
     [normalize(connection.host), 28],
     [normalize(connection.username), 16],
     [normalize(connection.type), 10],
   ];
+
+  const additionalFields = options?.getAdditionalFields?.(connection) ?? [];
+  additionalFields.forEach((field) => {
+    fields.push([normalize(field), 14]);
+  });
 
   let bestScore = 0;
 
@@ -84,6 +97,7 @@ export const searchConnections = (
   connections: ConnectionInfo[],
   rawQuery: string,
   limit = 8,
+  options?: ConnectionSearchOptions,
 ): ConnectionSearchResult[] => {
   const query = normalize(rawQuery);
 
@@ -104,7 +118,7 @@ export const searchConnections = (
   return connections
     .map((connection) => ({
       connection,
-      score: scoreConnection(connection, query),
+      score: scoreConnection(connection, query, options),
     }))
     .filter((item) => item.score > 0)
     .sort((left, right) => {

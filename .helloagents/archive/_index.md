@@ -7,6 +7,8 @@
 
 | 时间戳 | 名称 | 类型 | 涉及模块 | 决策 | 结果 |
 |--------|------|------|---------|------|------|
+| 202604152147 | status-monitor-process-manager-modal | - | - | - | ✅完成 |
+| 202604152139 | workspace-global-search-tag-fuzzy-search | - | - | - | ✅完成 |
 | 202604152110 | workspace-global-search-show-connection-tags | - | - | - | ✅完成 |
 | 202604152109 | status-monitor-responsive-remodel | - | - | - | ✅完成 |
 | 202604122248 | connections-tag-batch-management | implementation | frontend, backend | connections-tag-batch-management#D001 | ✅完成 |

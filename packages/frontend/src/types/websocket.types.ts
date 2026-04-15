@@ -27,6 +27,21 @@ export interface SftpUploadProgressMessage extends WebSocketMessage {
   payload: SftpUploadProgressPayload;
 }
 
+export interface ProcessListResponsePayload {
+  processes: import('./server.types').ProcessListItem[];
+  total: number;
+  running: number;
+  sleeping: number;
+  requestedAt: number;
+}
+
+export interface ProcessSignalResponsePayload {
+  pid: number;
+  signal: 'TERM' | 'KILL';
+  success: boolean;
+  error?: string;
+}
+
 // --- SSH Suspend Mode WebSocket Message Types ---
 
 // 导入挂起会话类型，用于相关消息的 payload
