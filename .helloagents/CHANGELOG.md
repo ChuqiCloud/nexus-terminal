@@ -61,6 +61,12 @@
   - 方案: [202603250614_terminal-ansi-color-effects](archive/2026-03/202603250614_terminal-ansi-color-effects/)
 
 ### 快速修改
+- **[frontend]**: 将状态监控顶部资源条改为仅保留 CPU 占用横条，并把内存右侧统计块压缩为更接近参考图的紧凑小卡布局 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/StatusMonitor.vue
+- **[frontend]**: 删除右侧状态监控默认概览中的“挂载”信息条，避免在顶部概览重复展示仅为 `/` 的磁盘挂载值 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/StatusMonitor.vue:550-557
 - **[frontend]**: 取消连接管理页在“批量修改”模式下对单行“连接 / 更多”按钮的禁用，保留批量选择同时允许继续操作单台服务器 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/views/ConnectionsView.vue

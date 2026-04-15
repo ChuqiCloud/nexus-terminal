@@ -76,31 +76,29 @@
       </section>
 
       <section class="monitor-module monitor-module--usage">
-        <div class="monitor-module__heading">
+        <div class="cpu-module__hero">
           <div>
             <span class="monitor-module__eyebrow">{{ t('statusMonitor.cpuLabel') }}</span>
-            <h5 class="monitor-module__title">{{ t('statusMonitor.cpuModelLabel') }} {{ displayCpuCores }}</h5>
+            <h5 class="monitor-module__title">CPU</h5>
           </div>
-          <span class="monitor-module__pill">{{ displayCpuPercent.toFixed(0) }}%</span>
+          <div class="cpu-module__sparkline" aria-hidden="true">
+            <svg viewBox="0 0 160 28" preserveAspectRatio="none">
+              <path class="cpu-module__sparkline-path" :d="cpuSparklinePath"></path>
+            </svg>
+          </div>
         </div>
 
         <div class="usage-lane-list">
-          <article
-            v-for="item in usageLaneItems"
-            :key="item.key"
-            :class="['usage-lane', `usage-lane--${item.tone}`]"
-          >
-            <div class="usage-lane__index">{{ item.index }}</div>
+          <article class="usage-lane usage-lane--cpu usage-lane--solo">
             <div class="usage-lane__content">
               <div class="usage-lane__meta">
-                <span class="usage-lane__label">{{ item.label }}</span>
-                <span class="usage-lane__helper">{{ item.helper }}</span>
+                <span class="usage-lane__label">{{ displayCpuCores }}</span>
+                <span class="usage-lane__value-inline">{{ cpuUsageLane.value }}</span>
               </div>
               <div class="usage-lane__track">
-                <span class="usage-lane__fill" :style="{ width: `${item.percent}%` }"></span>
+                <span class="usage-lane__fill" :style="{ width: `${cpuUsageLane.percent}%` }"></span>
               </div>
             </div>
-            <div class="usage-lane__value">{{ item.value }}</div>
           </article>
         </div>
       </section>
@@ -327,9 +325,9 @@ const clampPercent = (value?: number): number => {
 
 const currentSessionState = computed(() => (props.activeSessionId ? sessions.value.get(props.activeSessionId) : null));
 const currentServerStatus = computed<ServerStatus | null>(() => currentSessionState.value?.statusMonitorManager?.serverStatus?.value ?? null);
+const currentCpuHistory = computed<readonly (number | null)[]>(() => currentSessionState.value?.statusMonitorManager?.cpuHistory?.value ?? Array(24).fill(null));
 
 const displayCpuPercent = computed(() => clampPercent(currentServerStatus.value?.cpuPercent));
-const displaySwapPercent = computed(() => clampPercent(currentServerStatus.value?.swapPercent));
 const displayMemoryPercent = computed(() => clampPercent(currentServerStatus.value?.memPercent));
 const displayDiskPercent = computed(() => clampPercent(currentServerStatus.value?.diskPercent));
 const currentStatusError = computed<string | null>(() => currentSessionState.value?.statusMonitorManager?.statusError?.value ?? null);
@@ -440,17 +438,6 @@ const formatProcessMemory = (mb?: number): string => {
   return `${(mb / 1024).toFixed(1)} G`;
 };
 
-const toIndexedLabel = (index: number): string => String(index + 1).padStart(2, '0');
-
-const swapDisplay = computed(() => {
-  const total = currentServerStatus.value?.swapTotal ?? 0;
-  const used = currentServerStatus.value?.swapUsed ?? 0;
-  if (total === 0) {
-    return t('statusMonitor.swapNotAvailable');
-  }
-  return `${formatMemorySize(used)} / ${formatMemorySize(total)}`;
-});
-
 const memoryTotalValue = computed(() => currentServerStatus.value?.memTotal ?? 0);
 const memoryUsedValue = computed(() => currentServerStatus.value?.memUsed ?? 0);
 const memoryCachedValue = computed(() => currentServerStatus.value?.memCached ?? 0);
@@ -553,8 +540,6 @@ const overviewItems = computed<MonitorOverviewItem[]>(() => {
     { key: 'cpu-cores', label: t('statusMonitor.cpuLabel'), value: displayCpuCores.value },
     { key: 'timezone', label: t('statusMonitor.timezoneLabel'), value: timezoneDisplay.value },
     { key: 'uptime', label: t('statusMonitor.uptimeLabel'), value: uptimeDisplay.value },
-    { key: 'memory-total', label: t('statusMonitor.memoryCardTitle'), value: memoryTotalDisplay.value },
-    { key: 'disk-mount', label: t('statusMonitor.diskMountLabel'), value: diskMountPointDisplay.value },
   ];
 
   if (statusMonitorShowIpBoolean.value && sessionIpAddress.value) {
@@ -578,47 +563,28 @@ const overviewRows = computed<MonitorOverviewItem[][]>(() => {
   return rows;
 });
 
-const resourceRailItems = computed(() => [
-  {
-    key: 'cpu',
-    label: t('statusMonitor.cpuLabel'),
-    value: `${Math.round(displayCpuPercent.value)}%`,
-    helper: displayCpuCores.value,
-    percent: displayCpuPercent.value,
-    tone: 'cpu',
-  },
-  {
-    key: 'memory',
-    label: t('statusMonitor.memoryCardTitle'),
-    value: memoryPercentDisplay.value,
-    helper: `${formatMemorySize(memoryUsedValue.value)} / ${memoryTotalDisplay.value}`,
-    percent: displayMemoryPercent.value,
-    tone: 'memory',
-  },
-  {
-    key: 'swap',
-    label: t('statusMonitor.swapLabel'),
-    value: `${Math.round(displaySwapPercent.value)}%`,
-    helper: swapDisplay.value,
-    percent: displaySwapPercent.value,
-    tone: 'swap',
-  },
-  {
-    key: 'disk',
-    label: t('statusMonitor.diskCardTitle'),
-    value: diskPercentDisplay.value,
-    helper: `${t('statusMonitor.diskAvailableLabel')} ${diskAvailableDisplay.value}`,
-    percent: displayDiskPercent.value,
-    tone: 'disk',
-  },
-]);
+const cpuUsageLane = computed(() => ({
+  value: `${Math.round(displayCpuPercent.value)}%`,
+  percent: displayCpuPercent.value,
+}));
 
-const usageLaneItems = computed(() =>
-  resourceRailItems.value.map((item, index) => ({
-    ...item,
-    index: toIndexedLabel(index),
-  })),
-);
+const cpuSparklinePath = computed(() => {
+  const samples = currentCpuHistory.value.slice(-24).map(value => clampPercent(value ?? 0));
+  if (samples.length === 0) {
+    return 'M0 24 L160 24';
+  }
+
+  const width = 160;
+  const height = 28;
+  const usableHeight = 18;
+  const step = samples.length > 1 ? width / (samples.length - 1) : width;
+
+  return samples.map((value, index) => {
+    const x = Number((index * step).toFixed(2));
+    const y = Number((height - 4 - (value / 100) * usableHeight).toFixed(2));
+    return `${index === 0 ? 'M' : 'L'}${x} ${y}`;
+  }).join(' ');
+});
 
 const networkFlowItems = computed(() => [
   {
@@ -971,6 +937,35 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   line-height: 1.3;
 }
 
+.cpu-module__hero {
+  display: grid;
+  grid-template-columns: auto minmax(96px, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.cpu-module__sparkline {
+  height: 28px;
+  min-width: 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.cpu-module__sparkline svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cpu-module__sparkline-path {
+  fill: none;
+  stroke: #7dd3fc;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 6px rgba(125, 211, 252, 0.28));
+}
+
 .usage-lane-list,
 .memory-stat-stack,
 .network-stat-stack,
@@ -982,13 +977,13 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
 .usage-lane {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
   align-items: center;
   border-radius: 14px;
   border: 1px solid rgba(148, 163, 184, 0.08);
   background: rgba(255, 255, 255, 0.03);
-  padding: 10px 12px;
+  padding: 10px 10px 8px;
 }
 
 .usage-lane__index,
@@ -1035,6 +1030,13 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   white-space: nowrap;
 }
 
+.usage-lane__value-inline {
+  color: #f8fbff;
+  font-size: 17px;
+  font-weight: 800;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
 .usage-lane__track,
 .network-stat__track,
 .disk-visual__meter {
@@ -1046,7 +1048,7 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
 .usage-lane__track,
 .network-stat__track {
-  height: 7px;
+  height: 8px;
 }
 
 .usage-lane__fill,
@@ -1055,14 +1057,6 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: inherit;
-}
-
-.usage-lane__value {
-  min-width: 52px;
-  color: #f8fbff;
-  font-size: 18px;
-  font-weight: 800;
-  text-align: right;
 }
 
 .usage-lane--cpu .usage-lane__fill {
@@ -1101,13 +1095,14 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   display: grid;
   justify-items: center;
   align-content: center;
-  gap: 8px;
+  gap: 6px;
+  padding: 10px;
 }
 
 .memory-ring {
   position: relative;
-  width: 88px;
-  height: 88px;
+  width: 76px;
+  height: 76px;
   border-radius: 999px;
   padding: 3px;
 }
@@ -1115,7 +1110,7 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 .memory-ring::after {
   content: '';
   position: absolute;
-  inset: 14px;
+  inset: 13px;
   border-radius: 999px;
   background: rgba(9, 14, 20, 0.96);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
@@ -1129,13 +1124,13 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   align-items: center;
   justify-content: center;
   color: #f8fbff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
 }
 
 .memory-ring-panel__caption {
   color: #9cb0c2;
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1153,13 +1148,15 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 }
 
 .memory-stat {
-  padding: 10px;
+  padding: 8px 9px;
+  border-radius: 10px;
 }
 
 .memory-stat__label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  font-size: 10px;
 }
 
 .memory-stat__dot {
@@ -1184,10 +1181,10 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 .memory-stat__value,
 .disk-foot-item__value {
   display: block;
-  margin-top: 6px;
+  margin-top: 4px;
   overflow-wrap: anywhere;
   color: #f8fbff;
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 800;
   line-height: 1.15;
 }
@@ -1496,6 +1493,12 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
     grid-template-columns: minmax(150px, 0.92fr) minmax(0, 1.08fr);
     align-items: stretch;
   }
+
+  .memory-stat-stack {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-content: center;
+    gap: 6px;
+  }
 }
 
 @container (min-width: 760px) {
@@ -1521,12 +1524,8 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
     white-space: normal;
   }
 
-  .usage-lane {
-    grid-template-columns: 36px minmax(0, 1fr);
-  }
-
-  .usage-lane__value {
-    grid-column: 2;
+  .cpu-module__hero {
+    grid-template-columns: 1fr;
   }
 
   .network-stat__top,
@@ -1541,6 +1540,10 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   .monitor-overview__row,
   .disk-foot-grid,
   .process-summary-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .memory-stat-stack {
     grid-template-columns: 1fr;
   }
 }
