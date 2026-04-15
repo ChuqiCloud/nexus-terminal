@@ -1,5 +1,5 @@
 <template>
-  <div class="status-charts">
+  <div ref="chartHostRef" class="status-charts">
     <section class="chart-panel">
       <div class="chart-panel__header">
         <div>
@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, type PropType } from 'vue';
+import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick, type PropType } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Line } from 'vue-chartjs';
 import { useSessionStore } from '../stores/session.store'; 
@@ -96,6 +96,9 @@ const networkChartKey = ref(0);
 
 const networkRateUnitIsMB = ref(false);
 const memoryUnitIsGB = ref(false);
+const chartHostRef = ref<HTMLElement | null>(null);
+let chartResizeObserver: ResizeObserver | null = null;
+let lastChartHostWidth = 0;
 
 // const networkChartTitle = ref('网络速度 (KB/s)'); // Will be replaced by i18n
 // const memoryChartTitle = ref('内存使用情况 (MB)'); // Will be replaced by i18n
@@ -433,11 +436,48 @@ const updateAxisAndUnits = () => {
   }
 };
 
+const rerenderVisibleCharts = () => {
+  cpuChartKey.value++;
+  networkChartKey.value++;
+};
+
 // --- 监听 props.serverStatus 的变化，仅用于更新 Y 轴范围和单位 ---
 // 数据本身由 computed 属性从 store 获取
 watch(() => props.serverStatus, () => {
     updateAxisAndUnits();
 }, { deep: true, immediate: true }); // immediate: true 确保初始加载时设置好轴
+
+onMounted(() => {
+  const host = chartHostRef.value;
+  if (!host || typeof ResizeObserver === 'undefined') {
+    return;
+  }
+
+  lastChartHostWidth = Math.round(host.getBoundingClientRect().width);
+  chartResizeObserver = new ResizeObserver(entries => {
+    const entry = entries[0];
+    if (!entry) {
+      return;
+    }
+
+    const nextWidth = Math.round(entry.contentRect.width);
+    if (!nextWidth || Math.abs(nextWidth - lastChartHostWidth) < 2) {
+      return;
+    }
+
+    lastChartHostWidth = nextWidth;
+    nextTick(() => {
+      rerenderVisibleCharts();
+    });
+  });
+
+  chartResizeObserver.observe(host);
+});
+
+onBeforeUnmount(() => {
+  chartResizeObserver?.disconnect();
+  chartResizeObserver = null;
+});
 
 </script>
 
@@ -446,10 +486,12 @@ watch(() => props.serverStatus, () => {
   display: grid;
   gap: 12px;
   margin-top: 2px;
+  min-width: 0;
   container-type: inline-size;
 }
 
 .chart-panel {
+  min-width: 0;
   border-radius: 18px;
   border: 1px solid rgba(148, 163, 184, 0.12);
   background:
@@ -508,7 +550,15 @@ watch(() => props.serverStatus, () => {
 }
 
 .chart-wrapper {
+  min-width: 0;
+  width: 100%;
   height: 164px;
+  overflow: hidden;
+}
+
+.chart-wrapper :deep(canvas) {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 @container (min-width: 860px) {

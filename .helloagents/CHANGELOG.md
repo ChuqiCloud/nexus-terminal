@@ -2,7 +2,9 @@
 
 ## [Unreleased]
 
-- **[frontend]**: 将右侧状态监控继续收紧为更贴近服务器小屏的默认概览，并新增时区、运行时间、进程概览与“查看全部”独立进程管理弹窗 — by yinjianm
+- **[frontend]**: 将右侧服务器状态监控的默认视图从通用卡片栅格重排为更贴近参考图的窄屏监控布局，统一顶部信息条、索引化资源行与内存/网络/磁盘/进程概览的左右分区关系 - by yinjianm
+  - 方案: [202604152323_status-monitor-reference-layout-parity](archive/2026-04/202604152323_status-monitor-reference-layout-parity/)
+- **[frontend]**: 将右侧状态监控继续收紧为更贴近服务器小屏的默认概览，并新增时区、运行时间、进程概览与“查看全部”独立进程管理弹窗 - by yinjianm
   - 方案: [202604152147_status-monitor-process-manager-modal](archive/2026-04/202604152147_status-monitor-process-manager-modal/)
 - **[backend]**: 扩展状态监控采集时区、运行时间和轻量进程摘要，并为当前 SSH 会话新增 `process:list` / `process:signal` WebSocket 进程管理消息 — by yinjianm
   - 方案: [202604152147_status-monitor-process-manager-modal](archive/2026-04/202604152147_status-monitor-process-manager-modal/)
@@ -65,6 +67,9 @@
 - **[frontend]**: 修复右侧状态监控在窄侧栏下的内存/磁盘卡片字体重叠问题，改为基于卡片容器宽度自适应折列与缩字 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/StatusMonitor.vue:446-452,572-600,697-707,744-802
+- **[frontend]**: 修复右侧状态监控底部 CPU / 网络图表在侧栏收窄后仍保留旧 canvas 宽度的问题，补充容器宽度监听并强制图表随容器重绘收缩 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/StatusCharts.vue:2,34,99-100,439-479,485-560
 - **[frontend]**: 将“添加新连接”弹窗的脚本模式开关上移到基本信息之前，并在脚本导入时自动忽略空格、空行与 Markdown 代码围栏行 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/AddConnectionForm.vue, packages/frontend/src/composables/useAddConnectionForm.ts

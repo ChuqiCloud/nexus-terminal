@@ -7,6 +7,7 @@
 
 | 时间戳 | 名称 | 类型 | 涉及模块 | 决策 | 结果 |
 |--------|------|------|---------|------|------|
+| 202604152323 | status-monitor-reference-layout-parity | implementation | frontend | status-monitor-reference-layout-parity#D001 | ✅完成 |
 | 202604152147 | status-monitor-process-manager-modal | - | - | - | ✅完成 |
 | 202604152139 | workspace-global-search-tag-fuzzy-search | - | - | - | ✅完成 |
 | 202604152110 | workspace-global-search-show-connection-tags | - | - | - | ✅完成 |
@@ -54,6 +55,7 @@
 ## 按月归档
 
 ### 2026-04
+- [202604152323_status-monitor-reference-layout-parity](./2026-04/202604152323_status-monitor-reference-layout-parity/) - 将右侧状态监控默认视图重排为更贴近参考图的窄屏监控布局，修正顶部信息区与模块内部左右关系
 - [202604122248_connections-tag-batch-management](./2026-04/202604122248_connections-tag-batch-management/) - 为连接管理页新增标签批量管理弹窗，并补齐后端批量标签删除策略
 - [202604120709_quickcommands-double-click-tooltip](./2026-04/202604120709_quickcommands-double-click-tooltip/) - 将快捷命令列表改为单击选中、双击执行，并在 hover 时显示完整命令
 - [202604120656_ssh-group-close-and-script-input-sanitize](./2026-04/202604120656_ssh-group-close-and-script-input-sanitize/) - 为 SSH 服务器组头补充整组关闭按钮，并修正脚本模式对单/双引号包裹值的保存行为
