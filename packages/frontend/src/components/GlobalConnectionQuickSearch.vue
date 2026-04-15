@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import type { ConnectionInfo } from '../stores/connections.store';
+import { useTagsStore } from '../stores/tags.store';
 import { searchConnections } from '../utils/connectionSearch';
 
 const props = defineProps<{
@@ -15,6 +17,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const tagsStore = useTagsStore();
+const { tags } = storeToRefs(tagsStore);
 const inputRef = ref<HTMLInputElement | null>(null);
 const query = ref('');
 const selectedIndex = ref(0);
@@ -35,6 +39,7 @@ watch(results, async (nextResults) => {
 });
 
 onMounted(async () => {
+  void tagsStore.fetchTags();
   await nextTick();
   inputRef.value?.focus();
   inputRef.value?.select();
@@ -90,6 +95,24 @@ const handleKeyDown = (event: KeyboardEvent) => {
 };
 
 const getConnectionLabel = (connection: ConnectionInfo): string => connection.name || connection.host;
+
+const tagLookup = computed(() => {
+  const map = new Map<number, string>();
+  tags.value.forEach((tag) => {
+    map.set(tag.id, tag.name);
+  });
+  return map;
+});
+
+const getConnectionTagNames = (connection: ConnectionInfo): string[] => {
+  if (!connection.tag_ids?.length) {
+    return [];
+  }
+
+  return connection.tag_ids
+    .map((tagId) => tagLookup.value.get(tagId))
+    .filter((tagName): tagName is string => Boolean(tagName));
+};
 </script>
 
 <template>
@@ -165,6 +188,18 @@ const getConnectionLabel = (connection: ConnectionInfo): string => connection.na
             <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-secondary">
               <span>{{ item.connection.host }}:{{ item.connection.port }}</span>
               <span>{{ item.connection.username }}</span>
+            </div>
+            <div
+              v-if="getConnectionTagNames(item.connection).length > 0"
+              class="mt-2 flex flex-wrap gap-1.5"
+            >
+              <span
+                v-for="tagName in getConnectionTagNames(item.connection)"
+                :key="`${item.connection.id}-${tagName}`"
+                class="rounded-full border border-border bg-header px-2 py-0.5 text-[11px] text-text-secondary"
+              >
+                {{ tagName }}
+              </span>
             </div>
           </div>
         </button>

@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+- **[frontend]**: 将工作区状态监控重构为更接近服务器监控小屏的深色响应式面板，统一头部信息条、资源监控条、内存/网络/磁盘卡片及 CPU/网络趋势图风格 — by yinjianm
+  - 方案: [202604152109_status-monitor-responsive-remodel](archive/2026-04/202604152109_status-monitor-responsive-remodel/)
+
+- **[frontend]**: 为全局服务器检索结果卡片补充服务器标签显示，便于在 `Ctrl+Shift+F` 快速检索时区分同名或近似主机 - by yinjianm
+  - 方案: [202604152110_workspace-global-search-show-connection-tags](archive/2026-04/202604152110_workspace-global-search-show-connection-tags/)
+
 - **[frontend]**: 修复持续日志输出时切换终端后的 viewport 恢复偏移问题，改为按距底部偏移恢复滚动位置，避免重新激活后无法继续向下滚到最底部 — by yinjianm
   - 方案: [202604120705_terminal-scroll-viewport-restore-fix](archive/2026-04/202604120705_terminal-scroll-viewport-restore-fix/)
 

@@ -1,46 +1,37 @@
 <template>
-  <div class="status-charts grid grid-cols-1 gap-4 mt-4">
-    <div class="chart-container bg-header rounded p-3">
-      <div class="flex justify-between items-center mb-2">
-        <h5 class="text-sm font-medium text-text-secondary">{{ $t('statusMonitor.cpuUsageTitle') }}</h5>
-        <span class="text-xs text-text-tertiary ml-2">
-          {{ $t('statusMonitor.latestCpuValue', { value: cpuChartData.datasets[0].data[MAX_DATA_POINTS - 1]?.toFixed(1) }) }}
-        </span>
+  <div class="status-charts">
+    <section class="chart-panel">
+      <div class="chart-panel__header">
+        <div>
+          <h5 class="chart-panel__title">{{ $t('statusMonitor.cpuUsageTitle') }}</h5>
+          <p class="chart-panel__subtitle">{{ $t('statusMonitor.latestCpuValue', { value: cpuChartData.datasets[0].data[MAX_DATA_POINTS - 1]?.toFixed(1) }) }}</p>
+        </div>
+        <span class="chart-panel__badge chart-panel__badge--cpu">CPU</span>
       </div>
-      <div class="chart-wrapper h-40">
+      <div class="chart-wrapper">
         <Line :data="cpuChartData" :options="percentageChartOptions" :key="cpuChartKey" />
       </div>
-    </div>
-    <!-- 内存使用图表已注释掉 -->
-    <!--
-    <div class="chart-container bg-header rounded p-3">
-      <div class="flex justify-between items-center mb-2">
-        <h5 class="text-sm font-medium text-text-secondary">{{ $t('statusMonitor.memoryUsageTitleUnit', { unit: memoryUnitIsGB ? 'GB' : 'MB' }) }}</h5>
-        <span class="text-xs text-text-tertiary ml-2">
-           {{ $t('statusMonitor.latestMemoryValue', { value: memoryChartData.datasets[0].data[MAX_DATA_POINTS - 1]?.toFixed(1), unit: memoryUnitIsGB ? 'GB' : 'MB' }) }}
-        </span>
+    </section>
+
+    <section class="chart-panel">
+      <div class="chart-panel__header">
+        <div>
+          <h5 class="chart-panel__title">{{ $t('statusMonitor.networkSpeedTitleUnit', { unit: networkRateUnitIsMB ? 'MB/s' : 'KB/s' }) }}</h5>
+          <p class="chart-panel__subtitle">
+            {{ $t('statusMonitor.latestNetworkValue', { download: networkChartData.datasets[0].data[MAX_DATA_POINTS - 1]?.toFixed(1), upload: networkChartData.datasets[1].data[MAX_DATA_POINTS - 1]?.toFixed(1), unit: networkRateUnitIsMB ? 'MB/s' : 'KB/s' }) }}
+          </p>
+        </div>
+        <span class="chart-panel__badge chart-panel__badge--network">NET</span>
       </div>
-      <div class="chart-wrapper h-40">
-        <Line :data="memoryChartData" :options="memoryChartOptions" :key="memoryChartKey" />
-      </div>
-    </div>
-    -->
-    <div class="chart-container bg-header rounded p-3">
-      <div class="flex justify-between items-center mb-2">
-        <h5 class="text-sm font-medium text-text-secondary">{{ $t('statusMonitor.networkSpeedTitleUnit', { unit: networkRateUnitIsMB ? 'MB/s' : 'KB/s' }) }}</h5>
-        <span class="text-xs text-text-tertiary ml-2">
-          {{ $t('statusMonitor.latestNetworkValue', { download: networkChartData.datasets[0].data[MAX_DATA_POINTS - 1]?.toFixed(1), upload: networkChartData.datasets[1].data[MAX_DATA_POINTS - 1]?.toFixed(1), unit: networkRateUnitIsMB ? 'MB/s' : 'KB/s' }) }}
-        </span>
-      </div>
-      <div class="chart-wrapper h-40">
+      <div class="chart-wrapper">
         <Line :data="networkChartData" :options="networkChartOptions" :key="networkChartKey" />
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, computed, type PropType } from 'vue'; 
+import { ref, watch, computed, type PropType } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Line } from 'vue-chartjs';
 import { useSessionStore } from '../stores/session.store'; 
@@ -238,12 +229,15 @@ const networkChartData = computed(() => {
     };
 });
 
+const axisTickColor = '#8fa0b3';
+const axisGridColor = 'rgba(148, 163, 184, 0.12)';
+
 const baseChartOptions: Omit<ChartOptions<'line'>, 'scales'> = {
   responsive: true,
   maintainAspectRatio: false,
   animation: false,
   plugins: {
-    legend: { labels: { color: '#9CA3AF' } },
+    legend: { labels: { color: axisTickColor } },
     tooltip: { enabled: true, mode: 'index', intersect: false },
   },
   interaction: { mode: 'index', intersect: false },
@@ -256,11 +250,11 @@ const percentageChartOptions = ref<ChartOptions<'line'>>({ // For CPU
       beginAtZero: true,
       min: 0,
       max: 100,
-      ticks: { color: '#9CA3AF', callback: value => `${value}%` },
-      grid: { color: 'rgba(156, 163, 175, 0.1)' },
+      ticks: { color: axisTickColor, callback: value => `${value}%` },
+      grid: { color: axisGridColor },
     },
     x: {
-      ticks: { display: false, color: '#9CA3AF', maxRotation: 0, minRotation: 0 },
+      ticks: { display: false, color: axisTickColor, maxRotation: 0, minRotation: 0 },
       grid: { display: false },
     },
   },
@@ -294,15 +288,15 @@ const memoryChartOptions = ref<ChartOptions<'line'>>({
       min: 0,
       // max will be set dynamically based on memTotal
       ticks: {
-        color: '#9CA3AF',
+        color: axisTickColor,
         callback: function(value) {
           return `${parseFloat(Number(value).toFixed(1))}`; // Unit will be implicit from title or tooltip
         }
       },
-      grid: { color: 'rgba(156, 163, 175, 0.1)' },
+      grid: { color: axisGridColor },
     },
     x: {
-      ticks: { display: false, color: '#9CA3AF', maxRotation: 0, minRotation: 0 },
+      ticks: { display: false, color: axisTickColor, maxRotation: 0, minRotation: 0 },
       grid: { display: false },
     },
   },
@@ -337,7 +331,7 @@ const networkChartOptions = ref<ChartOptions<'line'>>({
       min: 0,
       max: 10, // 初始值，将动态更新
       ticks: {
-        color: '#9CA3AF',
+        color: axisTickColor,
         callback: function(value) {
           const precision = networkRateUnitIsMB.value ? 2 : 0; // KB/s usually whole numbers, MB/s two decimal places
           // For KB/s, if the value is very small (e.g. < 1), it might be better to show 1 decimal.
@@ -349,10 +343,10 @@ const networkChartOptions = ref<ChartOptions<'line'>>({
           return `${Number(value).toFixed(precision)}`;
         }
       },
-      grid: { color: 'rgba(156, 163, 175, 0.1)' },
+      grid: { color: axisGridColor },
     },
     x: {
-      ticks: { display: false, color: '#9CA3AF', maxRotation: 0, minRotation: 0 },
+      ticks: { display: false, color: axisTickColor, maxRotation: 0, minRotation: 0 },
       grid: { display: false },
     },
   },
@@ -445,10 +439,87 @@ watch(() => props.serverStatus, () => {
     updateAxisAndUnits();
 }, { deep: true, immediate: true }); // immediate: true 确保初始加载时设置好轴
 
-// 移除监听 activeSessionId 的 watcher 和 resetChartData 函数
-
-onMounted(() => {
-  // 初始轴和单位设置由 watch immediate 处理
-});
-
 </script>
+
+<style scoped>
+.status-charts {
+  display: grid;
+  gap: 12px;
+  margin-top: 2px;
+  container-type: inline-size;
+}
+
+.chart-panel {
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background:
+    linear-gradient(180deg, rgba(18, 24, 31, 0.94), rgba(14, 18, 24, 0.94)),
+    linear-gradient(90deg, rgba(52, 211, 153, 0.06), transparent);
+  padding: 14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+.chart-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.chart-panel__title {
+  margin: 0;
+  color: #f7fbff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.chart-panel__subtitle {
+  margin: 4px 0 0;
+  color: #8fa0b3;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.chart-panel__badge {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.chart-panel__badge--cpu {
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  background: rgba(37, 99, 235, 0.18);
+  color: #bfdbfe;
+}
+
+.chart-panel__badge--network {
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  background: rgba(5, 150, 105, 0.16);
+  color: #bbf7d0;
+}
+
+.chart-wrapper {
+  height: 164px;
+}
+
+@container (min-width: 860px) {
+  .status-charts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 420px) {
+  .chart-panel__header {
+    flex-direction: column;
+  }
+}
+</style>
