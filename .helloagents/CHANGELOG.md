@@ -61,6 +61,9 @@
   - 方案: [202603250614_terminal-ansi-color-effects](archive/2026-03/202603250614_terminal-ansi-color-effects/)
 
 ### 快速修改
+- **[frontend]**: 将状态监控默认视图中的网络模块改为基于真实上下行历史的小曲线 + 速度/累计流量表格，并把磁盘模块压缩成更贴近参考图的设备卡 + 读写速率 + 摘要表结构 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/StatusMonitor.vue
 - **[frontend]**: 将状态监控顶部资源条改为仅保留 CPU 占用横条，并把内存右侧统计块压缩为更接近参考图的紧凑小卡布局 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/StatusMonitor.vue

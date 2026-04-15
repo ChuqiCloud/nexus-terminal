@@ -138,27 +138,28 @@
         </section>
 
         <section class="monitor-module monitor-module--network">
-          <div class="monitor-module__heading">
+          <div class="network-module__hero">
             <div>
               <span class="monitor-module__eyebrow">{{ t('statusMonitor.networkLabel') }}</span>
-              <h5 class="monitor-module__title">{{ totalTrafficDisplay }}</h5>
+              <h5 class="monitor-module__title">{{ t('statusMonitor.networkLabel') }}</h5>
             </div>
-            <span class="monitor-module__pill">{{ networkInterfaceDisplay }}</span>
+            <div class="network-module__sparkline" aria-hidden="true">
+              <svg viewBox="0 0 160 30" preserveAspectRatio="none">
+                <path class="network-module__sparkline-path network-module__sparkline-path--up" :d="networkUpSparklinePath"></path>
+                <path class="network-module__sparkline-path network-module__sparkline-path--down" :d="networkDownSparklinePath"></path>
+              </svg>
+            </div>
           </div>
 
-          <div class="module-split module-split--network">
-            <div class="network-scope">
-              <div class="network-scope__screen">
-                <div class="network-scope__grid"></div>
-                <div class="network-scope__line network-scope__line--down" :style="{ top: `${networkScopeDownOffset}%` }"></div>
-                <div class="network-scope__line network-scope__line--up" :style="{ top: `${networkScopeUpOffset}%` }"></div>
-                <span class="network-scope__stamp">{{ networkInterfaceDisplay }}</span>
-              </div>
-
-              <div class="network-scope__legend">
-                <span class="network-scope__legend-item network-scope__legend-item--down">{{ t('statusMonitor.downloadLabel') }}</span>
-                <span class="network-scope__legend-item network-scope__legend-item--up">{{ t('statusMonitor.uploadLabel') }}</span>
-              </div>
+          <div class="network-table">
+            <div class="network-table__header">
+              <span>{{ networkInterfaceDisplay }}</span>
+              <span>{{ t('statusMonitor.downloadLabel') }} / {{ t('statusMonitor.uploadLabel') }}</span>
+            </div>
+            <div class="network-table__columns">
+              <span></span>
+              <span>{{ t('statusMonitor.networkSpeedTitleUnit', { unit: networkRateUnitLabel }) }}</span>
+              <span>{{ t('statusMonitor.totalTrafficLabel') }}</span>
             </div>
 
             <div class="network-stat-stack">
@@ -167,20 +168,12 @@
                 :key="item.key"
                 :class="['network-stat', `network-stat--${item.tone}`]"
               >
-                <div class="network-stat__top">
-                  <span class="network-stat__label">
-                    <i :class="['fas', item.icon]"></i>
-                    <span>{{ item.label }}</span>
-                  </span>
-                  <span class="network-stat__value">{{ item.value }}</span>
-                </div>
-                <div class="network-stat__track">
-                  <span class="network-stat__fill" :style="{ width: `${item.percent}%` }"></span>
-                </div>
-                <div class="network-stat__footer">
-                  <span>{{ item.totalLabel }}</span>
-                  <span>{{ item.totalValue }}</span>
-                </div>
+                <span class="network-stat__label">
+                  <i :class="['fas', item.icon]"></i>
+                  <span>{{ item.label }}</span>
+                </span>
+                <span class="network-stat__value">{{ item.value }}</span>
+                <span class="network-stat__total">{{ item.totalValue }}</span>
               </article>
             </div>
           </div>
@@ -195,31 +188,43 @@
             <span class="monitor-module__pill">{{ diskPercentDisplay }}</span>
           </div>
 
-          <div class="module-split module-split--disk">
-            <div class="disk-visual">
-              <span class="disk-visual__device">{{ diskDeviceAccent }}</span>
-              <span class="disk-visual__caption">{{ diskDeviceDisplay }}</span>
-              <div class="disk-visual__meter">
-                <div class="disk-visual__meter-fill" :style="{ width: `${displayDiskPercent}%` }"></div>
+          <div class="disk-compact-top">
+            <div class="disk-device-card">
+              <div class="disk-device-card__head">
+                <span class="disk-device-card__mount">{{ diskMountPointDisplay }}</span>
+                <span class="disk-device-card__type">{{ diskFsTypeDisplay }}</span>
               </div>
-              <div class="disk-visual__meta">
-                <span class="disk-visual__meta-pill">{{ diskFsTypeDisplay }}</span>
-                <span class="disk-visual__meta-pill">{{ diskMountPointDisplay }}</span>
+              <div class="disk-device-card__body">
+                <div class="disk-device-card__icon">
+                  <div class="disk-device-card__icon-fill" :style="{ height: `${Math.max(10, displayDiskPercent)}%` }"></div>
+                </div>
+                <div class="disk-device-card__device">{{ diskDeviceAccent }}</div>
               </div>
             </div>
 
-            <div class="disk-stat-stack">
-              <div v-for="item in diskStatItems" :key="item.key" class="disk-stat">
-                <span class="disk-stat__label">{{ item.label }}</span>
-                <span class="disk-stat__value">{{ item.value }}</span>
-              </div>
+            <div class="disk-io-card">
+              <span class="disk-io-card__label">{{ t('statusMonitor.diskReadRateLabel') }}</span>
+              <span class="disk-io-card__value">{{ diskReadRateDisplay }}</span>
+            </div>
+
+            <div class="disk-io-card">
+              <span class="disk-io-card__label">{{ t('statusMonitor.diskWriteRateLabel') }}</span>
+              <span class="disk-io-card__value">{{ diskWriteRateDisplay }}</span>
             </div>
           </div>
 
-          <div class="disk-foot-grid">
-            <div v-for="item in diskInfoItems" :key="item.key" class="disk-foot-item">
-              <span class="disk-foot-item__label">{{ item.label }}</span>
-              <span class="disk-foot-item__value">{{ item.value }}</span>
+          <div class="disk-summary-table">
+            <div class="disk-summary-table__head">
+              <span>{{ t('statusMonitor.diskMountLabel') }}</span>
+              <span>{{ t('statusMonitor.diskSizeLabel') }}</span>
+              <span>{{ t('statusMonitor.diskAvailableLabel') }}</span>
+              <span>{{ t('statusMonitor.diskUsedPercentLabel') }}</span>
+            </div>
+            <div class="disk-summary-table__row">
+              <span class="disk-summary-table__mount">{{ diskMountPointDisplay }}</span>
+              <span>{{ diskSizeDisplay }}</span>
+              <span>{{ diskAvailableDisplay }}</span>
+              <span class="disk-summary-table__used">{{ diskPercentDisplay }}</span>
             </div>
           </div>
         </section>
@@ -326,6 +331,8 @@ const clampPercent = (value?: number): number => {
 const currentSessionState = computed(() => (props.activeSessionId ? sessions.value.get(props.activeSessionId) : null));
 const currentServerStatus = computed<ServerStatus | null>(() => currentSessionState.value?.statusMonitorManager?.serverStatus?.value ?? null);
 const currentCpuHistory = computed<readonly (number | null)[]>(() => currentSessionState.value?.statusMonitorManager?.cpuHistory?.value ?? Array(24).fill(null));
+const currentNetRxHistory = computed<readonly (number | null)[]>(() => currentSessionState.value?.statusMonitorManager?.netRxHistory?.value ?? Array(24).fill(null));
+const currentNetTxHistory = computed<readonly (number | null)[]>(() => currentSessionState.value?.statusMonitorManager?.netTxHistory?.value ?? Array(24).fill(null));
 
 const displayCpuPercent = computed(() => clampPercent(currentServerStatus.value?.cpuPercent));
 const displayMemoryPercent = computed(() => clampPercent(currentServerStatus.value?.memPercent));
@@ -509,30 +516,8 @@ const sessionIpAddress = computed(() => {
   return connectionInfo?.host || null;
 });
 
-const totalTrafficDisplay = computed(() => {
-  const totalDown = formatBytes(currentServerStatus.value?.netRxTotalBytes);
-  const totalUp = formatBytes(currentServerStatus.value?.netTxTotalBytes);
-  if (totalDown === t('statusMonitor.notAvailable') && totalUp === t('statusMonitor.notAvailable')) {
-    return t('statusMonitor.notAvailable');
-  }
-  return `${totalDown} / ${totalUp}`;
-});
-
 const uptimeDisplay = computed(() => formatUptime(currentServerStatus.value?.uptimeSeconds));
 const topProcessPreview = computed<readonly ProcessListItem[]>(() => currentServerStatus.value?.topProcesses ?? []);
-
-const maxCurrentNetworkRate = computed(() => {
-  const rxRate = currentServerStatus.value?.netRxRate ?? 0;
-  const txRate = currentServerStatus.value?.netTxRate ?? 0;
-  return Math.max(rxRate, txRate, 1);
-});
-
-const toRatePercent = (rate?: number): number => {
-  if (!rate || rate <= 0) {
-    return 8;
-  }
-  return Math.max(8, Math.min(100, (rate / maxCurrentNetworkRate.value) * 100));
-};
 
 const overviewItems = computed<MonitorOverviewItem[]>(() => {
   const items: MonitorOverviewItem[] = [
@@ -568,15 +553,11 @@ const cpuUsageLane = computed(() => ({
   percent: displayCpuPercent.value,
 }));
 
-const cpuSparklinePath = computed(() => {
-  const samples = currentCpuHistory.value.slice(-24).map(value => clampPercent(value ?? 0));
+const buildSparklinePath = (samples: readonly number[], width: number, height: number, usableHeight: number): string => {
   if (samples.length === 0) {
-    return 'M0 24 L160 24';
+    return `M0 ${height - 4} L${width} ${height - 4}`;
   }
 
-  const width = 160;
-  const height = 28;
-  const usableHeight = 18;
   const step = samples.length > 1 ? width / (samples.length - 1) : width;
 
   return samples.map((value, index) => {
@@ -584,6 +565,11 @@ const cpuSparklinePath = computed(() => {
     const y = Number((height - 4 - (value / 100) * usableHeight).toFixed(2));
     return `${index === 0 ? 'M' : 'L'}${x} ${y}`;
   }).join(' ');
+};
+
+const cpuSparklinePath = computed(() => {
+  const samples = currentCpuHistory.value.slice(-24).map(value => clampPercent(value ?? 0));
+  return buildSparklinePath(samples, 160, 28, 18);
 });
 
 const networkFlowItems = computed(() => [
@@ -591,9 +577,7 @@ const networkFlowItems = computed(() => [
     key: 'download',
     label: t('statusMonitor.downloadLabel'),
     value: formatBytesPerSecond(currentServerStatus.value?.netRxRate),
-    totalLabel: t('statusMonitor.totalTrafficLabel'),
     totalValue: formatBytes(currentServerStatus.value?.netRxTotalBytes),
-    percent: toRatePercent(currentServerStatus.value?.netRxRate),
     tone: 'down',
     icon: 'fa-arrow-down',
   },
@@ -601,18 +585,34 @@ const networkFlowItems = computed(() => [
     key: 'upload',
     label: t('statusMonitor.uploadLabel'),
     value: formatBytesPerSecond(currentServerStatus.value?.netTxRate),
-    totalLabel: t('statusMonitor.totalTrafficLabel'),
     totalValue: formatBytes(currentServerStatus.value?.netTxTotalBytes),
-    percent: toRatePercent(currentServerStatus.value?.netTxRate),
     tone: 'up',
     icon: 'fa-arrow-up',
   },
 ]);
 
-const normalizeScopeOffset = (rate?: number): number => Math.max(16, 88 - toRatePercent(rate) * 0.74);
+const networkRateUnitLabel = computed(() => {
+  const maxRate = Math.max(currentServerStatus.value?.netRxRate ?? 0, currentServerStatus.value?.netTxRate ?? 0);
+  return maxRate >= 1024 * 1024 ? 'MB/s' : 'KB/s';
+});
 
-const networkScopeDownOffset = computed(() => normalizeScopeOffset(currentServerStatus.value?.netRxRate));
-const networkScopeUpOffset = computed(() => normalizeScopeOffset(currentServerStatus.value?.netTxRate));
+const networkHistoryScale = computed(() => {
+  const values = [
+    ...currentNetRxHistory.value.map(value => value ?? 0),
+    ...currentNetTxHistory.value.map(value => value ?? 0),
+  ];
+  return Math.max(...values, 1);
+});
+
+const networkDownSparklinePath = computed(() => {
+  const samples = currentNetRxHistory.value.slice(-24).map(value => Math.max(0, ((value ?? 0) / networkHistoryScale.value) * 100));
+  return buildSparklinePath(samples, 160, 30, 22);
+});
+
+const networkUpSparklinePath = computed(() => {
+  const samples = currentNetTxHistory.value.slice(-24).map(value => Math.max(0, ((value ?? 0) / networkHistoryScale.value) * 100));
+  return buildSparklinePath(samples, 160, 30, 22);
+});
 
 const diskDeviceAccent = computed(() => {
   const raw = currentServerStatus.value?.diskDevice;
@@ -624,20 +624,6 @@ const diskDeviceAccent = computed(() => {
   const normalized = raw.replace(/^\/dev\//, '').split('/').pop() || raw;
   return normalized.toUpperCase();
 });
-
-const diskStatItems = computed(() => [
-  { key: 'read', label: t('statusMonitor.diskReadRateLabel'), value: diskReadRateDisplay.value },
-  { key: 'write', label: t('statusMonitor.diskWriteRateLabel'), value: diskWriteRateDisplay.value },
-  { key: 'type', label: t('statusMonitor.diskTypeLabel'), value: diskFsTypeDisplay.value },
-  { key: 'mount', label: t('statusMonitor.diskMountLabel'), value: diskMountPointDisplay.value },
-]);
-
-const diskInfoItems = computed(() => [
-  { key: 'size', label: t('statusMonitor.diskSizeLabel'), value: diskSizeDisplay.value },
-  { key: 'available', label: t('statusMonitor.diskAvailableLabel'), value: diskAvailableDisplay.value },
-  { key: 'mount', label: t('statusMonitor.diskMountLabel'), value: diskMountPointDisplay.value },
-  { key: 'used', label: t('statusMonitor.diskUsedPercentLabel'), value: diskPercentDisplay.value },
-]);
 
 const processSummaryItems = computed(() => [
   { key: 'total', label: t('statusMonitor.processManager.total'), value: String(processTotalDisplay.value) },
@@ -886,9 +872,10 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 .monitor-overview__label,
 .usage-lane__helper,
 .memory-stat__label,
-.network-stat__footer,
-.disk-stat__label,
-.disk-foot-item__label,
+.network-table__header,
+.network-table__columns,
+.disk-io-card__label,
+.disk-summary-table__head,
 .process-summary-item__label {
   color: #8ea0b1;
   font-size: 11px;
@@ -989,8 +976,6 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 .usage-lane__index,
 .usage-lane__value,
 .memory-stat__value,
-.disk-stat__value,
-.disk-foot-item__value,
 .process-summary-item__value {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
@@ -1038,22 +1023,20 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 }
 
 .usage-lane__track,
-.network-stat__track,
-.disk-visual__meter {
+.disk-device-card__icon {
   position: relative;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: 12px;
   background: rgba(51, 65, 85, 0.6);
 }
 
-.usage-lane__track,
-.network-stat__track {
+.usage-lane__track {
   height: 8px;
+  border-radius: 999px;
 }
 
 .usage-lane__fill,
-.network-stat__fill,
-.disk-visual__meter-fill {
+.disk-device-card__icon-fill {
   position: absolute;
   inset: 0 auto 0 0;
   border-radius: inherit;
@@ -1063,26 +1046,15 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   background: linear-gradient(90deg, #7dd3fc, #2563eb);
 }
 
-.usage-lane--memory .usage-lane__fill {
-  background: linear-gradient(90deg, #fb7185, #ef4444);
-}
-
-.usage-lane--swap .usage-lane__fill {
-  background: linear-gradient(90deg, #fbbf24, #f59e0b);
-}
-
-.usage-lane--disk .usage-lane__fill {
-  background: linear-gradient(90deg, #86efac, #22c55e);
-}
-
 .module-split {
   display: grid;
   gap: 12px;
 }
 
 .memory-ring-panel,
-.network-scope,
-.disk-visual {
+.disk-device-card,
+.disk-io-card,
+.network-table {
   border-radius: 16px;
   border: 1px solid rgba(148, 163, 184, 0.08);
   background:
@@ -1137,8 +1109,6 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
 .memory-stat,
 .network-stat,
-.disk-stat,
-.disk-foot-item,
 .process-summary-item,
 .process-preview-item {
   min-width: 0;
@@ -1179,7 +1149,8 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 }
 
 .memory-stat__value,
-.disk-foot-item__value {
+.disk-summary-table__row span,
+.disk-io-card__value {
   display: block;
   margin-top: 4px;
   overflow-wrap: anywhere;
@@ -1189,106 +1160,97 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   line-height: 1.15;
 }
 
-.network-scope {
+.network-module__hero {
   display: grid;
-  gap: 10px;
-}
-
-.network-scope__screen {
-  position: relative;
-  min-height: 118px;
-  overflow: hidden;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.08);
-  background:
-    radial-gradient(circle at top, rgba(14, 116, 144, 0.16), transparent 58%),
-    linear-gradient(180deg, rgba(3, 7, 18, 0.92), rgba(15, 23, 42, 0.88));
-}
-
-.network-scope__grid {
-  position: absolute;
-  inset: 0;
-  background:
-    repeating-linear-gradient(180deg, rgba(148, 163, 184, 0.08) 0 1px, transparent 1px 22px),
-    repeating-linear-gradient(90deg, rgba(148, 163, 184, 0.06) 0 1px, transparent 1px 26px);
-}
-
-.network-scope__line {
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  height: 2px;
-  border-radius: 999px;
-  transform: skewX(-24deg);
-}
-
-.network-scope__line--down {
-  background: linear-gradient(90deg, transparent, rgba(52, 211, 153, 0.98) 14%, rgba(52, 211, 153, 0.18));
-  box-shadow: 0 0 14px rgba(52, 211, 153, 0.45);
-}
-
-.network-scope__line--up {
-  background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.98) 18%, rgba(96, 165, 250, 0.16));
-  box-shadow: 0 0 14px rgba(96, 165, 250, 0.4);
-}
-
-.network-scope__stamp {
-  position: absolute;
-  right: 12px;
-  bottom: 10px;
-  color: rgba(226, 232, 240, 0.62);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-}
-
-.network-scope__legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.network-scope__legend-item {
-  display: inline-flex;
+  grid-template-columns: auto minmax(96px, 1fr);
   align-items: center;
-  gap: 6px;
-  color: #dbeafe;
-  font-size: 11px;
-  font-weight: 700;
+  gap: 12px;
 }
 
-.network-scope__legend-item::before {
-  content: '';
-  width: 10px;
-  height: 2px;
-  border-radius: 999px;
+.network-module__sparkline {
+  height: 30px;
+  min-width: 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
 }
 
-.network-scope__legend-item--down::before {
-  background: #34d399;
+.network-module__sparkline svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
-.network-scope__legend-item--up::before {
-  background: #60a5fa;
+.network-module__sparkline-path {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.network-stat {
-  padding: 10px;
+.network-module__sparkline-path--up {
+  stroke: #34d399;
+  filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.28));
 }
 
-.network-stat__top,
-.network-stat__footer,
-.process-preview-item__main {
+.network-module__sparkline-path--down {
+  stroke: #60a5fa;
+  filter: drop-shadow(0 0 6px rgba(96, 165, 250, 0.24));
+}
+
+.network-table {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.network-table__header,
+.network-table__columns,
+.network-stat,
+.disk-summary-table__head,
+.disk-summary-table__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 
+.network-table__header {
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.network-table__columns {
+  padding-top: 2px;
+  color: #9cb0c2;
+  font-weight: 700;
+}
+
+.network-table__columns span,
+.network-stat span,
+.disk-summary-table__head span,
+.disk-summary-table__row span {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.network-table__columns span:first-child,
+.network-stat span:first-child {
+  flex-basis: 30%;
+}
+
+.network-stat {
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 10px;
+}
+
 .network-stat__label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  color: #d9e5f1;
 }
 
 .network-stat__label i {
@@ -1297,81 +1259,135 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 }
 
 .network-stat__value,
-.disk-stat__value {
+.network-stat__total {
   color: #f8fbff;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
-}
-
-.network-stat__footer {
-  margin-top: 8px;
-}
-
-.network-stat--down .network-stat__fill {
-  background: linear-gradient(90deg, #34d399, #10b981);
-}
-
-.network-stat--up .network-stat__fill {
-  background: linear-gradient(90deg, #60a5fa, #2563eb);
-}
-
-.disk-visual {
-  display: grid;
-  gap: 10px;
-  align-content: start;
-}
-
-.disk-visual__device {
-  color: #f8fbff;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 22px;
-  font-weight: 800;
-  line-height: 1;
 }
 
-.disk-visual__caption {
-  color: #9db0c1;
-  font-size: 12px;
-  overflow-wrap: anywhere;
+.network-stat--up .network-stat__label i {
+  color: #34d399;
 }
 
-.disk-visual__meter {
-  height: 8px;
+.network-stat--down .network-stat__label i {
+  color: #3b82f6;
 }
 
-.disk-visual__meter-fill {
-  width: 100%;
-  background: linear-gradient(90deg, #fbbf24, #22c55e);
-}
-
-.disk-visual__meta {
-  display: flex;
-  flex-wrap: wrap;
+.disk-compact-top {
+  display: grid;
+  grid-template-columns: minmax(108px, 0.92fr) repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
-.disk-visual__meta-pill {
-  border: 1px solid rgba(251, 191, 36, 0.14);
-  background: rgba(120, 53, 15, 0.25);
-  color: #fde68a;
+.disk-device-card {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
 }
 
-.disk-stat {
+.disk-device-card__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 10px 12px;
-}
-
-.disk-foot-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
-.disk-foot-item {
+.disk-device-card__mount {
+  color: #d9e5f1;
+  font-size: 14px;
+  font-weight: 800;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.disk-device-card__type {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  border-radius: 8px;
+  padding: 0 8px;
+  background: rgba(111, 76, 15, 0.32);
+  color: #facc15;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.disk-device-card__body {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.disk-device-card__icon {
+  flex: 0 0 24px;
+  width: 24px;
+  height: 54px;
+  border: 1px solid rgba(203, 213, 225, 0.22);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(226, 232, 240, 0.88));
+}
+
+.disk-device-card__icon-fill {
+  inset: auto 0 0;
+  background: linear-gradient(180deg, rgba(134, 239, 172, 0.95), rgba(34, 197, 94, 1));
+}
+
+.disk-device-card__device {
+  color: #9db0c1;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  overflow-wrap: anywhere;
+}
+
+.disk-io-card {
+  display: grid;
+  align-content: center;
+  gap: 6px;
   padding: 10px;
+}
+
+.disk-io-card__value {
+  margin-top: 0;
+  font-size: 15px;
+}
+
+.disk-summary-table {
+  display: grid;
+  gap: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  background: rgba(255, 255, 255, 0.025);
+  padding: 10px;
+}
+
+.disk-summary-table__head {
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  font-weight: 700;
+}
+
+.disk-summary-table__row {
+  color: #f8fbff;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.disk-summary-table__mount {
+  color: #86efac;
+}
+
+.disk-summary-table__used {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  background: rgba(26, 92, 62, 0.34);
+  color: #d7ffe6;
 }
 
 .monitor-action-button {
@@ -1433,6 +1449,10 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 }
 
 .process-preview-item__main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -1487,9 +1507,7 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
     justify-content: flex-end;
   }
 
-  .module-split--memory,
-  .module-split--network,
-  .module-split--disk {
+  .module-split--memory {
     grid-template-columns: minmax(150px, 0.92fr) minmax(0, 1.08fr);
     align-items: stretch;
   }
@@ -1498,6 +1516,11 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     align-content: center;
     gap: 6px;
+  }
+
+  .disk-summary-table__head span,
+  .disk-summary-table__row span {
+    text-align: left;
   }
 }
 
@@ -1520,7 +1543,7 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   .monitor-chip__value,
   .monitor-overview__value,
   .usage-lane__helper,
-  .disk-foot-item__value {
+  .disk-summary-table__row span {
     white-space: normal;
   }
 
@@ -1528,17 +1551,32 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
     grid-template-columns: 1fr;
   }
 
-  .network-stat__top,
-  .network-stat__footer,
+  .network-module__hero,
+  .disk-compact-top {
+    grid-template-columns: 1fr;
+  }
+
+  .network-table__header,
+  .network-table__columns,
+  .network-stat,
+  .disk-summary-table__head,
+  .disk-summary-table__row,
   .process-preview-item__main {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .network-table__columns span,
+  .network-stat span,
+  .disk-summary-table__head span,
+  .disk-summary-table__row span {
+    width: 100%;
+    flex: none;
   }
 }
 
 @container (max-width: 360px) {
   .monitor-overview__row,
-  .disk-foot-grid,
   .process-summary-strip {
     grid-template-columns: 1fr;
   }
