@@ -848,15 +848,17 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
 .monitor-module-grid {
   display: grid;
-  gap: 12px;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
 }
 
 .monitor-module {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
-  border-radius: 20px;
-  padding: 14px;
+  border-radius: 18px;
+  padding: 12px;
+  container-type: inline-size;
 }
 
 .monitor-module__heading {
@@ -1474,34 +1476,21 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   }
 }
 
-@container (min-width: 760px) {
-  .monitor-module-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
+@container (min-width: 420px) {
   .monitor-module--usage,
   .monitor-module--process {
     grid-column: 1 / -1;
   }
 }
 
-@container (max-width: 440px) {
-  .monitor-chip {
-    max-width: 100%;
-  }
-
-  .monitor-chip__value,
-  .usage-lane__helper,
-  .disk-summary-table__row span {
-    white-space: normal;
-  }
-
-  .cpu-module__hero {
+@container (max-width: 250px) {
+  .module-split--memory,
+  .network-module__hero,
+  .disk-compact-top {
     grid-template-columns: 1fr;
   }
 
-  .network-module__hero,
-  .disk-compact-top {
+  .memory-stat-stack {
     grid-template-columns: 1fr;
   }
 
@@ -1521,6 +1510,22 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   .disk-summary-table__row span {
     width: 100%;
     flex: none;
+  }
+}
+
+@container (max-width: 440px) {
+  .monitor-chip {
+    max-width: 100%;
+  }
+
+  .monitor-chip__value,
+  .usage-lane__helper,
+  .disk-summary-table__row span {
+    white-space: normal;
+  }
+
+  .cpu-module__hero {
+    grid-template-columns: 1fr;
   }
 }
 

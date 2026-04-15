@@ -61,6 +61,9 @@
   - 方案: [202603250614_terminal-ansi-color-effects](archive/2026-03/202603250614_terminal-ansi-color-effects/)
 
 ### 快速修改
+- **[frontend]**: 将状态监控模块区从大断点固定分列改为更高密度的 auto-fit 自适应网格，让内存/网络/磁盘在正常宽度下默认并排，只有非常窄时才回落为单列 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/StatusMonitor.vue
 - **[frontend]**: 将状态监控顶部的“服务器状态 + 系统信息”从分裂的头部和独立概览块改为单个一体化系统卡，统一容纳 IP、LIVE、系统名、网卡、CPU 核数、CPU 型号、时区和运行时间 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/StatusMonitor.vue
