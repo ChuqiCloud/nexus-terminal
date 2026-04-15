@@ -17,63 +17,45 @@
 
     <section v-else class="status-monitor-shell">
       <header class="monitor-header">
-        <div class="monitor-header__identity">
-          <span class="monitor-header__eyebrow">{{ t('statusMonitor.title') }}</span>
-          <div class="monitor-header__title-row">
+        <div class="monitor-header__top">
+          <div class="monitor-header__identity">
+            <span class="monitor-header__eyebrow">{{ t('statusMonitor.title') }}</span>
             <h4 class="monitor-header__title">{{ displayOsName }}</h4>
-            <span class="monitor-header__badge">{{ networkInterfaceDisplay }}</span>
           </div>
-          <p class="monitor-header__subtitle">{{ displayCpuModel }}</p>
-        </div>
 
-        <div class="monitor-header__status">
-          <button
-            v-if="statusMonitorShowIpBoolean && activeSessionId && sessionIpAddress"
-            class="monitor-chip monitor-chip--interactive"
-            type="button"
-            :title="sessionIpAddress"
-            @click="copyIpToClipboard(sessionIpAddress)"
-          >
-            <span class="monitor-chip__label">IP</span>
-            <span class="monitor-chip__value">{{ sessionIpAddress }}</span>
-          </button>
-
-          <span class="monitor-live-pill">
-            <span class="monitor-live-pill__dot"></span>
-            LIVE
-          </span>
-        </div>
-      </header>
-
-      <section class="monitor-overview">
-        <div
-          v-for="(row, rowIndex) in overviewRows"
-          :key="`overview-${rowIndex}`"
-          class="monitor-overview__row"
-        >
-          <template v-for="item in row" :key="item.key">
+          <div class="monitor-header__status">
             <button
-              v-if="item.clickable"
+              v-if="statusMonitorShowIpBoolean && activeSessionId && sessionIpAddress"
+              class="monitor-chip monitor-chip--interactive"
               type="button"
-              class="monitor-overview__item monitor-overview__item--interactive"
-              :title="item.value"
+              :title="sessionIpAddress"
               @click="copyIpToClipboard(sessionIpAddress)"
             >
-              <span class="monitor-overview__label">{{ item.label }}</span>
-              <span class="monitor-overview__value">{{ item.value }}</span>
+              <span class="monitor-chip__label">IP</span>
+              <span class="monitor-chip__value">{{ sessionIpAddress }}</span>
             </button>
 
-            <article
-              v-else
-              class="monitor-overview__item"
-              :title="item.value"
-            >
-              <span class="monitor-overview__label">{{ item.label }}</span>
-              <span class="monitor-overview__value">{{ item.value }}</span>
-            </article>
-          </template>
+            <span class="monitor-live-pill">
+              <span class="monitor-live-pill__dot"></span>
+              LIVE
+            </span>
+          </div>
         </div>
-      </section>
+
+        <div class="monitor-header__chip-row">
+          <span class="monitor-header__badge">{{ networkInterfaceDisplay }}</span>
+          <span class="monitor-header__badge monitor-header__badge--subtle">{{ displayCpuCores }}</span>
+        </div>
+
+        <p class="monitor-header__subtitle">{{ displayCpuModel }}</p>
+
+        <div class="monitor-header__meta-line">
+          <div v-for="item in systemCardMetaItems" :key="item.key" class="monitor-header__meta-item">
+            <span class="monitor-header__meta-label">{{ item.label }}</span>
+            <span class="monitor-header__meta-value">{{ item.value }}</span>
+          </div>
+        </div>
+      </header>
 
       <section class="monitor-module monitor-module--usage">
         <div class="cpu-module__hero">
@@ -519,34 +501,10 @@ const sessionIpAddress = computed(() => {
 const uptimeDisplay = computed(() => formatUptime(currentServerStatus.value?.uptimeSeconds));
 const topProcessPreview = computed<readonly ProcessListItem[]>(() => currentServerStatus.value?.topProcesses ?? []);
 
-const overviewItems = computed<MonitorOverviewItem[]>(() => {
-  const items: MonitorOverviewItem[] = [
-    { key: 'cpu-model', label: t('statusMonitor.cpuModelLabel'), value: displayCpuModel.value },
-    { key: 'cpu-cores', label: t('statusMonitor.cpuLabel'), value: displayCpuCores.value },
-    { key: 'timezone', label: t('statusMonitor.timezoneLabel'), value: timezoneDisplay.value },
-    { key: 'uptime', label: t('statusMonitor.uptimeLabel'), value: uptimeDisplay.value },
-  ];
-
-  if (statusMonitorShowIpBoolean.value && sessionIpAddress.value) {
-    items.unshift({ key: 'session-ip', label: 'IP', value: sessionIpAddress.value, clickable: true });
-  }
-
-  return items;
-});
-
-const overviewRows = computed<MonitorOverviewItem[][]>(() => {
-  const rows: MonitorOverviewItem[][] = [];
-
-  overviewItems.value.forEach((item, index) => {
-    if (index % 2 === 0) {
-      rows.push([item]);
-      return;
-    }
-    rows[rows.length - 1]?.push(item);
-  });
-
-  return rows;
-});
+const systemCardMetaItems = computed<MonitorOverviewItem[]>(() => [
+  { key: 'timezone', label: t('statusMonitor.timezoneLabel'), value: timezoneDisplay.value },
+  { key: 'uptime', label: t('statusMonitor.uptimeLabel'), value: uptimeDisplay.value },
+]);
 
 const cpuUsageLane = computed(() => ({
   value: `${Math.round(displayCpuPercent.value)}%`,
@@ -694,7 +652,6 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 }
 
 .monitor-header,
-.monitor-overview,
 .monitor-module,
 .status-monitor__charts {
   border: 1px solid rgba(148, 163, 184, 0.12);
@@ -708,9 +665,16 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
 .monitor-header {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   border-radius: 20px;
   padding: 14px;
+}
+
+.monitor-header__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .monitor-header__identity {
@@ -727,23 +691,21 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   text-transform: uppercase;
 }
 
-.monitor-header__title-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-}
-
 .monitor-header__title {
-  margin: 0;
+  margin: 10px 0 0;
   font-size: 18px;
   font-weight: 800;
   line-height: 1.15;
 }
 
+.monitor-header__chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .monitor-header__subtitle {
-  margin: 8px 0 0;
+  margin: 0;
   color: #8fa0b3;
   font-size: 12px;
   line-height: 1.4;
@@ -751,7 +713,6 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
 .monitor-header__badge,
 .monitor-module__pill,
-.disk-visual__meta-pill,
 .monitor-chip {
   display: inline-flex;
   align-items: center;
@@ -771,6 +732,12 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   color: #d7ffe6;
 }
 
+.monitor-header__badge--subtle {
+  border-color: rgba(96, 165, 250, 0.16);
+  background: rgba(30, 64, 175, 0.14);
+  color: #dbeafe;
+}
+
 .monitor-chip {
   border: 1px solid rgba(96, 165, 250, 0.18);
   background: rgba(30, 64, 175, 0.2);
@@ -778,14 +745,12 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 }
 
 .monitor-chip--interactive,
-.monitor-overview__item--interactive,
 .monitor-action-button {
   cursor: pointer;
   transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
 }
 
 .monitor-chip--interactive:hover,
-.monitor-overview__item--interactive:hover,
 .monitor-action-button:hover {
   transform: translateY(-1px);
 }
@@ -812,7 +777,7 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 .monitor-header__status {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-start;
+  justify-content: flex-end;
   gap: 8px;
 }
 
@@ -839,37 +804,22 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   box-shadow: 0 0 10px rgba(74, 222, 128, 0.7);
 }
 
-.monitor-overview {
-  display: grid;
-  gap: 8px;
-  border-radius: 20px;
-  padding: 10px;
+.monitor-header__meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
 }
 
-.monitor-overview__row {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.monitor-header__meta-item {
+  display: inline-flex;
+  align-items: baseline;
   gap: 8px;
-}
-
-.monitor-overview__item {
-  display: grid;
-  gap: 6px;
   min-width: 0;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.08);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02)),
-    radial-gradient(circle at top left, rgba(52, 211, 153, 0.05), transparent 60%);
-  padding: 11px 12px;
-  text-align: left;
 }
 
-.monitor-overview__item--interactive:hover {
-  border-color: rgba(96, 165, 250, 0.32);
-}
-
-.monitor-overview__label,
+.monitor-header__meta-label,
 .usage-lane__helper,
 .memory-stat__label,
 .network-table__header,
@@ -881,13 +831,13 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   font-size: 11px;
 }
 
-.monitor-overview__label {
+.monitor-header__meta-label {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.monitor-overview__value {
+.monitor-header__meta-value {
   overflow: hidden;
   color: #f7fbff;
   font-size: 13px;
@@ -1541,7 +1491,6 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   }
 
   .monitor-chip__value,
-  .monitor-overview__value,
   .usage-lane__helper,
   .disk-summary-table__row span {
     white-space: normal;
@@ -1576,7 +1525,6 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 }
 
 @container (max-width: 360px) {
-  .monitor-overview__row,
   .process-summary-strip {
     grid-template-columns: 1fr;
   }
