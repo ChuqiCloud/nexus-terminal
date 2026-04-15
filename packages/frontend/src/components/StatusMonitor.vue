@@ -17,15 +17,16 @@
 
     <section v-else class="status-monitor-shell">
       <header class="monitor-header">
-        <div class="monitor-header__title-group">
+        <div class="monitor-header__identity">
           <span class="monitor-header__eyebrow">{{ t('statusMonitor.title') }}</span>
-          <div class="monitor-header__title-line">
+          <div class="monitor-header__title-row">
             <h4 class="monitor-header__title">{{ displayOsName }}</h4>
             <span class="monitor-header__badge">{{ networkInterfaceDisplay }}</span>
           </div>
+          <p class="monitor-header__subtitle">{{ displayCpuModel }}</p>
         </div>
 
-        <div class="monitor-header__actions">
+        <div class="monitor-header__status">
           <button
             v-if="statusMonitorShowIpBoolean && activeSessionId && sessionIpAddress"
             class="monitor-chip monitor-chip--interactive"
@@ -44,66 +45,85 @@
         </div>
       </header>
 
-      <div class="monitor-meta-grid">
-        <template v-for="item in monitorMetaItems" :key="item.key">
-          <button
-            v-if="item.clickable"
-            type="button"
-            class="monitor-meta-card monitor-meta-card--interactive"
-            :title="item.value"
-            @click="copyIpToClipboard(sessionIpAddress)"
-          >
-            <span class="monitor-meta-card__label">{{ item.label }}</span>
-            <span class="monitor-meta-card__value">{{ item.value }}</span>
-          </button>
-
-          <article v-else class="monitor-meta-card" :title="item.value">
-            <span class="monitor-meta-card__label">{{ item.label }}</span>
-            <span class="monitor-meta-card__value">{{ item.value }}</span>
-          </article>
-        </template>
-      </div>
-
-      <div class="monitor-rail">
-        <article
-          v-for="item in resourceRailItems"
-          :key="item.key"
-          :class="['metric-strip', `metric-strip--${item.tone}`]"
+      <section class="monitor-overview">
+        <div
+          v-for="(row, rowIndex) in overviewRows"
+          :key="`overview-${rowIndex}`"
+          class="monitor-overview__row"
         >
-          <div class="metric-strip__top">
-            <span class="metric-strip__label">{{ item.label }}</span>
-            <span class="metric-strip__value">{{ item.value }}</span>
+          <template v-for="item in row" :key="item.key">
+            <button
+              v-if="item.clickable"
+              type="button"
+              class="monitor-overview__item monitor-overview__item--interactive"
+              :title="item.value"
+              @click="copyIpToClipboard(sessionIpAddress)"
+            >
+              <span class="monitor-overview__label">{{ item.label }}</span>
+              <span class="monitor-overview__value">{{ item.value }}</span>
+            </button>
+
+            <article
+              v-else
+              class="monitor-overview__item"
+              :title="item.value"
+            >
+              <span class="monitor-overview__label">{{ item.label }}</span>
+              <span class="monitor-overview__value">{{ item.value }}</span>
+            </article>
+          </template>
+        </div>
+      </section>
+
+      <section class="monitor-module monitor-module--usage">
+        <div class="monitor-module__heading">
+          <div>
+            <span class="monitor-module__eyebrow">{{ t('statusMonitor.cpuLabel') }}</span>
+            <h5 class="monitor-module__title">{{ t('statusMonitor.cpuModelLabel') }} {{ displayCpuCores }}</h5>
           </div>
+          <span class="monitor-module__pill">{{ displayCpuPercent.toFixed(0) }}%</span>
+        </div>
 
-          <div class="metric-strip__track">
-            <span class="metric-strip__fill" :style="{ width: `${item.percent}%` }"></span>
-          </div>
-
-          <span class="metric-strip__helper">{{ item.helper }}</span>
-        </article>
-      </div>
-
-      <div class="monitor-panels">
-        <section class="monitor-card monitor-card--memory">
-          <div class="monitor-card__header">
-            <div class="monitor-card__title-group">
-              <span class="monitor-card__icon monitor-card__icon--memory">
-                <i class="fas fa-memory"></i>
-              </span>
-              <div>
-                <h5 class="monitor-card__title">{{ t('statusMonitor.memoryCardTitle') }}</h5>
-                <p class="monitor-card__subtitle">{{ t('statusMonitor.memoryUsedStat') }} / {{ t('statusMonitor.memoryFreeStat') }}</p>
+        <div class="usage-lane-list">
+          <article
+            v-for="item in usageLaneItems"
+            :key="item.key"
+            :class="['usage-lane', `usage-lane--${item.tone}`]"
+          >
+            <div class="usage-lane__index">{{ item.index }}</div>
+            <div class="usage-lane__content">
+              <div class="usage-lane__meta">
+                <span class="usage-lane__label">{{ item.label }}</span>
+                <span class="usage-lane__helper">{{ item.helper }}</span>
+              </div>
+              <div class="usage-lane__track">
+                <span class="usage-lane__fill" :style="{ width: `${item.percent}%` }"></span>
               </div>
             </div>
-            <span class="monitor-card__badge">{{ memoryTotalDisplay }}</span>
+            <div class="usage-lane__value">{{ item.value }}</div>
+          </article>
+        </div>
+      </section>
+
+      <div class="monitor-module-grid">
+        <section class="monitor-module monitor-module--memory">
+          <div class="monitor-module__heading">
+            <div>
+              <span class="monitor-module__eyebrow">{{ t('statusMonitor.memoryCardTitle') }}</span>
+              <h5 class="monitor-module__title">{{ t('statusMonitor.memoryUsedStat') }} / {{ t('statusMonitor.memoryFreeStat') }}</h5>
+            </div>
+            <span class="monitor-module__pill">{{ memoryTotalDisplay }}</span>
           </div>
 
-          <div class="memory-card__content">
-            <div class="memory-ring" :style="memoryRingStyle">
-              <div class="memory-ring__center">{{ memoryPercentDisplay }}</div>
+          <div class="module-split module-split--memory">
+            <div class="memory-ring-panel">
+              <div class="memory-ring" :style="memoryRingStyle">
+                <div class="memory-ring__center">{{ memoryPercentDisplay }}</div>
+              </div>
+              <span class="memory-ring-panel__caption">{{ t('statusMonitor.memoryCardTitle') }}</span>
             </div>
 
-            <div class="memory-stats-grid">
+            <div class="memory-stat-stack">
               <div
                 v-for="item in memoryStatItems"
                 :key="item.key"
@@ -119,132 +139,125 @@
           </div>
         </section>
 
-        <section class="monitor-card monitor-card--network">
-          <div class="monitor-card__header">
-            <div class="monitor-card__title-group">
-              <span class="monitor-card__icon monitor-card__icon--network">
-                <i class="fas fa-network-wired"></i>
-              </span>
-              <div>
-                <h5 class="monitor-card__title">{{ t('statusMonitor.networkLabel') }}</h5>
-                <p class="monitor-card__subtitle">{{ networkInterfaceDisplay }}</p>
+        <section class="monitor-module monitor-module--network">
+          <div class="monitor-module__heading">
+            <div>
+              <span class="monitor-module__eyebrow">{{ t('statusMonitor.networkLabel') }}</span>
+              <h5 class="monitor-module__title">{{ totalTrafficDisplay }}</h5>
+            </div>
+            <span class="monitor-module__pill">{{ networkInterfaceDisplay }}</span>
+          </div>
+
+          <div class="module-split module-split--network">
+            <div class="network-scope">
+              <div class="network-scope__screen">
+                <div class="network-scope__grid"></div>
+                <div class="network-scope__line network-scope__line--down" :style="{ top: `${networkScopeDownOffset}%` }"></div>
+                <div class="network-scope__line network-scope__line--up" :style="{ top: `${networkScopeUpOffset}%` }"></div>
+                <span class="network-scope__stamp">{{ networkInterfaceDisplay }}</span>
+              </div>
+
+              <div class="network-scope__legend">
+                <span class="network-scope__legend-item network-scope__legend-item--down">{{ t('statusMonitor.downloadLabel') }}</span>
+                <span class="network-scope__legend-item network-scope__legend-item--up">{{ t('statusMonitor.uploadLabel') }}</span>
               </div>
             </div>
-            <span class="monitor-card__badge">{{ totalTrafficDisplay }}</span>
-          </div>
 
-          <div class="network-stream-list">
-            <article
-              v-for="item in networkFlowItems"
-              :key="item.key"
-              :class="['network-stream', `network-stream--${item.tone}`]"
-            >
-              <div class="network-stream__top">
-                <span class="network-stream__label">
-                  <i :class="['fas', item.icon]"></i>
-                  <span>{{ item.label }}</span>
-                </span>
-                <span class="network-stream__value">{{ item.value }}</span>
-              </div>
-
-              <div class="network-stream__track">
-                <span class="network-stream__fill" :style="{ width: `${item.percent}%` }"></span>
-              </div>
-
-              <div class="network-stream__footer">
-                <span>{{ item.totalLabel }}</span>
-                <span>{{ item.totalValue }}</span>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section class="monitor-card monitor-card--disk">
-          <div class="monitor-card__header">
-            <div class="monitor-card__title-group">
-              <span class="monitor-card__icon monitor-card__icon--disk">
-                <i class="fas fa-hdd"></i>
-              </span>
-              <div>
-                <h5 class="monitor-card__title">{{ t('statusMonitor.diskCardTitle') }}</h5>
-                <p class="monitor-card__subtitle">{{ diskDeviceDisplay }}</p>
-              </div>
-            </div>
-            <span class="monitor-card__badge">{{ diskUsageDisplay }}</span>
-          </div>
-
-          <div class="disk-meta-row">
-            <span class="disk-meta-pill">{{ diskFsTypeDisplay }}</span>
-            <span class="disk-meta-pill">{{ diskMountPointDisplay }}</span>
-          </div>
-
-          <div class="disk-card__body">
-            <div class="disk-usage-tube">
-              <div class="disk-usage-tube__inner">
-                <div class="disk-usage-tube__fill" :style="diskUsageFillStyle"></div>
-              </div>
-              <span class="disk-usage-tube__value">{{ diskPercentDisplay }}</span>
-            </div>
-
-            <div class="disk-rate-grid">
-              <div class="disk-rate-card">
-                <span class="disk-rate-card__label">{{ t('statusMonitor.diskReadRateLabel') }}</span>
-                <span class="disk-rate-card__value">{{ diskReadRateDisplay }}</span>
-              </div>
-              <div class="disk-rate-card">
-                <span class="disk-rate-card__label">{{ t('statusMonitor.diskWriteRateLabel') }}</span>
-                <span class="disk-rate-card__value">{{ diskWriteRateDisplay }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="disk-info-grid">
-            <div v-for="item in diskInfoItems" :key="item.key" class="disk-info-item">
-              <span class="disk-info-item__label">{{ item.label }}</span>
-              <span class="disk-info-item__value">{{ item.value }}</span>
+            <div class="network-stat-stack">
+              <article
+                v-for="item in networkFlowItems"
+                :key="item.key"
+                :class="['network-stat', `network-stat--${item.tone}`]"
+              >
+                <div class="network-stat__top">
+                  <span class="network-stat__label">
+                    <i :class="['fas', item.icon]"></i>
+                    <span>{{ item.label }}</span>
+                  </span>
+                  <span class="network-stat__value">{{ item.value }}</span>
+                </div>
+                <div class="network-stat__track">
+                  <span class="network-stat__fill" :style="{ width: `${item.percent}%` }"></span>
+                </div>
+                <div class="network-stat__footer">
+                  <span>{{ item.totalLabel }}</span>
+                  <span>{{ item.totalValue }}</span>
+                </div>
+              </article>
             </div>
           </div>
         </section>
 
-        <section class="monitor-card monitor-card--process">
-          <div class="monitor-card__header">
-            <div class="monitor-card__title-group">
-              <span class="monitor-card__icon monitor-card__icon--process">
-                <i class="fas fa-list-check"></i>
-              </span>
-              <div>
-                <h5 class="monitor-card__title">{{ t('statusMonitor.processManager.title') }}</h5>
-                <p class="monitor-card__subtitle">{{ t('statusMonitor.processManager.subtitle') }}</p>
+        <section class="monitor-module monitor-module--disk">
+          <div class="monitor-module__heading">
+            <div>
+              <span class="monitor-module__eyebrow">{{ t('statusMonitor.diskCardTitle') }}</span>
+              <h5 class="monitor-module__title">{{ diskUsageDisplay }}</h5>
+            </div>
+            <span class="monitor-module__pill">{{ diskPercentDisplay }}</span>
+          </div>
+
+          <div class="module-split module-split--disk">
+            <div class="disk-visual">
+              <span class="disk-visual__device">{{ diskDeviceAccent }}</span>
+              <span class="disk-visual__caption">{{ diskDeviceDisplay }}</span>
+              <div class="disk-visual__meter">
+                <div class="disk-visual__meter-fill" :style="{ width: `${displayDiskPercent}%` }"></div>
               </div>
+              <div class="disk-visual__meta">
+                <span class="disk-visual__meta-pill">{{ diskFsTypeDisplay }}</span>
+                <span class="disk-visual__meta-pill">{{ diskMountPointDisplay }}</span>
+              </div>
+            </div>
+
+            <div class="disk-stat-stack">
+              <div v-for="item in diskStatItems" :key="item.key" class="disk-stat">
+                <span class="disk-stat__label">{{ item.label }}</span>
+                <span class="disk-stat__value">{{ item.value }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="disk-foot-grid">
+            <div v-for="item in diskInfoItems" :key="item.key" class="disk-foot-item">
+              <span class="disk-foot-item__label">{{ item.label }}</span>
+              <span class="disk-foot-item__value">{{ item.value }}</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="monitor-module monitor-module--process">
+          <div class="monitor-module__heading">
+            <div>
+              <span class="monitor-module__eyebrow">{{ t('statusMonitor.processManager.title') }}</span>
+              <h5 class="monitor-module__title">{{ t('statusMonitor.processManager.subtitle') }}</h5>
             </div>
             <button class="monitor-action-button" type="button" @click="isProcessManagerVisible = true">
               {{ t('statusMonitor.processManager.viewAll') }}
             </button>
           </div>
 
-          <div class="process-summary-grid">
-            <div class="process-summary-item">
-              <span class="process-summary-item__label">{{ t('statusMonitor.processManager.total') }}</span>
-              <span class="process-summary-item__value">{{ processTotalDisplay }}</span>
-            </div>
-            <div class="process-summary-item">
-              <span class="process-summary-item__label">{{ t('statusMonitor.processManager.running') }}</span>
-              <span class="process-summary-item__value">{{ processRunningDisplay }}</span>
-            </div>
-            <div class="process-summary-item">
-              <span class="process-summary-item__label">{{ t('statusMonitor.processManager.sleeping') }}</span>
-              <span class="process-summary-item__value">{{ processSleepingDisplay }}</span>
+          <div class="process-summary-strip">
+            <div v-for="item in processSummaryItems" :key="item.key" class="process-summary-item">
+              <span class="process-summary-item__label">{{ item.label }}</span>
+              <span class="process-summary-item__value">{{ item.value }}</span>
             </div>
           </div>
 
-          <div v-if="topProcessPreview.length > 0" class="process-preview-list">
-            <article v-for="item in topProcessPreview" :key="item.pid" class="process-preview-item">
-              <div class="process-preview-item__meta">
+          <div v-if="processPreviewItems.length > 0" class="process-preview-list">
+            <article v-for="item in processPreviewItems" :key="item.pid" class="process-preview-item">
+              <div class="process-preview-item__rail">
                 <span class="process-preview-item__pid">PID {{ item.pid }}</span>
-                <span class="process-preview-item__cpu">{{ item.cpu.toFixed(1) }}%</span>
-                <span class="process-preview-item__mem">{{ formatProcessMemory(item.memMb) }}</span>
+                <span class="process-preview-item__user">{{ item.user }}</span>
+                <span class="process-preview-item__state">{{ item.state }}</span>
               </div>
-              <div class="process-preview-item__command" :title="item.command">{{ item.command }}</div>
+              <div class="process-preview-item__main">
+                <div class="process-preview-item__command" :title="item.command">{{ item.command }}</div>
+                <div class="process-preview-item__stats">
+                  <span class="process-preview-item__cpu">{{ item.cpu.toFixed(1) }}%</span>
+                  <span class="process-preview-item__mem">{{ formatProcessMemory(item.memMb) }}</span>
+                </div>
+              </div>
             </article>
           </div>
           <div v-else class="process-preview-empty">
@@ -255,6 +268,7 @@
 
       <StatusCharts
         v-if="activeSessionId && currentServerStatus"
+        class="status-monitor__charts"
         :server-status="currentServerStatus"
         :active-session-id="activeSessionId"
       />
@@ -280,7 +294,7 @@ import { useConnectionsStore } from '../stores/connections.store';
 import { useUiNotificationsStore } from '../stores/uiNotifications.store';
 import type { ProcessListItem, ServerStatus } from '../types/server.types';
 
-interface MonitorMetaItem {
+interface MonitorOverviewItem {
   key: string;
   label: string;
   value: string;
@@ -426,6 +440,8 @@ const formatProcessMemory = (mb?: number): string => {
   return `${(mb / 1024).toFixed(1)} G`;
 };
 
+const toIndexedLabel = (index: number): string => String(index + 1).padStart(2, '0');
+
 const swapDisplay = computed(() => {
   const total = currentServerStatus.value?.swapTotal ?? 0;
   const used = currentServerStatus.value?.swapUsed ?? 0;
@@ -482,10 +498,6 @@ const diskUsageDisplay = computed(() => {
   return `${formatStorageSizeFromKb(data.diskUsed, true)} / ${formatStorageSizeFromKb(data.diskTotal, true)}`;
 });
 
-const diskUsageFillStyle = computed<CSSProperties>(() => ({
-  height: `${Math.max(8, displayDiskPercent.value)}%`,
-}));
-
 const diskDeviceDisplay = computed(() => currentServerStatus.value?.diskDevice || t('statusMonitor.notAvailable'));
 const diskFsTypeDisplay = computed(() => currentServerStatus.value?.diskFsType || t('statusMonitor.notAvailable'));
 const diskReadRateDisplay = computed(() => formatCompactBytes(currentServerStatus.value?.diskReadRate));
@@ -535,8 +547,8 @@ const toRatePercent = (rate?: number): number => {
   return Math.max(8, Math.min(100, (rate / maxCurrentNetworkRate.value) * 100));
 };
 
-const monitorMetaItems = computed<MonitorMetaItem[]>(() => {
-  const items: MonitorMetaItem[] = [
+const overviewItems = computed<MonitorOverviewItem[]>(() => {
+  const items: MonitorOverviewItem[] = [
     { key: 'cpu-model', label: t('statusMonitor.cpuModelLabel'), value: displayCpuModel.value },
     { key: 'cpu-cores', label: t('statusMonitor.cpuLabel'), value: displayCpuCores.value },
     { key: 'timezone', label: t('statusMonitor.timezoneLabel'), value: timezoneDisplay.value },
@@ -550,6 +562,20 @@ const monitorMetaItems = computed<MonitorMetaItem[]>(() => {
   }
 
   return items;
+});
+
+const overviewRows = computed<MonitorOverviewItem[][]>(() => {
+  const rows: MonitorOverviewItem[][] = [];
+
+  overviewItems.value.forEach((item, index) => {
+    if (index % 2 === 0) {
+      rows.push([item]);
+      return;
+    }
+    rows[rows.length - 1]?.push(item);
+  });
+
+  return rows;
 });
 
 const resourceRailItems = computed(() => [
@@ -587,6 +613,13 @@ const resourceRailItems = computed(() => [
   },
 ]);
 
+const usageLaneItems = computed(() =>
+  resourceRailItems.value.map((item, index) => ({
+    ...item,
+    index: toIndexedLabel(index),
+  })),
+);
+
 const networkFlowItems = computed(() => [
   {
     key: 'download',
@@ -610,12 +643,43 @@ const networkFlowItems = computed(() => [
   },
 ]);
 
+const normalizeScopeOffset = (rate?: number): number => Math.max(16, 88 - toRatePercent(rate) * 0.74);
+
+const networkScopeDownOffset = computed(() => normalizeScopeOffset(currentServerStatus.value?.netRxRate));
+const networkScopeUpOffset = computed(() => normalizeScopeOffset(currentServerStatus.value?.netTxRate));
+
+const diskDeviceAccent = computed(() => {
+  const raw = currentServerStatus.value?.diskDevice;
+
+  if (!raw) {
+    return 'N/A';
+  }
+
+  const normalized = raw.replace(/^\/dev\//, '').split('/').pop() || raw;
+  return normalized.toUpperCase();
+});
+
+const diskStatItems = computed(() => [
+  { key: 'read', label: t('statusMonitor.diskReadRateLabel'), value: diskReadRateDisplay.value },
+  { key: 'write', label: t('statusMonitor.diskWriteRateLabel'), value: diskWriteRateDisplay.value },
+  { key: 'type', label: t('statusMonitor.diskTypeLabel'), value: diskFsTypeDisplay.value },
+  { key: 'mount', label: t('statusMonitor.diskMountLabel'), value: diskMountPointDisplay.value },
+]);
+
 const diskInfoItems = computed(() => [
   { key: 'size', label: t('statusMonitor.diskSizeLabel'), value: diskSizeDisplay.value },
   { key: 'available', label: t('statusMonitor.diskAvailableLabel'), value: diskAvailableDisplay.value },
   { key: 'mount', label: t('statusMonitor.diskMountLabel'), value: diskMountPointDisplay.value },
   { key: 'used', label: t('statusMonitor.diskUsedPercentLabel'), value: diskPercentDisplay.value },
 ]);
+
+const processSummaryItems = computed(() => [
+  { key: 'total', label: t('statusMonitor.processManager.total'), value: String(processTotalDisplay.value) },
+  { key: 'running', label: t('statusMonitor.processManager.running'), value: String(processRunningDisplay.value) },
+  { key: 'sleeping', label: t('statusMonitor.processManager.sleeping'), value: String(processSleepingDisplay.value) },
+]);
+
+const processPreviewItems = computed<readonly ProcessListItem[]>(() => topProcessPreview.value.slice(0, 4));
 
 const copyIpToClipboard = async (ipAddress: string | null) => {
   if (!ipAddress) return;
@@ -678,56 +742,64 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 }
 
 .monitor-header,
-.monitor-card,
-.monitor-meta-card,
-.metric-strip {
+.monitor-overview,
+.monitor-module,
+.status-monitor__charts {
   border: 1px solid rgba(148, 163, 184, 0.12);
-  background: linear-gradient(180deg, rgba(18, 24, 31, 0.92), rgba(14, 18, 24, 0.92));
+  background:
+    linear-gradient(180deg, rgba(19, 26, 33, 0.96), rgba(11, 16, 22, 0.96)),
+    linear-gradient(90deg, rgba(52, 211, 153, 0.04), transparent 35%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 10px 24px rgba(0, 0, 0, 0.18);
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 16px 30px rgba(0, 0, 0, 0.24);
 }
 
 .monitor-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  border-radius: 18px;
+  display: grid;
+  gap: 14px;
+  border-radius: 20px;
   padding: 14px;
 }
 
-.monitor-header__title-group {
+.monitor-header__identity {
   min-width: 0;
 }
 
-.monitor-header__eyebrow {
+.monitor-header__eyebrow,
+.monitor-module__eyebrow {
   display: inline-block;
-  margin-bottom: 6px;
   color: #7dd3a5;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
-.monitor-header__title-line {
+.monitor-header__title-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  margin-top: 8px;
 }
 
 .monitor-header__title {
   margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.monitor-header__subtitle {
+  margin: 8px 0 0;
+  color: #8fa0b3;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .monitor-header__badge,
-.monitor-card__badge,
-.disk-meta-pill,
+.monitor-module__pill,
+.disk-visual__meta-pill,
 .monitor-chip {
   display: inline-flex;
   align-items: center;
@@ -735,52 +807,60 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   min-height: 28px;
   border-radius: 999px;
   padding: 0 10px;
-  color: #e2fbe9;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   line-height: 1.1;
 }
 
 .monitor-header__badge,
-.monitor-card__badge {
-  border: 1px solid rgba(74, 222, 128, 0.2);
-  background: rgba(24, 79, 51, 0.38);
+.monitor-module__pill {
+  border: 1px solid rgba(74, 222, 128, 0.18);
+  background: rgba(26, 92, 62, 0.34);
+  color: #d7ffe6;
 }
 
 .monitor-chip {
   border: 1px solid rgba(96, 165, 250, 0.18);
   background: rgba(30, 64, 175, 0.2);
+  color: #dbeafe;
 }
 
-.monitor-chip--interactive {
+.monitor-chip--interactive,
+.monitor-overview__item--interactive,
+.monitor-action-button {
   cursor: pointer;
-  transition: border-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+.monitor-chip--interactive:hover,
+.monitor-overview__item--interactive:hover,
+.monitor-action-button:hover {
+  transform: translateY(-1px);
 }
 
 .monitor-chip--interactive:hover {
   border-color: rgba(96, 165, 250, 0.38);
   color: #ffffff;
-  transform: translateY(-1px);
 }
 
 .monitor-chip__label {
   color: #bfdbfe;
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  font-size: 10px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .monitor-chip__value {
-  max-width: 160px;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.monitor-header__actions {
+.monitor-header__status {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 8px;
 }
 
@@ -807,40 +887,54 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   box-shadow: 0 0 10px rgba(74, 222, 128, 0.7);
 }
 
-.monitor-meta-grid {
+.monitor-overview {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  border-radius: 20px;
+  padding: 10px;
+}
+
+.monitor-overview__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
-.monitor-meta-card {
+.monitor-overview__item {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
   border-radius: 14px;
-  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02)),
+    radial-gradient(circle at top left, rgba(52, 211, 153, 0.05), transparent 60%);
+  padding: 11px 12px;
   text-align: left;
 }
 
-.monitor-meta-card--interactive {
-  cursor: pointer;
-  transition: border-color 0.2s ease, transform 0.2s ease;
-}
-
-.monitor-meta-card--interactive:hover {
+.monitor-overview__item--interactive:hover {
   border-color: rgba(96, 165, 250, 0.32);
-  transform: translateY(-1px);
 }
 
-.monitor-meta-card__label {
-  color: #8fa0b3;
+.monitor-overview__label,
+.usage-lane__helper,
+.memory-stat__label,
+.network-stat__footer,
+.disk-stat__label,
+.disk-foot-item__label,
+.process-summary-item__label {
+  color: #8ea0b1;
   font-size: 11px;
+}
+
+.monitor-overview__label {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.monitor-meta-card__value {
+.monitor-overview__value {
   overflow: hidden;
   color: #f7fbff;
   font-size: 13px;
@@ -849,158 +943,171 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   text-overflow: ellipsis;
 }
 
-.monitor-rail {
-  display: grid;
-  gap: 8px;
-}
-
-.metric-strip {
-  display: grid;
-  gap: 8px;
-  border-radius: 14px;
-  padding: 12px;
-}
-
-.metric-strip__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.metric-strip__label,
-.metric-strip__helper {
-  color: #91a0b1;
-  font-size: 12px;
-}
-
-.metric-strip__label {
-  font-weight: 600;
-}
-
-.metric-strip__value {
-  color: #f8fbff;
-  font-size: 18px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.metric-strip__track,
-.network-stream__track {
-  position: relative;
-  height: 8px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgba(51, 65, 85, 0.65);
-}
-
-.metric-strip__fill,
-.network-stream__fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: inherit;
-}
-
-.metric-strip__helper {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.metric-strip--cpu .metric-strip__fill {
-  background: linear-gradient(90deg, #38bdf8, #2563eb);
-}
-
-.metric-strip--memory .metric-strip__fill {
-  background: linear-gradient(90deg, #fb7185, #ef4444);
-}
-
-.metric-strip--swap .metric-strip__fill {
-  background: linear-gradient(90deg, #fbbf24, #f59e0b);
-}
-
-.metric-strip--disk .metric-strip__fill {
-  background: linear-gradient(90deg, #86efac, #22c55e);
-}
-
-.monitor-panels {
+.monitor-module-grid {
   display: grid;
   gap: 12px;
 }
 
-.monitor-card {
+.monitor-module {
   display: grid;
   gap: 12px;
   min-width: 0;
-  border-radius: 18px;
+  border-radius: 20px;
   padding: 14px;
-  container-type: inline-size;
 }
 
-.monitor-card__header {
+.monitor-module__heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
 
-.monitor-card__title-group {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 10px;
-}
-
-.monitor-card__icon {
-  display: inline-flex;
-  height: 30px;
-  width: 30px;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.monitor-card__icon--memory {
-  color: #f87171;
-}
-
-.monitor-card__icon--network {
-  color: #60a5fa;
-}
-
-.monitor-card__icon--disk {
-  color: #fbbf24;
-}
-
-.monitor-card__icon--process {
-  color: #fda4af;
-}
-
-.monitor-card__title {
-  margin: 0;
+.monitor-module__title {
+  margin: 6px 0 0;
+  color: #f8fbff;
   font-size: 15px;
-  font-weight: 700;
-  line-height: 1.2;
+  font-weight: 800;
+  line-height: 1.3;
 }
 
-.monitor-card__subtitle {
-  margin: 4px 0 0;
-  color: #8fa0b3;
+.usage-lane-list,
+.memory-stat-stack,
+.network-stat-stack,
+.disk-stat-stack,
+.process-preview-list {
+  display: grid;
+  gap: 8px;
+}
+
+.usage-lane {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 12px;
+}
+
+.usage-lane__index,
+.usage-lane__value,
+.memory-stat__value,
+.disk-stat__value,
+.disk-foot-item__value,
+.process-summary-item__value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.usage-lane__index {
+  color: rgba(226, 232, 240, 0.52);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.usage-lane__content {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.usage-lane__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.usage-lane__label,
+.network-stat__label,
+.process-preview-item__rail {
+  color: #d9e5f1;
   font-size: 12px;
+  font-weight: 700;
 }
 
-.memory-card__content {
+.usage-lane__helper {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.usage-lane__track,
+.network-stat__track,
+.disk-visual__meter {
+  position: relative;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(51, 65, 85, 0.6);
+}
+
+.usage-lane__track,
+.network-stat__track {
+  height: 7px;
+}
+
+.usage-lane__fill,
+.network-stat__fill,
+.disk-visual__meter-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+}
+
+.usage-lane__value {
+  min-width: 52px;
+  color: #f8fbff;
+  font-size: 18px;
+  font-weight: 800;
+  text-align: right;
+}
+
+.usage-lane--cpu .usage-lane__fill {
+  background: linear-gradient(90deg, #7dd3fc, #2563eb);
+}
+
+.usage-lane--memory .usage-lane__fill {
+  background: linear-gradient(90deg, #fb7185, #ef4444);
+}
+
+.usage-lane--swap .usage-lane__fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.usage-lane--disk .usage-lane__fill {
+  background: linear-gradient(90deg, #86efac, #22c55e);
+}
+
+.module-split {
   display: grid;
   gap: 12px;
 }
 
+.memory-ring-panel,
+.network-scope,
+.disk-visual {
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02)),
+    radial-gradient(circle at top left, rgba(52, 211, 153, 0.04), transparent 58%);
+  padding: 12px;
+}
+
+.memory-ring-panel {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 8px;
+}
+
 .memory-ring {
   position: relative;
-  justify-self: center;
-  width: 84px;
-  height: 84px;
+  width: 88px;
+  height: 88px;
   border-radius: 999px;
   padding: 3px;
 }
@@ -1026,52 +1133,33 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   font-weight: 800;
 }
 
-.memory-stats-grid,
-.disk-rate-grid,
-.disk-info-grid {
-  display: grid;
-  gap: 8px;
+.memory-ring-panel__caption {
+  color: #9cb0c2;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .memory-stat,
-.disk-rate-card,
-.disk-info-item,
-.network-stream {
-  border-radius: 12px;
+.network-stat,
+.disk-stat,
+.disk-foot-item,
+.process-summary-item,
+.process-preview-item {
+  min-width: 0;
+  border-radius: 14px;
   border: 1px solid rgba(148, 163, 184, 0.08);
   background: rgba(255, 255, 255, 0.03);
+}
+
+.memory-stat {
   padding: 10px;
-  min-width: 0;
 }
 
-.memory-stat__label,
-.disk-rate-card__label,
-.disk-info-item__label,
-.network-stream__footer,
-.network-stream__label {
-  color: #8fa0b3;
-  font-size: 12px;
-}
-
-.memory-stat__label,
-.network-stream__label {
+.memory-stat__label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-}
-
-.memory-stat__value,
-.disk-rate-card__value,
-.disk-info-item__value,
-.network-stream__value {
-  display: block;
-  margin-top: 6px;
-  overflow-wrap: anywhere;
-  color: #f8fbff;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 18px;
-  font-weight: 800;
-  line-height: 1.15;
 }
 
 .memory-stat__dot {
@@ -1093,92 +1181,200 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   background: #4ade80;
 }
 
-.network-stream-list {
+.memory-stat__value,
+.disk-foot-item__value {
+  display: block;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+  color: #f8fbff;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.network-scope {
   display: grid;
+  gap: 10px;
+}
+
+.network-scope__screen {
+  position: relative;
+  min-height: 118px;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  background:
+    radial-gradient(circle at top, rgba(14, 116, 144, 0.16), transparent 58%),
+    linear-gradient(180deg, rgba(3, 7, 18, 0.92), rgba(15, 23, 42, 0.88));
+}
+
+.network-scope__grid {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(180deg, rgba(148, 163, 184, 0.08) 0 1px, transparent 1px 22px),
+    repeating-linear-gradient(90deg, rgba(148, 163, 184, 0.06) 0 1px, transparent 1px 26px);
+}
+
+.network-scope__line {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  border-radius: 999px;
+  transform: skewX(-24deg);
+}
+
+.network-scope__line--down {
+  background: linear-gradient(90deg, transparent, rgba(52, 211, 153, 0.98) 14%, rgba(52, 211, 153, 0.18));
+  box-shadow: 0 0 14px rgba(52, 211, 153, 0.45);
+}
+
+.network-scope__line--up {
+  background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.98) 18%, rgba(96, 165, 250, 0.16));
+  box-shadow: 0 0 14px rgba(96, 165, 250, 0.4);
+}
+
+.network-scope__stamp {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  color: rgba(226, 232, 240, 0.62);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.network-scope__legend {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.network-stream__top {
+.network-scope__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #dbeafe;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.network-scope__legend-item::before {
+  content: '';
+  width: 10px;
+  height: 2px;
+  border-radius: 999px;
+}
+
+.network-scope__legend-item--down::before {
+  background: #34d399;
+}
+
+.network-scope__legend-item--up::before {
+  background: #60a5fa;
+}
+
+.network-stat {
+  padding: 10px;
+}
+
+.network-stat__top,
+.network-stat__footer,
+.process-preview-item__main {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 
-.network-stream__label i {
+.network-stat__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.network-stat__label i {
   width: 12px;
   text-align: center;
 }
 
-.network-stream--down .network-stream__fill {
+.network-stat__value,
+.disk-stat__value {
+  color: #f8fbff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.network-stat__footer {
+  margin-top: 8px;
+}
+
+.network-stat--down .network-stat__fill {
   background: linear-gradient(90deg, #34d399, #10b981);
 }
 
-.network-stream--up .network-stream__fill {
+.network-stat--up .network-stat__fill {
   background: linear-gradient(90deg, #60a5fa, #2563eb);
 }
 
-.network-stream__footer {
-  margin-top: 8px;
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
+.disk-visual {
+  display: grid;
+  gap: 10px;
+  align-content: start;
 }
 
-.disk-meta-row {
+.disk-visual__device {
+  color: #f8fbff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.disk-visual__caption {
+  color: #9db0c1;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.disk-visual__meter {
+  height: 8px;
+}
+
+.disk-visual__meter-fill {
+  width: 100%;
+  background: linear-gradient(90deg, #fbbf24, #22c55e);
+}
+
+.disk-visual__meta {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.disk-meta-pill {
+.disk-visual__meta-pill {
   border: 1px solid rgba(251, 191, 36, 0.14);
   background: rgba(120, 53, 15, 0.25);
   color: #fde68a;
 }
 
-.disk-card__body {
-  display: grid;
-  gap: 12px;
+.disk-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
 }
 
-.disk-usage-tube {
+.disk-foot-grid {
   display: grid;
-  justify-items: center;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-  padding: 12px;
 }
 
-.disk-usage-tube__inner {
-  position: relative;
-  width: 26px;
-  height: 90px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(203, 213, 225, 0.9));
-}
-
-.disk-usage-tube__fill {
-  position: absolute;
-  inset: auto 0 0;
-  background: linear-gradient(180deg, rgba(134, 239, 172, 0.9), rgba(34, 197, 94, 1));
-}
-
-.disk-usage-tube__value {
-  color: #f8fbff;
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.disk-info-item__label {
-  display: block;
-}
-
-.disk-info-item__value {
-  margin-top: 4px;
+.disk-foot-item {
+  padding: 10px;
 }
 
 .monitor-action-button {
@@ -1193,26 +1389,25 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   color: #dbeafe;
   font-size: 12px;
   font-weight: 700;
-  cursor: pointer;
 }
 
-.process-summary-grid {
+.monitor-action-button:hover {
+  border-color: rgba(96, 165, 250, 0.42);
+  color: #ffffff;
+}
+
+.process-summary-strip {
   display: grid;
-  gap: 8px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .process-summary-item {
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.08);
-  background: rgba(255, 255, 255, 0.03);
   padding: 10px;
 }
 
 .process-summary-item__label {
   display: block;
-  color: #8fa0b3;
-  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1222,30 +1417,45 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   display: block;
   margin-top: 6px;
   color: #f8fbff;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 20px;
   font-weight: 800;
 }
 
-.process-preview-list {
+.process-preview-item {
   display: grid;
   gap: 8px;
+  padding: 10px 12px;
 }
 
-.process-preview-item {
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-  padding: 10px;
-}
-
-.process-preview-item__meta {
+.process-preview-item__rail {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   color: #9fb0bf;
-  font-size: 12px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.process-preview-item__main {
+  min-width: 0;
+}
+
+.process-preview-item__command {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #f8fbff;
+  font-size: 13px;
+}
+
+.process-preview-item__stats {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .process-preview-item__cpu {
@@ -1254,15 +1464,6 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
 .process-preview-item__mem {
   color: #fde68a;
-}
-
-.process-preview-item__command {
-  margin-top: 8px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #f8fbff;
-  font-size: 13px;
 }
 
 .process-preview-empty {
@@ -1274,89 +1475,72 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   text-align: center;
 }
 
-@container (min-width: 560px) {
-  .monitor-rail {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.status-monitor__charts {
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+@container (min-width: 520px) {
+  .monitor-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
   }
 
-  .memory-card__content,
-  .disk-card__body {
-    grid-template-columns: minmax(90px, 112px) minmax(0, 1fr);
-    align-items: center;
+  .monitor-header__status {
+    justify-content: flex-end;
   }
 
-  .memory-stats-grid,
-  .disk-rate-grid,
-  .disk-info-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .module-split--memory,
+  .module-split--network,
+  .module-split--disk {
+    grid-template-columns: minmax(150px, 0.92fr) minmax(0, 1.08fr);
+    align-items: stretch;
   }
 }
 
 @container (min-width: 760px) {
-  .monitor-panels {
+  .monitor-module-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .monitor-card--memory {
+  .monitor-module--usage,
+  .monitor-module--process {
     grid-column: 1 / -1;
   }
-
-  .memory-stats-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
-@container (min-width: 1040px) {
-  .monitor-panels {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .monitor-card--memory {
-    grid-column: auto;
-  }
-
-  .monitor-card--process {
-    grid-column: 2 / span 2;
-  }
-
-  .disk-info-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-@container (max-width: 420px) {
-  .monitor-header {
-    flex-direction: column;
-  }
-
-  .monitor-header__actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-
+@container (max-width: 440px) {
   .monitor-chip {
     max-width: 100%;
   }
 
   .monitor-chip__value,
-  .monitor-meta-card__value,
-  .metric-strip__helper,
-  .disk-info-item__value {
+  .monitor-overview__value,
+  .usage-lane__helper,
+  .disk-foot-item__value {
     white-space: normal;
   }
 
-  .metric-strip__top,
-  .monitor-card__header,
-  .network-stream__top,
-  .network-stream__footer {
+  .usage-lane {
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+
+  .usage-lane__value {
+    grid-column: 2;
+  }
+
+  .network-stat__top,
+  .network-stat__footer,
+  .process-preview-item__main {
     flex-direction: column;
     align-items: flex-start;
   }
+}
 
-  .memory-stats-grid,
-  .disk-rate-grid,
-  .disk-info-grid,
-  .process-summary-grid {
+@container (max-width: 360px) {
+  .monitor-overview__row,
+  .disk-foot-grid,
+  .process-summary-strip {
     grid-template-columns: 1fr;
   }
 }

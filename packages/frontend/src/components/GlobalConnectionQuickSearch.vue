@@ -23,6 +23,24 @@ const inputRef = ref<HTMLInputElement | null>(null);
 const query = ref('');
 const selectedIndex = ref(0);
 
+const tagLookup = computed(() => {
+  const map = new Map<number, string>();
+  tags.value.forEach((tag) => {
+    map.set(tag.id, tag.name);
+  });
+  return map;
+});
+
+const getConnectionTagNames = (connection: ConnectionInfo): string[] => {
+  if (!connection.tag_ids?.length) {
+    return [];
+  }
+
+  return connection.tag_ids
+    .map((tagId) => tagLookup.value.get(tagId))
+    .filter((tagName): tagName is string => Boolean(tagName));
+};
+
 const results = computed(() => searchConnections(props.connections, query.value, 8, {
   getAdditionalFields: getConnectionTagNames,
 }));
@@ -97,24 +115,6 @@ const handleKeyDown = (event: KeyboardEvent) => {
 };
 
 const getConnectionLabel = (connection: ConnectionInfo): string => connection.name || connection.host;
-
-const tagLookup = computed(() => {
-  const map = new Map<number, string>();
-  tags.value.forEach((tag) => {
-    map.set(tag.id, tag.name);
-  });
-  return map;
-});
-
-const getConnectionTagNames = (connection: ConnectionInfo): string[] => {
-  if (!connection.tag_ids?.length) {
-    return [];
-  }
-
-  return connection.tag_ids
-    .map((tagId) => tagLookup.value.get(tagId))
-    .filter((tagName): tagName is string => Boolean(tagName));
-};
 </script>
 
 <template>
