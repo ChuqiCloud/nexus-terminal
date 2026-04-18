@@ -41,6 +41,19 @@ export function createStatusMonitorManager(sessionId: string, wsDeps: StatusMoni
 
 
     // --- WebSocket 消息处理 ---
+    const normalizeCpuCorePercents = (values: unknown): number[] | undefined => {
+        if (!Array.isArray(values)) {
+            return undefined;
+        }
+
+        return values.map(value => {
+            if (typeof value !== 'number' || !Number.isFinite(value)) {
+                return 0;
+            }
+            return Math.max(0, Math.min(100, Number(value.toFixed(1))));
+        });
+    };
+
     const handleStatusUpdate = (payload: MessagePayload, message?: WebSocketMessage) => {
         // 检查消息是否属于此会话
         if (message?.sessionId && message.sessionId !== sessionId) {
@@ -49,7 +62,10 @@ export function createStatusMonitorManager(sessionId: string, wsDeps: StatusMoni
 
         // console.debug(`[会话 ${sessionId}][状态监控模块] 收到 status_update:`, JSON.stringify(payload));
         if (payload?.status) {
-            const newStatus: ServerStatus = payload.status;
+            const newStatus: ServerStatus = {
+                ...payload.status,
+                cpuCorePercents: normalizeCpuCorePercents(payload.status.cpuCorePercents),
+            };
             serverStatus.value = newStatus;
             statusError.value = null; // 收到有效状态时清除错误
 

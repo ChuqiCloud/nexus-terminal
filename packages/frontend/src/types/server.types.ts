@@ -13,6 +13,7 @@ export interface ProcessListItem {
 export interface ServerStatus {
     cpuPercent?: number;
     cpuCores?: number;
+    cpuCorePercents?: readonly number[];
     memPercent?: number;
     memUsed?: number; // MB
     memTotal?: number; // MB

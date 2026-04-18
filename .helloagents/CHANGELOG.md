@@ -2,7 +2,22 @@
 
 ## [Unreleased]
 
-- **[frontend]**: 支持将快捷指令从一个标签组拖到另一个标签组内，允许把未标记命令直接拖入目标标签组，并修正 `manual / name / last_used` 排序按钮状态映射 — by yinjianm
+- **[frontend]**: 将状态监控中的 CPU 卡片升级为总 CPU `canvas` 历史图 + 每核心实时条卡，并在极窄侧栏下自动切换为单列布局 — by yinjianm
+  - 方案: [202604190351_status-monitor-cpu-total-and-per-core](archive/2026-04/202604190351_status-monitor-cpu-total-and-per-core/)
+
+- **[backend]**: 扩展 `StatusMonitorService` 的 `/proc/stat` 采样链路，新增 `cpuCorePercents` 每核心实时占用字段并与总 CPU 百分比一同下发 — by yinjianm
+  - 方案: [202604190351_status-monitor-cpu-total-and-per-core](archive/2026-04/202604190351_status-monitor-cpu-total-and-per-core/)
+
+- **[frontend]**: 将状态监控里的网络历史图和网络统计表固定改为上下堆叠，并通过压缩图表 canvas、表格间距与统计项内边距，把整个网络模块限制在 350px 以内 — by yinjianm
+  - 方案: [202604190358_status-monitor-network-vertical-stack](archive/2026-04/202604190358_status-monitor-network-vertical-stack/)
+
+- **[frontend]**: 为进程管理详细视图补充可点击表头排序，支持按 `PID / USER / STATE / CPU / MEM / START / COMMAND` 列切换升降序，并拉开关闭按钮与刷新区的安全间距 — by yinjianm
+  - 方案: [202604190352_process-manager-table-sort-and-close-spacing](archive/2026-04/202604190352_process-manager-table-sort-and-close-spacing/)
+
+- **[frontend]**: 将状态监控“进程管理”的总数从独立摘要项提升为标题区右侧胶囊，并将默认摘要区收敛为“运行中 / 休眠中”两项，减少默认卡片纵向占用 - by yinjianm
+  - 方案: [202604190349_process-total-pill-display](archive/2026-04/202604190349_process-total-pill-display/)
+
+- **[frontend]**: 支持将快捷指令从一个标签组拖到另一个标签组内，允许把未标记命令直接拖入目标标签组，并修正 `manual / name / last_used` 排序按钮状态映射 - by yinjianm
   - 方案: [202604190322_quickcommands-cross-group-drag-move](archive/2026-04/202604190322_quickcommands-cross-group-drag-move/)
 
 - **[frontend]**: 将状态监控中的内存与网络卡片响应式阈值统一收紧到 250px，并把网络卡片的 SVG 趋势线升级为可 hover 查看最近 24 个采样点的 canvas 历史图 — by yinjianm
@@ -82,7 +97,10 @@
   - 方案: [202603250614_terminal-ansi-color-effects](archive/2026-03/202603250614_terminal-ansi-color-effects/)
 
 ### 快速修改
-- **[frontend]**: 将状态监控模块区从默认并排调整回基于常用 300px 右栏比例的单列布局，并用弹性高度把普通卡控制在约 200、进程管理控制在约 400 的视觉比例 — by yinjianm
+- **[frontend]**: 将状态监控“进程管理”的“运行中 / 休眠中”也收纳进标题区胶囊组，和“总数”一起以内联小显示呈现，不再保留独立摘要行 - by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/StatusMonitor.vue:217-230,571-575,875-880
+- **[frontend]**: 将状态监控模块区从默认并排调整回基于常用 300px 右栏比例的单列布局，并用弹性高度把普通卡控制在约 200、进程管理控制在约 400 的视觉比例 - by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/StatusMonitor.vue
 - **[frontend]**: 将状态监控模块区从大断点固定分列改为更高密度的 auto-fit 自适应网格，让内存/网络/磁盘在正常宽度下默认并排，只有非常窄时才回落为单列 — by yinjianm

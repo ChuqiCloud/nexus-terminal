@@ -259,22 +259,22 @@ onBeforeUnmount(() => {
 <style scoped>
 .network-history-chart {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
-  height: 100%;
+  height: auto;
   border-radius: 16px;
   border: 1px solid rgba(148, 163, 184, 0.08);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02)),
     radial-gradient(circle at top left, rgba(59, 130, 246, 0.06), transparent 62%);
-  padding: 12px;
+  padding: 10px;
 }
 
 .network-history-chart__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 .network-history-chart__subtitle {
@@ -327,7 +327,7 @@ onBeforeUnmount(() => {
 .network-history-chart__canvas {
   min-width: 0;
   width: 100%;
-  height: 164px;
+  height: 108px;
   overflow: hidden;
 }
 

@@ -58,30 +58,34 @@
       </header>
 
       <section class="monitor-module monitor-module--usage">
-        <div class="cpu-module__hero">
+        <div class="monitor-module__heading">
           <div>
             <span class="monitor-module__eyebrow">{{ t('statusMonitor.cpuLabel') }}</span>
-            <h5 class="monitor-module__title">CPU</h5>
+            <h5 class="monitor-module__title">{{ t('statusMonitor.cpuUsageTitle') }}</h5>
           </div>
-          <div class="cpu-module__sparkline" aria-hidden="true">
-            <svg viewBox="0 0 160 28" preserveAspectRatio="none">
-              <path class="cpu-module__sparkline-path" :d="cpuSparklinePath"></path>
-            </svg>
-          </div>
+          <span class="monitor-module__pill">{{ displayCpuCores }}</span>
         </div>
 
-        <div class="usage-lane-list">
-          <article class="usage-lane usage-lane--cpu usage-lane--solo">
-            <div class="usage-lane__content">
-              <div class="usage-lane__meta">
-                <span class="usage-lane__label">{{ displayCpuCores }}</span>
-                <span class="usage-lane__value-inline">{{ cpuUsageLane.value }}</span>
+        <div class="module-split module-split--cpu">
+          <StatusMonitorCpuHistoryChart :cpu-history="currentCpuHistory" />
+
+          <div class="cpu-core-grid">
+            <article
+              v-for="item in cpuCoreItems"
+              :key="item.key"
+              class="usage-lane usage-lane--cpu"
+            >
+              <div class="usage-lane__content">
+                <div class="usage-lane__meta">
+                  <span class="usage-lane__label">{{ item.label }}</span>
+                  <span class="usage-lane__value-inline">{{ item.value }}</span>
+                </div>
+                <div class="usage-lane__track">
+                  <span class="usage-lane__fill" :style="{ width: `${item.percent}%` }"></span>
+                </div>
               </div>
-              <div class="usage-lane__track">
-                <span class="usage-lane__fill" :style="{ width: `${cpuUsageLane.percent}%` }"></span>
-              </div>
-            </div>
-          </article>
+            </article>
+          </div>
         </div>
       </section>
 
@@ -219,15 +223,15 @@
               <span class="monitor-module__eyebrow">{{ t('statusMonitor.processManager.title') }}</span>
               <h5 class="monitor-module__title">{{ t('statusMonitor.processManager.subtitle') }}</h5>
             </div>
-            <button class="monitor-action-button" type="button" @click="isProcessManagerVisible = true">
-              {{ t('statusMonitor.processManager.viewAll') }}
-            </button>
-          </div>
-
-          <div class="process-summary-strip">
-            <div v-for="item in processSummaryItems" :key="item.key" class="process-summary-item">
-              <span class="process-summary-item__label">{{ item.label }}</span>
-              <span class="process-summary-item__value">{{ item.value }}</span>
+            <div class="monitor-module__heading-actions">
+              <div class="process-summary-pills">
+                <span v-for="item in processSummaryItems" :key="item.key" class="monitor-module__pill">
+                  {{ item.label }} {{ item.value }}
+                </span>
+              </div>
+              <button class="monitor-action-button" type="button" @click="isProcessManagerVisible = true">
+                {{ t('statusMonitor.processManager.viewAll') }}
+              </button>
             </div>
           </div>
 
@@ -274,6 +278,7 @@ import { computed, ref, watch, type CSSProperties, type PropType } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import ProcessManagerModal from './ProcessManagerModal.vue';
+import StatusMonitorCpuHistoryChart from './StatusMonitorCpuHistoryChart.vue';
 import StatusCharts from './StatusCharts.vue';
 import StatusMonitorNetworkHistoryChart from './StatusMonitorNetworkHistoryChart.vue';
 import { useSessionStore } from '../stores/session.store';
@@ -509,28 +514,29 @@ const systemCardMetaItems = computed<MonitorOverviewItem[]>(() => [
   { key: 'uptime', label: t('statusMonitor.uptimeLabel'), value: uptimeDisplay.value },
 ]);
 
-const cpuUsageLane = computed(() => ({
-  value: `${Math.round(displayCpuPercent.value)}%`,
-  percent: displayCpuPercent.value,
-}));
+const cpuCoreItems = computed(() => {
+  const rawPercents = currentServerStatus.value?.cpuCorePercents;
+  const fallbackCoreCount = (() => {
+    const currentCores = currentServerStatus.value?.cpuCores;
+    if (typeof currentCores !== 'number' || !Number.isFinite(currentCores) || currentCores <= 0) {
+      return 0;
+    }
+    return Math.round(currentCores);
+  })();
 
-const buildSparklinePath = (samples: readonly number[], width: number, height: number, usableHeight: number): string => {
-  if (samples.length === 0) {
-    return `M0 ${height - 4} L${width} ${height - 4}`;
-  }
+  const normalizedPercents = Array.isArray(rawPercents) && rawPercents.length > 0
+    ? rawPercents
+    : Array.from({ length: fallbackCoreCount }, () => 0);
 
-  const step = samples.length > 1 ? width / (samples.length - 1) : width;
-
-  return samples.map((value, index) => {
-    const x = Number((index * step).toFixed(2));
-    const y = Number((height - 4 - (value / 100) * usableHeight).toFixed(2));
-    return `${index === 0 ? 'M' : 'L'}${x} ${y}`;
-  }).join(' ');
-};
-
-const cpuSparklinePath = computed(() => {
-  const samples = currentCpuHistory.value.slice(-24).map(value => clampPercent(value ?? 0));
-  return buildSparklinePath(samples, 160, 28, 18);
+  return normalizedPercents.map((percent, index) => {
+    const clampedPercent = clampPercent(percent);
+    return {
+      key: `cpu-core-${index + 1}`,
+      label: t('statusMonitor.cpuCoreLabel', { index: index + 1 }),
+      value: `${Math.round(clampedPercent)}%`,
+      percent: clampedPercent,
+    };
+  });
 });
 
 const networkFlowItems = computed(() => [
@@ -864,6 +870,21 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   gap: 12px;
 }
 
+.monitor-module__heading-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.process-summary-pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .monitor-module__title {
   margin: 6px 0 0;
   color: #f8fbff;
@@ -872,36 +893,6 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   line-height: 1.3;
 }
 
-.cpu-module__hero {
-  display: grid;
-  grid-template-columns: auto minmax(96px, 1fr);
-  align-items: center;
-  gap: 12px;
-}
-
-.cpu-module__sparkline {
-  height: 28px;
-  min-width: 0;
-  border-top: 1px solid rgba(148, 163, 184, 0.14);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-}
-
-.cpu-module__sparkline svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.cpu-module__sparkline-path {
-  fill: none;
-  stroke: #7dd3fc;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 0 6px rgba(125, 211, 252, 0.28));
-}
-
-.usage-lane-list,
 .memory-stat-stack,
 .network-stat-stack,
 .disk-stat-stack,
@@ -994,6 +985,16 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   background: linear-gradient(90deg, #7dd3fc, #2563eb);
 }
 
+.cpu-core-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  align-content: start;
+  gap: 8px;
+  max-height: 208px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
 .module-split {
   display: grid;
   gap: 12px;
@@ -1004,9 +1005,20 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   align-items: stretch;
 }
 
-.module-split--network {
-  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+.module-split--cpu {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   align-items: stretch;
+}
+
+.module-split--network {
+  grid-template-columns: 1fr;
+  align-content: start;
+  gap: 8px;
+}
+
+.monitor-module--network {
+  max-height: 350px;
+  gap: 8px;
 }
 
 .memory-ring-panel,
@@ -1126,9 +1138,9 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
 .network-table {
   display: grid;
-  gap: 8px;
-  height: 100%;
-  padding: 10px 12px;
+  gap: 6px;
+  height: auto;
+  padding: 8px 10px;
 }
 
 .network-table__header,
@@ -1143,15 +1155,19 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 }
 
 .network-table__header {
-  padding-bottom: 8px;
+  padding-bottom: 6px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.1);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 .network-table__columns {
-  padding-top: 2px;
+  padding-top: 0;
   color: #9cb0c2;
   font-weight: 700;
+}
+
+.network-stat-stack {
+  gap: 6px;
 }
 
 .network-table__columns span,
@@ -1171,7 +1187,7 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   border-radius: 10px;
   border: 1px solid rgba(148, 163, 184, 0.06);
   background: rgba(255, 255, 255, 0.03);
-  padding: 10px 10px;
+  padding: 8px 10px;
 }
 
 .network-stat__label {
@@ -1189,7 +1205,7 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 .network-stat__value,
 .network-stat__total {
   color: #f8fbff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
@@ -1337,31 +1353,6 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   color: #ffffff;
 }
 
-.process-summary-strip {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.process-summary-item {
-  padding: 10px;
-}
-
-.process-summary-item__label {
-  display: block;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.process-summary-item__value {
-  display: block;
-  margin-top: 6px;
-  color: #f8fbff;
-  font-size: 20px;
-  font-weight: 800;
-}
-
 .process-preview-item {
   display: grid;
   gap: 8px;
@@ -1448,12 +1439,17 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
 @container (max-width: 250px) {
   .module-split--memory,
+  .module-split--cpu,
   .module-split--network,
   .disk-compact-top {
     grid-template-columns: 1fr;
   }
 
   .memory-stat-stack {
+    grid-template-columns: 1fr;
+  }
+
+  .cpu-core-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1487,9 +1483,6 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
     white-space: normal;
   }
 
-  .cpu-module__hero {
-    grid-template-columns: 1fr;
-  }
 }
 
 @container (max-width: 360px) {

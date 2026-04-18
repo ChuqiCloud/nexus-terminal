@@ -7,6 +7,9 @@ import { useUiNotificationsStore } from '../stores/uiNotifications.store';
 import type { ProcessListItem } from '../types/server.types';
 import type { ProcessListResponsePayload, ProcessSignalResponsePayload, WebSocketMessage } from '../types/websocket.types';
 
+type ProcessSortKey = 'pid' | 'user' | 'state' | 'cpu' | 'mem' | 'startedAt' | 'command';
+type ProcessSortDirection = 'asc' | 'desc';
+
 const props = defineProps<{
   isVisible: boolean;
   sessionId: string | null;
@@ -30,6 +33,8 @@ const runningProcesses = ref(0);
 const sleepingProcesses = ref(0);
 const lastUpdatedAt = ref<number | null>(null);
 const processError = ref<string | null>(null);
+const sortKey = ref<ProcessSortKey | null>(null);
+const sortDirection = ref<ProcessSortDirection>('asc');
 
 let unregisterListResponse: (() => void) | null = null;
 let unregisterListError: (() => void) | null = null;
@@ -54,6 +59,67 @@ const filteredProcesses = computed(() => {
   });
 });
 
+const defaultSortDirections: Record<ProcessSortKey, ProcessSortDirection> = {
+  pid: 'asc',
+  user: 'asc',
+  state: 'asc',
+  cpu: 'desc',
+  mem: 'desc',
+  startedAt: 'desc',
+  command: 'asc',
+};
+
+const compareText = (left: string, right: string) =>
+  left.localeCompare(right, undefined, { sensitivity: 'base', numeric: true });
+
+const sortedProcesses = computed(() => {
+  const currentSortKey = sortKey.value;
+  if (!currentSortKey) {
+    return filteredProcesses.value;
+  }
+
+  const directionFactor = sortDirection.value === 'asc' ? 1 : -1;
+
+  return filteredProcesses.value
+    .map((item, index) => ({ item, index }))
+    .sort((leftEntry, rightEntry) => {
+      const left = leftEntry.item;
+      const right = rightEntry.item;
+
+      let result = 0;
+      switch (currentSortKey) {
+        case 'pid':
+          result = left.pid - right.pid;
+          break;
+        case 'cpu':
+          result = left.cpu - right.cpu;
+          break;
+        case 'mem':
+          result = left.memMb - right.memMb;
+          break;
+        case 'user':
+          result = compareText(left.user, right.user);
+          break;
+        case 'state':
+          result = compareText(left.state, right.state);
+          break;
+        case 'startedAt':
+          result = compareText(left.startedAt, right.startedAt);
+          break;
+        case 'command':
+          result = compareText(left.command, right.command);
+          break;
+      }
+
+      if (result !== 0) {
+        return result * directionFactor;
+      }
+
+      return leftEntry.index - rightEntry.index;
+    })
+    .map(({ item }) => item);
+});
+
 const formatMemoryMb = (value: number): string => {
   if (!Number.isFinite(value)) {
     return t('statusMonitor.notAvailable');
@@ -70,6 +136,38 @@ const lastUpdatedText = computed(() => {
   }
   return new Date(lastUpdatedAt.value).toLocaleTimeString();
 });
+
+const toggleSort = (key: ProcessSortKey) => {
+  if (sortKey.value === key) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
+    return;
+  }
+
+  sortKey.value = key;
+  sortDirection.value = defaultSortDirections[key];
+};
+
+const isSortedBy = (key: ProcessSortKey) => sortKey.value === key;
+
+const getSortIcon = (key: ProcessSortKey) => {
+  if (!isSortedBy(key)) {
+    return 'fas fa-sort';
+  }
+
+  return sortDirection.value === 'asc' ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+};
+
+const getSortLabel = (key: ProcessSortKey, label: string) => {
+  if (!isSortedBy(key)) {
+    return label;
+  }
+
+  return `${label} - ${
+    sortDirection.value === 'asc'
+      ? t('common.sortAscending', '升序')
+      : t('common.sortDescending', '降序')
+  }`;
+};
 
 const stateTone = (state: string) => {
   switch (state) {
@@ -285,25 +383,102 @@ onUnmounted(() => {
       </div>
 
       <div v-else class="process-table-wrap">
-        <div v-if="!isLoading && filteredProcesses.length === 0" class="process-state">
+        <div v-if="!isLoading && sortedProcesses.length === 0" class="process-state">
           {{ t('statusMonitor.processManager.empty') }}
         </div>
 
         <table v-else class="process-table">
           <thead>
             <tr>
-              <th>{{ t('statusMonitor.processManager.columns.pid') }}</th>
-              <th>{{ t('statusMonitor.processManager.columns.user') }}</th>
-              <th>{{ t('statusMonitor.processManager.columns.state') }}</th>
-              <th>{{ t('statusMonitor.processManager.columns.cpu') }}</th>
-              <th>{{ t('statusMonitor.processManager.columns.mem') }}</th>
-              <th>{{ t('statusMonitor.processManager.columns.start') }}</th>
-              <th>{{ t('statusMonitor.processManager.columns.command') }}</th>
+              <th>
+                <button
+                  class="process-sort-button"
+                  type="button"
+                  :aria-label="getSortLabel('pid', t('statusMonitor.processManager.columns.pid'))"
+                  :title="getSortLabel('pid', t('statusMonitor.processManager.columns.pid'))"
+                  @click="toggleSort('pid')"
+                >
+                  <span>{{ t('statusMonitor.processManager.columns.pid') }}</span>
+                  <i :class="[getSortIcon('pid'), 'process-sort-button__icon', { 'process-sort-button__icon--active': isSortedBy('pid') }]"></i>
+                </button>
+              </th>
+              <th>
+                <button
+                  class="process-sort-button"
+                  type="button"
+                  :aria-label="getSortLabel('user', t('statusMonitor.processManager.columns.user'))"
+                  :title="getSortLabel('user', t('statusMonitor.processManager.columns.user'))"
+                  @click="toggleSort('user')"
+                >
+                  <span>{{ t('statusMonitor.processManager.columns.user') }}</span>
+                  <i :class="[getSortIcon('user'), 'process-sort-button__icon', { 'process-sort-button__icon--active': isSortedBy('user') }]"></i>
+                </button>
+              </th>
+              <th>
+                <button
+                  class="process-sort-button"
+                  type="button"
+                  :aria-label="getSortLabel('state', t('statusMonitor.processManager.columns.state'))"
+                  :title="getSortLabel('state', t('statusMonitor.processManager.columns.state'))"
+                  @click="toggleSort('state')"
+                >
+                  <span>{{ t('statusMonitor.processManager.columns.state') }}</span>
+                  <i :class="[getSortIcon('state'), 'process-sort-button__icon', { 'process-sort-button__icon--active': isSortedBy('state') }]"></i>
+                </button>
+              </th>
+              <th>
+                <button
+                  class="process-sort-button"
+                  type="button"
+                  :aria-label="getSortLabel('cpu', t('statusMonitor.processManager.columns.cpu'))"
+                  :title="getSortLabel('cpu', t('statusMonitor.processManager.columns.cpu'))"
+                  @click="toggleSort('cpu')"
+                >
+                  <span>{{ t('statusMonitor.processManager.columns.cpu') }}</span>
+                  <i :class="[getSortIcon('cpu'), 'process-sort-button__icon', { 'process-sort-button__icon--active': isSortedBy('cpu') }]"></i>
+                </button>
+              </th>
+              <th>
+                <button
+                  class="process-sort-button"
+                  type="button"
+                  :aria-label="getSortLabel('mem', t('statusMonitor.processManager.columns.mem'))"
+                  :title="getSortLabel('mem', t('statusMonitor.processManager.columns.mem'))"
+                  @click="toggleSort('mem')"
+                >
+                  <span>{{ t('statusMonitor.processManager.columns.mem') }}</span>
+                  <i :class="[getSortIcon('mem'), 'process-sort-button__icon', { 'process-sort-button__icon--active': isSortedBy('mem') }]"></i>
+                </button>
+              </th>
+              <th>
+                <button
+                  class="process-sort-button"
+                  type="button"
+                  :aria-label="getSortLabel('startedAt', t('statusMonitor.processManager.columns.start'))"
+                  :title="getSortLabel('startedAt', t('statusMonitor.processManager.columns.start'))"
+                  @click="toggleSort('startedAt')"
+                >
+                  <span>{{ t('statusMonitor.processManager.columns.start') }}</span>
+                  <i :class="[getSortIcon('startedAt'), 'process-sort-button__icon', { 'process-sort-button__icon--active': isSortedBy('startedAt') }]"></i>
+                </button>
+              </th>
+              <th>
+                <button
+                  class="process-sort-button"
+                  type="button"
+                  :aria-label="getSortLabel('command', t('statusMonitor.processManager.columns.command'))"
+                  :title="getSortLabel('command', t('statusMonitor.processManager.columns.command'))"
+                  @click="toggleSort('command')"
+                >
+                  <span>{{ t('statusMonitor.processManager.columns.command') }}</span>
+                  <i :class="[getSortIcon('command'), 'process-sort-button__icon', { 'process-sort-button__icon--active': isSortedBy('command') }]"></i>
+                </button>
+              </th>
               <th>{{ t('statusMonitor.processManager.columns.actions') }}</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in filteredProcesses" :key="item.pid">
+            <tr v-for="item in sortedProcesses" :key="item.pid">
               <td class="process-table__mono">{{ item.pid }}</td>
               <td>{{ item.user }}</td>
               <td>
@@ -374,9 +549,21 @@ onUnmounted(() => {
   right: 14px;
   border: none;
   background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   color: #cbd5e1;
   font-size: 18px;
   cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.process-modal-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fbff;
 }
 
 .process-modal-toolbar {
@@ -384,6 +571,7 @@ onUnmounted(() => {
   gap: 12px;
   align-items: center;
   justify-content: space-between;
+  padding-right: 52px;
 }
 
 .process-modal-search {
@@ -505,6 +693,30 @@ onUnmounted(() => {
   text-transform: uppercase;
 }
 
+.process-sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.process-sort-button__icon {
+  color: rgba(159, 176, 191, 0.56);
+  font-size: 11px;
+}
+
+.process-sort-button__icon--active {
+  color: #f8fbff;
+}
+
 .process-table__mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
@@ -569,6 +781,7 @@ onUnmounted(() => {
   .process-modal-toolbar {
     flex-direction: column;
     align-items: stretch;
+    padding-right: 52px;
   }
 
   .process-modal-controls {

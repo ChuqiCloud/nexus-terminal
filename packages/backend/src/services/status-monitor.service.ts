@@ -6,6 +6,7 @@ import { settingsService } from '../settings/settings.service';
 interface ServerStatus {
     cpuPercent?: number;
     cpuCores?: number;
+    cpuCorePercents?: number[];
     memPercent?: number;
     memUsed?: number; // MB
     memTotal?: number; // MB
@@ -63,6 +64,16 @@ interface DiskIoStats {
     };
 }
 
+interface CpuTimesSnapshot {
+    total: number;
+    idle: number;
+}
+
+interface ParsedCpuStatSnapshot {
+    overall: CpuTimesSnapshot;
+    perCore: CpuTimesSnapshot[];
+}
+
 const previousNetStats = new Map<string, { rx: number; tx: number; timestamp: number }>();
 const previousDiskStats = new Map<string, { device: string; readBytes: number; writeBytes: number; timestamp: number }>();
 const monthMap: Record<string, string> = {
@@ -82,7 +93,7 @@ const monthMap: Record<string, string> = {
 
 export class StatusMonitorService {
     private clientStates: Map<string, ClientState>;
-    private previousCpuStats = new Map<string, { total: number; idle: number; timestamp: number }>();
+    private previousCpuStats = new Map<string, { overall: CpuTimesSnapshot; perCore: CpuTimesSnapshot[]; timestamp: number }>();
 
     constructor(clientStates: Map<string, ClientState>) {
         this.clientStates = clientStates;
@@ -159,30 +170,38 @@ export class StatusMonitorService {
 
             try {
                 const procStatOutput = await this.executeSshCommand(sshClient, 'cat /proc/stat');
-                const currentCpuTimes = this.parseProcStat(procStatOutput);
+                const currentCpuSnapshot = this.parseProcStat(procStatOutput);
                 const now = Date.now();
 
-                if (currentCpuTimes) {
+                if (currentCpuSnapshot) {
+                    if (currentCpuSnapshot.perCore.length > 0) {
+                        status.cpuCores = currentCpuSnapshot.perCore.length;
+                    }
+
                     const prevCpuStats = this.previousCpuStats.get(sessionId);
                     if (prevCpuStats && prevCpuStats.timestamp < now) {
-                        const totalDiff = currentCpuTimes.total - prevCpuStats.total;
-                        const idleDiff = currentCpuTimes.idle - prevCpuStats.idle;
                         const timeDiffMs = now - prevCpuStats.timestamp;
 
-                        if (totalDiff > 0 && timeDiffMs > 100) {
-                            const usageRatio = 1.0 - (idleDiff / totalDiff);
-                            status.cpuPercent = parseFloat((Math.max(0, Math.min(100, usageRatio * 100))).toFixed(1));
+                        if (timeDiffMs > 100) {
+                            status.cpuPercent = this.calculateCpuPercent(prevCpuStats.overall, currentCpuSnapshot.overall);
+                            status.cpuCorePercents = currentCpuSnapshot.perCore.map((coreSnapshot, index) => {
+                                const previousCore = prevCpuStats.perCore[index];
+                                return previousCore ? this.calculateCpuPercent(previousCore, coreSnapshot) : 0;
+                            });
                         } else {
-                            status.cpuPercent = prevCpuStats.total > 0 ? status.cpuPercent : 0;
+                            status.cpuPercent = 0;
+                            status.cpuCorePercents = currentCpuSnapshot.perCore.map(() => 0);
                         }
                     } else {
                         status.cpuPercent = 0;
+                        status.cpuCorePercents = currentCpuSnapshot.perCore.map(() => 0);
                     }
 
-                    this.previousCpuStats.set(sessionId, { ...currentCpuTimes, timestamp: now });
+                    this.previousCpuStats.set(sessionId, { ...currentCpuSnapshot, timestamp: now });
                 }
             } catch (err) {
                 status.cpuPercent = undefined;
+                status.cpuCorePercents = undefined;
             }
 
             try {
@@ -664,25 +683,57 @@ export class StatusMonitorService {
         });
     }
 
-    private parseProcStat(output: string): { total: number; idle: number } | null {
+    private calculateCpuPercent(previous: CpuTimesSnapshot, current: CpuTimesSnapshot): number {
+        const totalDiff = current.total - previous.total;
+        const idleDiff = current.idle - previous.idle;
+
+        if (totalDiff <= 0) {
+            return 0;
+        }
+
+        const usageRatio = 1.0 - (idleDiff / totalDiff);
+        return parseFloat((Math.max(0, Math.min(100, usageRatio * 100))).toFixed(1));
+    }
+
+    private parseProcStat(output: string): ParsedCpuStatSnapshot | null {
         try {
-            const cpuLine = output.split('\n').find(line => line.startsWith('cpu '));
-            if (!cpuLine) {
+            const cpuLines = output
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => /^cpu(?:\d+)?\s+/.test(line));
+
+            if (cpuLines.length === 0) {
                 return null;
             }
 
-            const fields = cpuLine.trim().split(/\s+/).slice(1).map(Number);
-            if (fields.length < 4 || fields.slice(0, 4).some(isNaN)) {
+            let overall: CpuTimesSnapshot | null = null;
+            const perCore: CpuTimesSnapshot[] = [];
+
+            for (const cpuLine of cpuLines) {
+                const parts = cpuLine.split(/\s+/);
+                const cpuLabel = parts[0];
+                const fields = parts.slice(1).map(Number);
+                if (fields.length < 4 || fields.slice(0, 4).some(isNaN)) {
+                    continue;
+                }
+
+                const snapshot: CpuTimesSnapshot = {
+                    idle: fields[3] + (fields[4] ?? 0),
+                    total: fields.reduce((sum, value) => sum + (isNaN(value) ? 0 : value), 0),
+                };
+
+                if (cpuLabel === 'cpu') {
+                    overall = snapshot;
+                } else {
+                    perCore.push(snapshot);
+                }
+            }
+
+            if (!overall) {
                 return null;
             }
 
-            const idle = fields[3];
-            const total = fields.reduce((sum, value) => sum + (isNaN(value) ? 0 : value), 0);
-            if (isNaN(total) || isNaN(idle)) {
-                return null;
-            }
-
-            return { total, idle };
+            return { overall, perCore };
         } catch (e) {
             return null;
         }

@@ -7,6 +7,10 @@
 
 | 时间戳 | 名称 | 类型 | 涉及模块 | 决策 | 结果 |
 |--------|------|------|---------|------|------|
+| 202604190351 | status-monitor-cpu-total-and-per-core | implementation | frontend, backend | status-monitor-cpu-total-and-per-core#D001 | ✅完成 |
+| 202604190358 | status-monitor-network-vertical-stack | implementation | frontend | - | ✅完成 |
+| 202604190352 | process-manager-table-sort-and-close-spacing | implementation | frontend | process-manager-table-sort-and-close-spacing#D001, process-manager-table-sort-and-close-spacing#D002 | ✅完成 |
+| 202604190349 | process-total-pill-display | - | - | - | ✅完成 |
 | 202604190322 | quickcommands-cross-group-drag-move | implementation | frontend | quickcommands-cross-group-drag-move#D001, quickcommands-cross-group-drag-move#D002 | ✅完成 |
 | 202604190319 | status-monitor-memory-network-canvas-history | - | - | - | ✅完成 |
 | 202604190208 | quickcommands-drag-reorder | - | - | - | ✅完成 |
@@ -61,6 +65,9 @@
 ## 按月归档
 
 ### 2026-04
+- [202604190351_status-monitor-cpu-total-and-per-core](./2026-04/202604190351_status-monitor-cpu-total-and-per-core/) - 将状态监控 CPU 卡片升级为总 CPU canvas 历史图，并新增每核心实时条卡与后端 `cpuCorePercents` 采样链路
+- [202604190358_status-monitor-network-vertical-stack](./2026-04/202604190358_status-monitor-network-vertical-stack/) - 将状态监控网络模块固定改为“上方历史图 + 下方统计表”的纵向堆叠，并把总高度限制在 350px 以内
+- [202604190352_process-manager-table-sort-and-close-spacing](./2026-04/202604190352_process-manager-table-sort-and-close-spacing/) - 为进程管理详细视图补充可点击表头排序，并拉开关闭按钮与刷新区的安全间距
 - [202604190322_quickcommands-cross-group-drag-move](./2026-04/202604190322_quickcommands-cross-group-drag-move/) - 支持将快捷指令从一个标签组拖到另一个标签组内，并允许把未标记命令直接拖入目标标签组
 - [202604190319_status-monitor-memory-network-canvas-history](./2026-04/202604190319_status-monitor-memory-network-canvas-history/) - 将状态监控中的内存与网络卡片响应式阈值统一收紧到 250px，并把网络卡片的 SVG 趋势线升级为可 hover 查看最近 24 个采样点的 canvas 历史图
 - [202604190210_connection-card-default-test-button](./2026-04/202604190210_connection-card-default-test-button/) - 将连接管理页 SSH 连接卡片的默认操作区调整为“连接 / 测试 / 更多”，并移除更多菜单中的重复测试入口
