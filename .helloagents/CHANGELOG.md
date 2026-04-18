@@ -2,9 +2,9 @@
 
 ## [Unreleased]
 
-- **[frontend]**: 删除状态监控默认视图中的 CPU 使用率卡与网络速度卡，保留内存 / 磁盘 / 进程管理作为常驻概览，减少右侧窄栏中的重复信息 — by yinjianm
+- **[frontend]**: 移除状态监控底部重复的 CPU / 网络 `chart-panel` 图表区，保留默认概览中的 CPU 与网络卡片，只收掉重复展示 — by yinjianm
   - 类型: 快速修改（无方案包）
-  - 文件: packages/frontend/src/components/StatusMonitor.vue:60-168,276-280,282-325
+  - 文件: packages/frontend/src/components/StatusMonitor.vue:184-189
 
 - **[frontend]**: 将状态监控中的 CPU 卡片升级为总 CPU `canvas` 历史图 + 每核心实时条卡，并在极窄侧栏下自动切换为单列布局 — by yinjianm
   - 方案: [202604190351_status-monitor-cpu-total-and-per-core](archive/2026-04/202604190351_status-monitor-cpu-total-and-per-core/)

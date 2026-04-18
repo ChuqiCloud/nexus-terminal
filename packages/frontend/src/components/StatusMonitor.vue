@@ -57,6 +57,38 @@
         </div>
       </header>
 
+      <section class="monitor-module monitor-module--usage">
+        <div class="monitor-module__heading">
+          <div>
+            <span class="monitor-module__eyebrow">{{ t('statusMonitor.cpuLabel') }}</span>
+            <h5 class="monitor-module__title">{{ t('statusMonitor.cpuUsageTitle') }}</h5>
+          </div>
+          <span class="monitor-module__pill">{{ displayCpuCores }}</span>
+        </div>
+
+        <div class="module-split module-split--cpu">
+          <StatusMonitorCpuHistoryChart :cpu-history="currentCpuHistory" />
+
+          <div class="cpu-core-grid">
+            <article
+              v-for="item in cpuCoreItems"
+              :key="item.key"
+              class="usage-lane usage-lane--cpu"
+            >
+              <div class="usage-lane__content">
+                <div class="usage-lane__meta">
+                  <span class="usage-lane__label">{{ item.label }}</span>
+                  <span class="usage-lane__value-inline">{{ item.value }}</span>
+                </div>
+                <div class="usage-lane__track">
+                  <span class="usage-lane__fill" :style="{ width: `${item.percent}%` }"></span>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
       <div class="monitor-module-grid">
         <section class="monitor-module monitor-module--memory">
           <div class="monitor-module__heading">
@@ -86,6 +118,50 @@
                   <span>{{ item.label }}</span>
                 </div>
                 <div class="memory-stat__value">{{ item.value }}</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="monitor-module monitor-module--network">
+          <div class="monitor-module__heading">
+            <div>
+              <span class="monitor-module__eyebrow">{{ t('statusMonitor.networkLabel') }}</span>
+              <h5 class="monitor-module__title">{{ t('statusMonitor.networkLabel') }}</h5>
+            </div>
+            <span class="monitor-module__pill">{{ t('statusMonitor.networkSpeedTitleUnit', { unit: networkRateUnitLabel }) }}</span>
+          </div>
+
+          <div class="module-split module-split--network">
+            <StatusMonitorNetworkHistoryChart
+              :download-history="currentNetRxHistory"
+              :upload-history="currentNetTxHistory"
+            />
+
+            <div class="network-table">
+              <div class="network-table__header">
+                <span>{{ networkInterfaceDisplay }}</span>
+                <span>{{ t('statusMonitor.downloadLabel') }} / {{ t('statusMonitor.uploadLabel') }}</span>
+              </div>
+              <div class="network-table__columns">
+                <span></span>
+                <span>{{ t('statusMonitor.networkSpeedTitleUnit', { unit: networkRateUnitLabel }) }}</span>
+                <span>{{ t('statusMonitor.totalTrafficLabel') }}</span>
+              </div>
+
+              <div class="network-stat-stack">
+                <article
+                  v-for="item in networkFlowItems"
+                  :key="item.key"
+                  :class="['network-stat', `network-stat--${item.tone}`]"
+                >
+                  <span class="network-stat__label">
+                    <i :class="['fas', item.icon]"></i>
+                    <span>{{ item.label }}</span>
+                  </span>
+                  <span class="network-stat__value">{{ item.value }}</span>
+                  <span class="network-stat__total">{{ item.totalValue }}</span>
+                </article>
               </div>
             </div>
           </div>
@@ -181,12 +257,6 @@
         </section>
       </div>
 
-      <StatusCharts
-        v-if="activeSessionId && currentServerStatus"
-        class="status-monitor__charts"
-        :server-status="currentServerStatus"
-        :active-session-id="activeSessionId"
-      />
     </section>
 
     <ProcessManagerModal
@@ -202,7 +272,8 @@ import { computed, ref, watch, type CSSProperties, type PropType } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import ProcessManagerModal from './ProcessManagerModal.vue';
-import StatusCharts from './StatusCharts.vue';
+import StatusMonitorCpuHistoryChart from './StatusMonitorCpuHistoryChart.vue';
+import StatusMonitorNetworkHistoryChart from './StatusMonitorNetworkHistoryChart.vue';
 import { useSessionStore } from '../stores/session.store';
 import { useSettingsStore } from '../stores/settings.store';
 import { useConnectionsStore } from '../stores/connections.store';
@@ -242,6 +313,10 @@ const clampPercent = (value?: number): number => {
 
 const currentSessionState = computed(() => (props.activeSessionId ? sessions.value.get(props.activeSessionId) : null));
 const currentServerStatus = computed<ServerStatus | null>(() => currentSessionState.value?.statusMonitorManager?.serverStatus?.value ?? null);
+const currentCpuHistory = computed<readonly (number | null)[]>(() => currentSessionState.value?.statusMonitorManager?.cpuHistory?.value ?? Array(24).fill(null));
+const currentNetRxHistory = computed<readonly (number | null)[]>(() => currentSessionState.value?.statusMonitorManager?.netRxHistory?.value ?? Array(24).fill(null));
+const currentNetTxHistory = computed<readonly (number | null)[]>(() => currentSessionState.value?.statusMonitorManager?.netTxHistory?.value ?? Array(24).fill(null));
+
 const displayMemoryPercent = computed(() => clampPercent(currentServerStatus.value?.memPercent));
 const displayDiskPercent = computed(() => clampPercent(currentServerStatus.value?.diskPercent));
 const currentStatusError = computed<string | null>(() => currentSessionState.value?.statusMonitorManager?.statusError?.value ?? null);
@@ -278,6 +353,23 @@ const displayCpuCores = computed(() => {
 });
 const displayOsName = computed(() => (currentServerStatus.value?.osName ?? cachedOsName.value) || t('statusMonitor.notAvailable'));
 const networkInterfaceDisplay = computed(() => currentServerStatus.value?.netInterface || t('statusMonitor.notAvailable'));
+
+const formatBytesPerSecond = (bytes?: number): string => {
+  if (bytes === undefined || bytes === null || isNaN(bytes)) return t('statusMonitor.notAvailable');
+  if (bytes < 1024) return `${bytes} ${t('statusMonitor.bytesPerSecond')}`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} ${t('statusMonitor.kiloBytesPerSecond')}`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} ${t('statusMonitor.megaBytesPerSecond')}`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} ${t('statusMonitor.gigaBytesPerSecond')}`;
+};
+
+const formatBytes = (bytes?: number): string => {
+  if (bytes === undefined || bytes === null || isNaN(bytes)) return t('statusMonitor.notAvailable');
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} ${t('statusMonitor.megaBytes')}`;
+  if (bytes < 1024 * 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} ${t('statusMonitor.gigaBytes')}`;
+  return `${(bytes / (1024 * 1024 * 1024 * 1024)).toFixed(1)} TB`;
+};
 
 const formatCompactBytes = (bytes?: number): string => {
   if (bytes === undefined || bytes === null || isNaN(bytes)) return t('statusMonitor.notAvailable');
@@ -413,6 +505,55 @@ const systemCardMetaItems = computed<MonitorOverviewItem[]>(() => [
   { key: 'timezone', label: t('statusMonitor.timezoneLabel'), value: timezoneDisplay.value },
   { key: 'uptime', label: t('statusMonitor.uptimeLabel'), value: uptimeDisplay.value },
 ]);
+
+const cpuCoreItems = computed(() => {
+  const rawPercents = currentServerStatus.value?.cpuCorePercents;
+  const fallbackCoreCount = (() => {
+    const currentCores = currentServerStatus.value?.cpuCores;
+    if (typeof currentCores !== 'number' || !Number.isFinite(currentCores) || currentCores <= 0) {
+      return 0;
+    }
+    return Math.round(currentCores);
+  })();
+
+  const normalizedPercents = Array.isArray(rawPercents) && rawPercents.length > 0
+    ? rawPercents
+    : Array.from({ length: fallbackCoreCount }, () => 0);
+
+  return normalizedPercents.map((percent, index) => {
+    const clampedPercent = clampPercent(percent);
+    return {
+      key: `cpu-core-${index + 1}`,
+      label: t('statusMonitor.cpuCoreLabel', { index: index + 1 }),
+      value: `${Math.round(clampedPercent)}%`,
+      percent: clampedPercent,
+    };
+  });
+});
+
+const networkFlowItems = computed(() => [
+  {
+    key: 'download',
+    label: t('statusMonitor.downloadLabel'),
+    value: formatBytesPerSecond(currentServerStatus.value?.netRxRate),
+    totalValue: formatBytes(currentServerStatus.value?.netRxTotalBytes),
+    tone: 'down',
+    icon: 'fa-arrow-down',
+  },
+  {
+    key: 'upload',
+    label: t('statusMonitor.uploadLabel'),
+    value: formatBytesPerSecond(currentServerStatus.value?.netTxRate),
+    totalValue: formatBytes(currentServerStatus.value?.netTxTotalBytes),
+    tone: 'up',
+    icon: 'fa-arrow-up',
+  },
+]);
+
+const networkRateUnitLabel = computed(() => {
+  const maxRate = Math.max(currentServerStatus.value?.netRxRate ?? 0, currentServerStatus.value?.netTxRate ?? 0);
+  return maxRate >= 1024 * 1024 ? 'MB/s' : 'KB/s';
+});
 
 const diskDeviceAccent = computed(() => {
   const raw = currentServerStatus.value?.diskDevice;
