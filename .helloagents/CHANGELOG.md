@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- **[frontend]**: 将状态监控默认 CPU 卡改为“总 CPU 历史图 + 当前/平均/最忙核心紧凑摘要 + 查看全部核心详情弹层”，避免多核机器下侧栏被逐核心条卡撑高 — by yinjianm
+  - 方案: [202604190520_status-monitor-cpu-summary-modal](archive/2026-04/202604190520_status-monitor-cpu-summary-modal/)
+
 - **[frontend]**: 移除状态监控 CPU 与网络模块标题区里重复的主标题 `h5`，只保留 eyebrow 标签，减少卡片标题冗余 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/StatusMonitor.vue:61-64,129-132

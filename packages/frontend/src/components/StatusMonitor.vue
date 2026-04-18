@@ -1032,10 +1032,6 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   border-radius: inherit;
 }
 
-.usage-lane--cpu .usage-lane__fill {
-  background: linear-gradient(90deg, #7dd3fc, #2563eb);
-}
-
 .cpu-summary-panel {
   min-height: 0;
   border-radius: 16px;
@@ -1575,10 +1571,6 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   }
 
   .memory-stat-stack {
-    grid-template-columns: 1fr;
-  }
-
-  .cpu-core-grid {
     grid-template-columns: 1fr;
   }
 
