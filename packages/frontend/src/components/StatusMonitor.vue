@@ -61,6 +61,7 @@
         <div class="monitor-module__heading">
           <div>
             <span class="monitor-module__eyebrow">{{ t('statusMonitor.cpuLabel') }}</span>
+            <h5 class="monitor-module__title">{{ t('statusMonitor.cpuUsageTitle') }}</h5>
           </div>
           <span class="monitor-module__pill">{{ displayCpuCores }}</span>
         </div>
@@ -68,24 +69,24 @@
         <div class="module-split module-split--cpu">
           <StatusMonitorCpuHistoryChart :cpu-history="currentCpuHistory" />
 
-          <div class="cpu-core-panel">
-            <div class="cpu-core-grid">
+          <div class="cpu-summary-panel">
+            <div class="cpu-summary-grid">
               <article
-                v-for="item in cpuCoreItems"
+                v-for="item in cpuSummaryItems"
                 :key="item.key"
-                class="usage-lane usage-lane--cpu"
+                class="cpu-summary-card"
               >
-                <div class="usage-lane__content">
-                  <div class="usage-lane__meta">
-                    <span class="usage-lane__label">{{ item.label }}</span>
-                    <span class="usage-lane__value-inline">{{ item.value }}</span>
-                  </div>
-                  <div class="usage-lane__track">
-                    <span class="usage-lane__fill" :style="{ width: `${item.percent}%` }"></span>
-                  </div>
-                </div>
+                <span class="cpu-summary-card__label">{{ item.label }}</span>
+                <span class="cpu-summary-card__value">{{ item.value }}</span>
               </article>
             </div>
+            <button
+              type="button"
+              class="monitor-action-button cpu-summary-action"
+              @click="isCpuCoreModalVisible = true"
+            >
+              {{ t('statusMonitor.cpuViewAllCores') }}
+            </button>
           </div>
         </div>
       </section>
@@ -263,6 +264,12 @@
       :session-id="activeSessionId"
       @close="isProcessManagerVisible = false"
     />
+    <StatusMonitorCpuCoreModal
+      :is-visible="isCpuCoreModalVisible"
+      :cpu-core-items="cpuCoreItems"
+      :total-cpu-percent="displayCpuPercent"
+      @close="isCpuCoreModalVisible = false"
+    />
   </div>
 </template>
 
@@ -271,6 +278,7 @@ import { computed, ref, watch, type CSSProperties, type PropType } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import ProcessManagerModal from './ProcessManagerModal.vue';
+import StatusMonitorCpuCoreModal from './StatusMonitorCpuCoreModal.vue';
 import StatusMonitorCpuHistoryChart from './StatusMonitorCpuHistoryChart.vue';
 import StatusMonitorNetworkHistoryChart from './StatusMonitorNetworkHistoryChart.vue';
 import { useSessionStore } from '../stores/session.store';
@@ -293,6 +301,7 @@ const connectionsStore = useConnectionsStore();
 const uiNotificationsStore = useUiNotificationsStore();
 const { sessions } = storeToRefs(sessionStore);
 const { statusMonitorShowIpBoolean } = storeToRefs(settingsStore);
+const isCpuCoreModalVisible = ref(false);
 const isProcessManagerVisible = ref(false);
 
 const props = defineProps({
@@ -316,6 +325,7 @@ const currentCpuHistory = computed<readonly (number | null)[]>(() => currentSess
 const currentNetRxHistory = computed<readonly (number | null)[]>(() => currentSessionState.value?.statusMonitorManager?.netRxHistory?.value ?? Array(24).fill(null));
 const currentNetTxHistory = computed<readonly (number | null)[]>(() => currentSessionState.value?.statusMonitorManager?.netTxHistory?.value ?? Array(24).fill(null));
 
+const displayCpuPercent = computed(() => clampPercent(currentServerStatus.value?.cpuPercent));
 const displayMemoryPercent = computed(() => clampPercent(currentServerStatus.value?.memPercent));
 const displayDiskPercent = computed(() => clampPercent(currentServerStatus.value?.diskPercent));
 const currentStatusError = computed<string | null>(() => currentSessionState.value?.statusMonitorManager?.statusError?.value ?? null);
@@ -528,6 +538,49 @@ const cpuCoreItems = computed(() => {
       percent: clampedPercent,
     };
   });
+});
+
+const cpuAveragePercent = computed(() => {
+  if (cpuCoreItems.value.length === 0) {
+    return displayCpuPercent.value;
+  }
+
+  const total = cpuCoreItems.value.reduce((sum, item) => sum + item.percent, 0);
+  return total / cpuCoreItems.value.length;
+});
+
+const cpuBusiestCore = computed(() => {
+  if (cpuCoreItems.value.length === 0) {
+    return null;
+  }
+
+  return cpuCoreItems.value.reduce((highest, item) => (item.percent > highest.percent ? item : highest));
+});
+
+const cpuSummaryItems = computed(() => {
+  const items = [
+    {
+      key: 'current',
+      label: t('statusMonitor.cpuCurrentStat'),
+      value: `${displayCpuPercent.value.toFixed(1)}%`,
+    },
+  ];
+
+  if (cpuBusiestCore.value) {
+    items.push({
+      key: 'busiest',
+      label: t('statusMonitor.cpuBusiestCoreStat'),
+      value: `${cpuBusiestCore.value.label} / ${cpuBusiestCore.value.value}`,
+    });
+  }
+
+  items.push({
+    key: 'average',
+    label: t('statusMonitor.cpuAverageStat'),
+    value: `${cpuAveragePercent.value.toFixed(1)}%`,
+  });
+
+  return items;
 });
 
 const networkFlowItems = computed(() => [
@@ -983,48 +1036,52 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   background: linear-gradient(90deg, #7dd3fc, #2563eb);
 }
 
-.usage-lane--cpu {
-  gap: 6px;
-  border-radius: 10px;
-  padding: 6px 8px;
-}
-
-.usage-lane--cpu .usage-lane__content {
-  gap: 6px;
-}
-
-.usage-lane--cpu .usage-lane__label {
-  font-size: 11px;
-}
-
-.usage-lane--cpu .usage-lane__value-inline {
-  font-size: 14px;
-}
-
-.usage-lane--cpu .usage-lane__track {
-  height: 6px;
-}
-
-.cpu-core-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(116px, 1fr));
-  align-content: start;
-  gap: 6px;
-  min-height: 0;
-  height: 100%;
-  overflow-y: auto;
-  padding-right: 2px;
-}
-
-.cpu-core-panel {
+.cpu-summary-panel {
   min-height: 0;
   border-radius: 16px;
   border: 1px solid rgba(148, 163, 184, 0.08);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02)),
     radial-gradient(circle at top left, rgba(59, 130, 246, 0.04), transparent 60%);
-  padding: 8px 10px;
+  padding: 10px;
   overflow: hidden;
+}
+
+.cpu-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 8px;
+}
+
+.cpu-summary-card {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px;
+}
+
+.cpu-summary-card__label {
+  color: #8ea0b1;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cpu-summary-card__value {
+  color: #f8fbff;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.cpu-summary-action {
+  margin-top: 10px;
+  width: 100%;
 }
 
 .module-split {
