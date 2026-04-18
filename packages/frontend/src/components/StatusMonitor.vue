@@ -61,7 +61,6 @@
         <div class="monitor-module__heading">
           <div>
             <span class="monitor-module__eyebrow">{{ t('statusMonitor.cpuLabel') }}</span>
-            <h5 class="monitor-module__title">{{ t('statusMonitor.cpuUsageTitle') }}</h5>
           </div>
           <span class="monitor-module__pill">{{ displayCpuCores }}</span>
         </div>
@@ -1033,6 +1032,8 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 }
 
 .cpu-summary-panel {
+  display: grid;
+  gap: 10px;
   min-height: 0;
   border-radius: 16px;
   border: 1px solid rgba(148, 163, 184, 0.08);
@@ -1045,8 +1046,12 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
 .cpu-summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+.cpu-summary-card:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
 }
 
 .cpu-summary-card {
@@ -1076,7 +1081,6 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 }
 
 .cpu-summary-action {
-  margin-top: 10px;
   width: 100%;
 }
 
@@ -1092,7 +1096,7 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
 .module-split--cpu {
   grid-template-columns: 1fr;
-  grid-template-rows: minmax(0, 126px) minmax(0, 112px);
+  grid-template-rows: minmax(0, 126px) auto;
   min-height: 0;
   align-content: start;
   gap: 8px;
@@ -1571,6 +1575,10 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   }
 
   .memory-stat-stack {
+    grid-template-columns: 1fr;
+  }
+
+  .cpu-summary-grid {
     grid-template-columns: 1fr;
   }
 

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- **[frontend]**: 移除状态监控默认 CPU 卡里重复的 `CPU 使用率` 标题，并修正 CPU 摘要区固定高度导致的卡片/按钮截断问题 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/StatusMonitor.vue:61-88,1035-1100,1565-1580
+
 - **[frontend]**: 将状态监控默认 CPU 卡改为“总 CPU 历史图 + 当前/平均/最忙核心紧凑摘要 + 查看全部核心详情弹层”，避免多核机器下侧栏被逐核心条卡撑高 — by yinjianm
   - 方案: [202604190520_status-monitor-cpu-summary-modal](archive/2026-04/202604190520_status-monitor-cpu-summary-modal/)
 
