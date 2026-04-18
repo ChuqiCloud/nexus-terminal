@@ -13,7 +13,7 @@
 |----------|------|--------|------|
 | `package.json#workspaces` | `packages/*` | npm workspace 列表 | 声明后端、前端、远程网关三个子包属于同一工作区。 |
 | `package.json#postinstall` | 无 | shell 命令 | 安装依赖后自动执行 `patch-package`。 |
-| `.github/workflows/docker-publish.yml` | GitHub push / workflow_dispatch 事件 | GHCR 镜像 | 在 `main` 推送时发布三个 `linux/amd64` 业务镜像到 GHCR。 |
+| `.github/workflows/docker-publish.yml` | GitHub push / workflow_dispatch 事件 | GHCR 镜像 | 在 `main` 推送时按路径检测发布受影响的 `linux/amd64` 业务镜像，手动触发时仍可全量发布。 |
 | `docker-compose.yml` | 环境变量、卷、端口映射 | 服务编排 | 统一启动 `frontend`、`backend`、`remote-gateway`、`guacd`。 |
 
 ### 数据结构
@@ -37,8 +37,8 @@
 
 ### 镜像自动发布
 **条件**: 向 `main` 分支推送代码，或在 GitHub Actions 手动触发 workflow。  
-**行为**: `.github/workflows/docker-publish.yml` 使用各子包现有 Dockerfile 构建 `linux/amd64` 镜像，并向 GHCR 发布 `latest` 与 `sha-<commit>` 标签。  
-**结果**: 仓库镜像发布链路与 compose 使用的镜像来源保持一致。
+**行为**: `.github/workflows/docker-publish.yml` 当前会先运行 `detect-changes` 作业：对 `package.json`、`package-lock.json`、`docker-compose.yml`、`patches/**` 和 workflow 自身视为共享根文件，对 `packages/frontend/**`、`packages/backend/**`、`packages/remote-gateway/**` 分别视为服务级改动；若是手动 `workflow_dispatch` 则直接将三个服务都标记为受影响。随后发布作业按检测结果生成动态矩阵，仅对受影响服务使用各自 Dockerfile 构建 `linux/amd64` 镜像，并向 GHCR 发布 `latest` 与 `sha-<commit>` 标签。  
+**结果**: 镜像发布链路与 compose 使用的镜像来源保持一致，同时避免无关改动触发三个服务的完整构建。
 
 ## 依赖关系
 

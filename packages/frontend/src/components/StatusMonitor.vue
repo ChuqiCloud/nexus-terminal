@@ -849,7 +849,7 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 .monitor-module-grid {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  grid-template-columns: 1fr;
 }
 
 .monitor-module {
@@ -859,6 +859,17 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   border-radius: 18px;
   padding: 12px;
   container-type: inline-size;
+}
+
+.monitor-module--usage,
+.monitor-module--memory,
+.monitor-module--network,
+.monitor-module--disk {
+  min-height: clamp(188px, 62cqw, 220px);
+}
+
+.monitor-module--process {
+  min-height: clamp(340px, 116cqw, 420px);
 }
 
 .monitor-module__heading {
@@ -1473,13 +1484,6 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   .disk-summary-table__head span,
   .disk-summary-table__row span {
     text-align: left;
-  }
-}
-
-@container (min-width: 420px) {
-  .monitor-module--usage,
-  .monitor-module--process {
-    grid-column: 1 / -1;
   }
 }
 

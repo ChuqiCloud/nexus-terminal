@@ -7,6 +7,7 @@
 
 | 时间戳 | 名称 | 类型 | 涉及模块 | 决策 | 结果 |
 |--------|------|------|---------|------|------|
+| 202604160350 | workflow-service-scoped-docker-builds | - | - | - | ✅完成 |
 | 202604152323 | status-monitor-reference-layout-parity | implementation | frontend | status-monitor-reference-layout-parity#D001 | ✅完成 |
 | 202604152147 | status-monitor-process-manager-modal | - | - | - | ✅完成 |
 | 202604152139 | workspace-global-search-tag-fuzzy-search | - | - | - | ✅完成 |

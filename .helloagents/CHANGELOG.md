@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- **[workspace-root]**: 为 Docker 镜像发布 workflow 增加按路径检测的动态构建矩阵，仅在共享根文件或对应服务目录变更时构建受影响镜像，手动触发仍保留全量发布能力 - by yinjianm
+  - 方案: [202604160350_workflow-service-scoped-docker-builds](archive/2026-04/202604160350_workflow-service-scoped-docker-builds/)
+
 - **[frontend]**: 将右侧服务器状态监控的默认视图从通用卡片栅格重排为更贴近参考图的窄屏监控布局，统一顶部信息条、索引化资源行与内存/网络/磁盘/进程概览的左右分区关系 - by yinjianm
   - 方案: [202604152323_status-monitor-reference-layout-parity](archive/2026-04/202604152323_status-monitor-reference-layout-parity/)
 - **[frontend]**: 将右侧状态监控继续收紧为更贴近服务器小屏的默认概览，并新增时区、运行时间、进程概览与“查看全部”独立进程管理弹窗 - by yinjianm
@@ -61,6 +64,9 @@
   - 方案: [202603250614_terminal-ansi-color-effects](archive/2026-03/202603250614_terminal-ansi-color-effects/)
 
 ### 快速修改
+- **[frontend]**: 将状态监控模块区从默认并排调整回基于常用 300px 右栏比例的单列布局，并用弹性高度把普通卡控制在约 200、进程管理控制在约 400 的视觉比例 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/StatusMonitor.vue
 - **[frontend]**: 将状态监控模块区从大断点固定分列改为更高密度的 auto-fit 自适应网格，让内存/网络/磁盘在正常宽度下默认并排，只有非常窄时才回落为单列 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/StatusMonitor.vue
