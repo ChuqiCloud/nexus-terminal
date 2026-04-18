@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- **[frontend]**: 移除状态监控 CPU 与网络模块标题区里重复的主标题 `h5`，只保留 eyebrow 标签，减少卡片标题冗余 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/StatusMonitor.vue:61-64,129-132
+
 - **[frontend]**: 移除状态监控底部重复的 CPU / 网络 `chart-panel` 图表区，保留默认概览中的 CPU 与网络卡片，只收掉重复展示 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/StatusMonitor.vue:184-189

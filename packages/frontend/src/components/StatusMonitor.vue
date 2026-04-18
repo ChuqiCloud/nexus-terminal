@@ -61,7 +61,6 @@
         <div class="monitor-module__heading">
           <div>
             <span class="monitor-module__eyebrow">{{ t('statusMonitor.cpuLabel') }}</span>
-            <h5 class="monitor-module__title">{{ t('statusMonitor.cpuUsageTitle') }}</h5>
           </div>
           <span class="monitor-module__pill">{{ displayCpuCores }}</span>
         </div>
@@ -129,7 +128,6 @@
           <div class="monitor-module__heading">
             <div>
               <span class="monitor-module__eyebrow">{{ t('statusMonitor.networkLabel') }}</span>
-              <h5 class="monitor-module__title">{{ t('statusMonitor.networkLabel') }}</h5>
             </div>
             <span class="monitor-module__pill">{{ t('statusMonitor.networkSpeedTitleUnit', { unit: networkRateUnitLabel }) }}</span>
           </div>
