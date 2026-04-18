@@ -120,43 +120,45 @@
         </section>
 
         <section class="monitor-module monitor-module--network">
-          <div class="network-module__hero">
+          <div class="monitor-module__heading">
             <div>
               <span class="monitor-module__eyebrow">{{ t('statusMonitor.networkLabel') }}</span>
               <h5 class="monitor-module__title">{{ t('statusMonitor.networkLabel') }}</h5>
             </div>
-            <div class="network-module__sparkline" aria-hidden="true">
-              <svg viewBox="0 0 160 30" preserveAspectRatio="none">
-                <path class="network-module__sparkline-path network-module__sparkline-path--up" :d="networkUpSparklinePath"></path>
-                <path class="network-module__sparkline-path network-module__sparkline-path--down" :d="networkDownSparklinePath"></path>
-              </svg>
-            </div>
+            <span class="monitor-module__pill">{{ t('statusMonitor.networkSpeedTitleUnit', { unit: networkRateUnitLabel }) }}</span>
           </div>
 
-          <div class="network-table">
-            <div class="network-table__header">
-              <span>{{ networkInterfaceDisplay }}</span>
-              <span>{{ t('statusMonitor.downloadLabel') }} / {{ t('statusMonitor.uploadLabel') }}</span>
-            </div>
-            <div class="network-table__columns">
-              <span></span>
-              <span>{{ t('statusMonitor.networkSpeedTitleUnit', { unit: networkRateUnitLabel }) }}</span>
-              <span>{{ t('statusMonitor.totalTrafficLabel') }}</span>
-            </div>
+          <div class="module-split module-split--network">
+            <StatusMonitorNetworkHistoryChart
+              :download-history="currentNetRxHistory"
+              :upload-history="currentNetTxHistory"
+            />
 
-            <div class="network-stat-stack">
-              <article
-                v-for="item in networkFlowItems"
-                :key="item.key"
-                :class="['network-stat', `network-stat--${item.tone}`]"
-              >
-                <span class="network-stat__label">
-                  <i :class="['fas', item.icon]"></i>
-                  <span>{{ item.label }}</span>
-                </span>
-                <span class="network-stat__value">{{ item.value }}</span>
-                <span class="network-stat__total">{{ item.totalValue }}</span>
-              </article>
+            <div class="network-table">
+              <div class="network-table__header">
+                <span>{{ networkInterfaceDisplay }}</span>
+                <span>{{ t('statusMonitor.downloadLabel') }} / {{ t('statusMonitor.uploadLabel') }}</span>
+              </div>
+              <div class="network-table__columns">
+                <span></span>
+                <span>{{ t('statusMonitor.networkSpeedTitleUnit', { unit: networkRateUnitLabel }) }}</span>
+                <span>{{ t('statusMonitor.totalTrafficLabel') }}</span>
+              </div>
+
+              <div class="network-stat-stack">
+                <article
+                  v-for="item in networkFlowItems"
+                  :key="item.key"
+                  :class="['network-stat', `network-stat--${item.tone}`]"
+                >
+                  <span class="network-stat__label">
+                    <i :class="['fas', item.icon]"></i>
+                    <span>{{ item.label }}</span>
+                  </span>
+                  <span class="network-stat__value">{{ item.value }}</span>
+                  <span class="network-stat__total">{{ item.totalValue }}</span>
+                </article>
+              </div>
             </div>
           </div>
         </section>
@@ -273,6 +275,7 @@ import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import ProcessManagerModal from './ProcessManagerModal.vue';
 import StatusCharts from './StatusCharts.vue';
+import StatusMonitorNetworkHistoryChart from './StatusMonitorNetworkHistoryChart.vue';
 import { useSessionStore } from '../stores/session.store';
 import { useSettingsStore } from '../stores/settings.store';
 import { useConnectionsStore } from '../stores/connections.store';
@@ -552,24 +555,6 @@ const networkFlowItems = computed(() => [
 const networkRateUnitLabel = computed(() => {
   const maxRate = Math.max(currentServerStatus.value?.netRxRate ?? 0, currentServerStatus.value?.netTxRate ?? 0);
   return maxRate >= 1024 * 1024 ? 'MB/s' : 'KB/s';
-});
-
-const networkHistoryScale = computed(() => {
-  const values = [
-    ...currentNetRxHistory.value.map(value => value ?? 0),
-    ...currentNetTxHistory.value.map(value => value ?? 0),
-  ];
-  return Math.max(...values, 1);
-});
-
-const networkDownSparklinePath = computed(() => {
-  const samples = currentNetRxHistory.value.slice(-24).map(value => Math.max(0, ((value ?? 0) / networkHistoryScale.value) * 100));
-  return buildSparklinePath(samples, 160, 30, 22);
-});
-
-const networkUpSparklinePath = computed(() => {
-  const samples = currentNetTxHistory.value.slice(-24).map(value => Math.max(0, ((value ?? 0) / networkHistoryScale.value) * 100));
-  return buildSparklinePath(samples, 160, 30, 22);
 });
 
 const diskDeviceAccent = computed(() => {
@@ -1014,6 +999,16 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   gap: 12px;
 }
 
+.module-split--memory {
+  grid-template-columns: minmax(110px, 0.88fr) minmax(0, 1.12fr);
+  align-items: stretch;
+}
+
+.module-split--network {
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  align-items: stretch;
+}
+
 .memory-ring-panel,
 .disk-device-card,
 .disk-io-card,
@@ -1085,6 +1080,12 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   border-radius: 10px;
 }
 
+.memory-stat-stack {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: center;
+  gap: 6px;
+}
+
 .memory-stat__label {
   display: inline-flex;
   align-items: center;
@@ -1123,46 +1124,10 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   line-height: 1.15;
 }
 
-.network-module__hero {
-  display: grid;
-  grid-template-columns: auto minmax(96px, 1fr);
-  align-items: center;
-  gap: 12px;
-}
-
-.network-module__sparkline {
-  height: 30px;
-  min-width: 0;
-  border-top: 1px solid rgba(148, 163, 184, 0.14);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-}
-
-.network-module__sparkline svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.network-module__sparkline-path {
-  fill: none;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.network-module__sparkline-path--up {
-  stroke: #34d399;
-  filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.28));
-}
-
-.network-module__sparkline-path--down {
-  stroke: #60a5fa;
-  filter: drop-shadow(0 0 6px rgba(96, 165, 250, 0.24));
-}
-
 .network-table {
   display: grid;
   gap: 8px;
+  height: 100%;
   padding: 10px 12px;
 }
 
@@ -1475,12 +1440,6 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
     align-items: stretch;
   }
 
-  .memory-stat-stack {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    align-content: center;
-    gap: 6px;
-  }
-
   .disk-summary-table__head span,
   .disk-summary-table__row span {
     text-align: left;
@@ -1489,7 +1448,7 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
 @container (max-width: 250px) {
   .module-split--memory,
-  .network-module__hero,
+  .module-split--network,
   .disk-compact-top {
     grid-template-columns: 1fr;
   }
@@ -1535,10 +1494,6 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
 @container (max-width: 360px) {
   .process-summary-strip {
-    grid-template-columns: 1fr;
-  }
-
-  .memory-stat-stack {
     grid-template-columns: 1fr;
   }
 }

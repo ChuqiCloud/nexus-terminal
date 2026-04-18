@@ -84,4 +84,4 @@
 ### 快捷指令顺序持久化
 **条件**: 前端快捷指令视图提交分组拖拽、标签内命令拖拽或扁平列表命令拖拽结果。  
 **行为**: packages/backend/src/database/schema.ts 与 migrations.ts 现在为 quick_commands、quick_command_tags 与 quick_command_tag_associations 三张表补齐 sort_order 字段；quick-commands 业务域新增 /api/v1/quick-commands/reorder 与 /api/v1/quick-commands/reorder-by-tag，quick-command-tags 业务域新增 /api/v1/quick-command-tags/reorder。同时标签关联写入从“先删后插”调整为增量同步，保留命令已存在标签关联的原组内顺序，仅为新增关联追加新的末尾顺序。  
-**结果**: 后端可以稳定表达“标签顺序”“命令全局顺序”和“命令在某个标签组内的局部顺序”三层语义，并保证历史数据库升级后也能直接承接前端拖拽排序能力。  
+**结果**: 后端可以稳定表达“标签顺序”“命令全局顺序”和“命令在某个标签组内的局部顺序”三层语义，并保证历史数据库升级后也能直接承接前端拖拽排序能力；这也让前端可以通过“先更新 `tagIds`、再提交目标标签内重排”复用既有接口实现跨分组移动，而无需新增专用后端路由。  

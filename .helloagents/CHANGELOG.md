@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+- **[frontend]**: 支持将快捷指令从一个标签组拖到另一个标签组内，允许把未标记命令直接拖入目标标签组，并修正 `manual / name / last_used` 排序按钮状态映射 — by yinjianm
+  - 方案: [202604190322_quickcommands-cross-group-drag-move](archive/2026-04/202604190322_quickcommands-cross-group-drag-move/)
+
+- **[frontend]**: 将状态监控中的内存与网络卡片响应式阈值统一收紧到 250px，并把网络卡片的 SVG 趋势线升级为可 hover 查看最近 24 个采样点的 canvas 历史图 — by yinjianm
+  - 方案: [202604190319_status-monitor-memory-network-canvas-history](archive/2026-04/202604190319_status-monitor-memory-network-canvas-history/)
+
 - **[frontend]**: 为快捷指令视图新增分组拖拽排序、组内命令拖拽排序与扁平命令列表拖拽排序，并在拖拽完成后自动切换到手动顺序视图以保持刷新后顺序一致 — by yinjianm
   - 方案: [202604190208_quickcommands-drag-reorder](archive/2026-04/202604190208_quickcommands-drag-reorder/)
 

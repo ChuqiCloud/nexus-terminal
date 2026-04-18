@@ -1423,6 +1423,7 @@
         "cpuUsageTitle": "CPU使用率",
         "memoryUsageTitleUnit": "メモリ使用状況 ({unit})",
         "networkSpeedTitleUnit": "ネットワーク速度 ({unit})",
+        "networkHistoryRecentPoints": "直近 {count} 件のサンプル",
         "cpuUsageLabel": "CPU使用率 (%)",
         "memoryUsageLabelUnit": "メモリ使用量 ({unit})",
         "networkDownloadLabelUnit": "ダウンロード ({unit})",

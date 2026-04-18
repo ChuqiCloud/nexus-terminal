@@ -343,12 +343,15 @@ export const useQuickCommandsStore = defineStore('quickCommands', () => {
         command: string,
         tagIds?: number[],
         variables?: Record<string, string>,
+        notifySuccess = true,
     ): Promise<boolean> => {
         try {
             await apiClient.put(`/quick-commands/${id}`, { name, command, tagIds, variables });
             clearQuickCommandsCache();
             await fetchQuickCommands();
-            uiNotificationsStore.showSuccess('快捷指令已更新');
+            if (notifySuccess) {
+                uiNotificationsStore.showSuccess('快捷指令已更新');
+            }
             return true;
         } catch (err: any) {
             console.error('[QuickCommandsStore] 更新快捷指令失败:', err);

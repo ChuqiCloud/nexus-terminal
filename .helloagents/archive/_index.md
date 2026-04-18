@@ -7,6 +7,8 @@
 
 | 时间戳 | 名称 | 类型 | 涉及模块 | 决策 | 结果 |
 |--------|------|------|---------|------|------|
+| 202604190322 | quickcommands-cross-group-drag-move | implementation | frontend | quickcommands-cross-group-drag-move#D001, quickcommands-cross-group-drag-move#D002 | ✅完成 |
+| 202604190319 | status-monitor-memory-network-canvas-history | - | - | - | ✅完成 |
 | 202604190208 | quickcommands-drag-reorder | - | - | - | ✅完成 |
 | 202604190210 | connection-card-default-test-button | implementation | frontend | - | ✅完成 |
 | 202604190201 | connection-password-visibility-toggle | - | - | - | ✅完成 |
@@ -59,6 +61,8 @@
 ## 按月归档
 
 ### 2026-04
+- [202604190322_quickcommands-cross-group-drag-move](./2026-04/202604190322_quickcommands-cross-group-drag-move/) - 支持将快捷指令从一个标签组拖到另一个标签组内，并允许把未标记命令直接拖入目标标签组
+- [202604190319_status-monitor-memory-network-canvas-history](./2026-04/202604190319_status-monitor-memory-network-canvas-history/) - 将状态监控中的内存与网络卡片响应式阈值统一收紧到 250px，并把网络卡片的 SVG 趋势线升级为可 hover 查看最近 24 个采样点的 canvas 历史图
 - [202604190210_connection-card-default-test-button](./2026-04/202604190210_connection-card-default-test-button/) - 将连接管理页 SSH 连接卡片的默认操作区调整为“连接 / 测试 / 更多”，并移除更多菜单中的重复测试入口
 - [202604190201_connection-password-visibility-toggle](./2026-04/202604190201_connection-password-visibility-toggle/) - 为连接新增/编辑表单与登录凭证管理弹窗补充密码显隐切换，默认仍隐藏，仅在本地输入端切换明文核对
 - [202604152323_status-monitor-reference-layout-parity](./2026-04/202604152323_status-monitor-reference-layout-parity/) - 将右侧状态监控默认视图重排为更贴近参考图的窄屏监控布局，修正顶部信息区与模块内部左右关系

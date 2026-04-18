@@ -688,6 +688,7 @@
     "cpuUsageTitle": "CPU Usage",
     "memoryUsageTitleUnit": "Memory Usage ({unit})",
     "networkSpeedTitleUnit": "Network Speed ({unit})",
+    "networkHistoryRecentPoints": "Latest {count} samples",
     "cpuUsageLabel": "CPU Usage (%)",
     "memoryUsageLabelUnit": "Memory Usage ({unit})",
     "networkDownloadLabelUnit": "Download ({unit})",

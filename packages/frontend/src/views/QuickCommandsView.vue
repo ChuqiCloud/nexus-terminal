@@ -464,6 +464,30 @@ const moveById = <T extends { id: number }>(items: T[], sourceId: number, target
   return clonedItems;
 };
 
+const insertOrMoveById = <T extends { id: number }>(
+  items: T[],
+  sourceId: number,
+  targetId: number,
+  getSourceItem?: () => T | undefined,
+): T[] => {
+  const clonedItems = [...items];
+  const sourceIndex = clonedItems.findIndex((item) => item.id === sourceId);
+  const targetIndex = clonedItems.findIndex((item) => item.id === targetId);
+
+  if (targetIndex === -1) {
+    return clonedItems;
+  }
+
+  const sourceItem = sourceIndex === -1 ? getSourceItem?.() : clonedItems.splice(sourceIndex, 1)[0];
+  if (!sourceItem) {
+    return clonedItems;
+  }
+
+  const nextTargetIndex = clonedItems.findIndex((item) => item.id === targetId);
+  clonedItems.splice(nextTargetIndex === -1 ? clonedItems.length : nextTargetIndex, 0, sourceItem);
+  return clonedItems;
+};
+
 const isGroupDropTarget = (tagId: number | null): boolean =>
   tagId !== null && groupDropTargetTagId.value === tagId;
 
@@ -544,7 +568,15 @@ const handleCommandDragOver = (commandId: number, groupTagId: number | null) => 
     return;
   }
 
-  if (draggingCommand.value.groupTagId !== groupTagId || draggingCommand.value.commandId === commandId) {
+  if (draggingCommand.value.commandId === commandId) {
+    return;
+  }
+
+  if (
+    showQuickCommandTagsBoolean.value
+    && draggingCommand.value.groupTagId !== groupTagId
+    && groupTagId === null
+  ) {
     return;
   }
 
@@ -552,51 +584,115 @@ const handleCommandDragOver = (commandId: number, groupTagId: number | null) => 
 };
 
 const handleCommandDrop = async (commandId: number, groupTagId: number | null) => {
-  if (!draggingCommand.value || dragDisabledBySearch.value) {
+  const activeDraggingCommand = draggingCommand.value;
+
+  if (!activeDraggingCommand || dragDisabledBySearch.value) {
     resetDragState();
     return;
   }
 
-  if (draggingCommand.value.groupTagId !== groupTagId || draggingCommand.value.commandId === commandId) {
+  if (activeDraggingCommand.commandId === commandId) {
+    resetDragState();
+    return;
+  }
+
+  const sourceGroupTagId = activeDraggingCommand.groupTagId;
+
+  if (
+    showQuickCommandTagsBoolean.value
+    && sourceGroupTagId !== groupTagId
+    && groupTagId === null
+  ) {
+    uiNotificationsStore.showInfo(t('quickCommands.dragMoveToUntaggedUnsupported', '暂不支持把已标记命令拖入“未标记”分组。'));
     resetDragState();
     return;
   }
 
   let currentCommands: QuickCommandFE[] = [];
-  if (showQuickCommandTagsBoolean.value) {
-    currentCommands = filteredAndGroupedCommands.value.find((group) => group.tagId === groupTagId)?.commands ?? [];
-  } else {
-    currentCommands = flatFilteredCommands.value;
-  }
-
-  const reorderedCommands = moveById(currentCommands, draggingCommand.value.commandId, commandId);
-  if (showQuickCommandTagsBoolean.value) {
-    if (groupTagId !== null) {
-      await quickCommandsStore.reorderCommandsInTag(groupTagId, reorderedCommands.map((item) => item.id));
+  if (!showQuickCommandTagsBoolean.value || sourceGroupTagId === groupTagId) {
+    if (showQuickCommandTagsBoolean.value) {
+      currentCommands = filteredAndGroupedCommands.value.find((group) => group.tagId === groupTagId)?.commands ?? [];
     } else {
-      const reorderedUntaggedIds = reorderedCommands.map((item) => item.id);
-      const globalCommandIds = [...quickCommandsStore.quickCommandsList]
-        .sort((a, b) => (a.sort_order - b.sort_order) || (a.id - b.id))
-        .map((command) => command.id);
-
-      let untaggedIndex = 0;
-      const mergedCommandIds = globalCommandIds.map((existingCommandId) => {
-        const command = quickCommandsStore.quickCommandsList.find((item) => item.id === existingCommandId);
-        if (!command || command.tagIds.length > 0) {
-          return existingCommandId;
-        }
-
-        const nextUntaggedId = reorderedUntaggedIds[untaggedIndex];
-        untaggedIndex += 1;
-        return nextUntaggedId ?? existingCommandId;
-      });
-
-      await quickCommandsStore.reorderQuickCommands(mergedCommandIds);
+      currentCommands = flatFilteredCommands.value;
     }
-  } else {
-    await quickCommandsStore.reorderQuickCommands(reorderedCommands.map((item) => item.id));
+
+    const reorderedCommands = moveById(currentCommands, activeDraggingCommand.commandId, commandId);
+
+    if (showQuickCommandTagsBoolean.value) {
+      if (groupTagId !== null) {
+        await quickCommandsStore.reorderCommandsInTag(groupTagId, reorderedCommands.map((item) => item.id));
+      } else {
+        const reorderedUntaggedIds = reorderedCommands.map((item) => item.id);
+        const globalCommandIds = [...quickCommandsStore.quickCommandsList]
+          .sort((a, b) => (a.sort_order - b.sort_order) || (a.id - b.id))
+          .map((command) => command.id);
+
+        let untaggedIndex = 0;
+        const mergedCommandIds = globalCommandIds.map((existingCommandId) => {
+          const command = quickCommandsStore.quickCommandsList.find((item) => item.id === existingCommandId);
+          if (!command || command.tagIds.length > 0) {
+            return existingCommandId;
+          }
+
+          const nextUntaggedId = reorderedUntaggedIds[untaggedIndex];
+          untaggedIndex += 1;
+          return nextUntaggedId ?? existingCommandId;
+        });
+
+        await quickCommandsStore.reorderQuickCommands(mergedCommandIds);
+      }
+    } else {
+      await quickCommandsStore.reorderQuickCommands(reorderedCommands.map((item) => item.id));
+    }
+
+    resetDragState();
+    return;
   }
 
+  if (groupTagId === null) {
+    resetDragState();
+    return;
+  }
+
+  const sourceCommand = quickCommandsStore.quickCommandsList.find((item) => item.id === activeDraggingCommand.commandId);
+  if (!sourceCommand) {
+    resetDragState();
+    return;
+  }
+
+  const nextTagIds = Array.from(
+    new Set([
+      ...sourceCommand.tagIds.filter((tagId) => tagId !== sourceGroupTagId),
+      groupTagId,
+    ]),
+  );
+
+  const updateSuccess = await quickCommandsStore.updateQuickCommand(
+    sourceCommand.id,
+    sourceCommand.name,
+    sourceCommand.command,
+    nextTagIds,
+    sourceCommand.variables ?? undefined,
+    false,
+  );
+
+  if (!updateSuccess) {
+    resetDragState();
+    return;
+  }
+
+  const refreshedSourceCommand =
+    quickCommandsStore.quickCommandsList.find((item) => item.id === sourceCommand.id)
+    ?? { ...sourceCommand, tagIds: nextTagIds };
+  const targetCommands = filteredAndGroupedCommands.value.find((group) => group.tagId === groupTagId)?.commands ?? [];
+  const reorderedTargetCommands = insertOrMoveById(
+    targetCommands,
+    refreshedSourceCommand.id,
+    commandId,
+    () => refreshedSourceCommand,
+  );
+
+  await quickCommandsStore.reorderCommandsInTag(groupTagId, reorderedTargetCommands.map((item) => item.id));
   resetDragState();
 };
 
@@ -745,13 +841,20 @@ const toggleGroup = (groupName: string) => {
 
 // 计算排序按钮的 title 和 icon
 const sortButtonTitle = computed(() => {
+  if (sortBy.value === 'manual') {
+    return t('quickCommands.sortByManual', '按手动顺序排序');
+  }
+
   return sortBy.value === 'name'
     ? t('quickCommands.sortByName', '按名称排序')
     : t('quickCommands.sortByLastUsed', '按最近使用排序');
 });
 
 const sortButtonIcon = computed(() => {
-  // 使用 Font Awesome 图标示例
+  if (sortBy.value === 'manual') {
+    return 'fas fa-grip-lines';
+  }
+
   return sortBy.value === 'name' ? 'fas fa-sort-alpha-down' : 'fas fa-clock';
 });
 
