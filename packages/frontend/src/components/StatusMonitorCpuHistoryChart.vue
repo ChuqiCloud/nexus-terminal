@@ -184,15 +184,16 @@ onBeforeUnmount(() => {
 <style scoped>
 .cpu-history-chart {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
-  height: 100%;
+  height: 188px;
+  align-self: start;
   border-radius: 16px;
   border: 1px solid rgba(148, 163, 184, 0.08);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02)),
     radial-gradient(circle at top left, rgba(59, 130, 246, 0.08), transparent 62%);
-  padding: 12px;
+  padding: 10px;
 }
 
 .cpu-history-chart__header {
@@ -212,22 +213,22 @@ onBeforeUnmount(() => {
 }
 
 .cpu-history-chart__title {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: #f8fbff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   line-height: 1.2;
 }
 
 .cpu-history-chart__latest {
   display: inline-flex;
-  min-height: 28px;
+  min-height: 24px;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
   border: 1px solid rgba(96, 165, 250, 0.22);
   background: rgba(37, 99, 235, 0.18);
-  padding: 0 10px;
+  padding: 0 9px;
   color: #dbeafe;
   font-size: 11px;
   font-weight: 800;
@@ -237,7 +238,7 @@ onBeforeUnmount(() => {
 .cpu-history-chart__canvas {
   min-width: 0;
   width: 100%;
-  height: 164px;
+  height: 112px;
   overflow: hidden;
 }
 

@@ -57,38 +57,6 @@
         </div>
       </header>
 
-      <section class="monitor-module monitor-module--usage">
-        <div class="monitor-module__heading">
-          <div>
-            <span class="monitor-module__eyebrow">{{ t('statusMonitor.cpuLabel') }}</span>
-            <h5 class="monitor-module__title">{{ t('statusMonitor.cpuUsageTitle') }}</h5>
-          </div>
-          <span class="monitor-module__pill">{{ displayCpuCores }}</span>
-        </div>
-
-        <div class="module-split module-split--cpu">
-          <StatusMonitorCpuHistoryChart :cpu-history="currentCpuHistory" />
-
-          <div class="cpu-core-grid">
-            <article
-              v-for="item in cpuCoreItems"
-              :key="item.key"
-              class="usage-lane usage-lane--cpu"
-            >
-              <div class="usage-lane__content">
-                <div class="usage-lane__meta">
-                  <span class="usage-lane__label">{{ item.label }}</span>
-                  <span class="usage-lane__value-inline">{{ item.value }}</span>
-                </div>
-                <div class="usage-lane__track">
-                  <span class="usage-lane__fill" :style="{ width: `${item.percent}%` }"></span>
-                </div>
-              </div>
-            </article>
-          </div>
-        </div>
-      </section>
-
       <div class="monitor-module-grid">
         <section class="monitor-module monitor-module--memory">
           <div class="monitor-module__heading">
@@ -118,50 +86,6 @@
                   <span>{{ item.label }}</span>
                 </div>
                 <div class="memory-stat__value">{{ item.value }}</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="monitor-module monitor-module--network">
-          <div class="monitor-module__heading">
-            <div>
-              <span class="monitor-module__eyebrow">{{ t('statusMonitor.networkLabel') }}</span>
-              <h5 class="monitor-module__title">{{ t('statusMonitor.networkLabel') }}</h5>
-            </div>
-            <span class="monitor-module__pill">{{ t('statusMonitor.networkSpeedTitleUnit', { unit: networkRateUnitLabel }) }}</span>
-          </div>
-
-          <div class="module-split module-split--network">
-            <StatusMonitorNetworkHistoryChart
-              :download-history="currentNetRxHistory"
-              :upload-history="currentNetTxHistory"
-            />
-
-            <div class="network-table">
-              <div class="network-table__header">
-                <span>{{ networkInterfaceDisplay }}</span>
-                <span>{{ t('statusMonitor.downloadLabel') }} / {{ t('statusMonitor.uploadLabel') }}</span>
-              </div>
-              <div class="network-table__columns">
-                <span></span>
-                <span>{{ t('statusMonitor.networkSpeedTitleUnit', { unit: networkRateUnitLabel }) }}</span>
-                <span>{{ t('statusMonitor.totalTrafficLabel') }}</span>
-              </div>
-
-              <div class="network-stat-stack">
-                <article
-                  v-for="item in networkFlowItems"
-                  :key="item.key"
-                  :class="['network-stat', `network-stat--${item.tone}`]"
-                >
-                  <span class="network-stat__label">
-                    <i :class="['fas', item.icon]"></i>
-                    <span>{{ item.label }}</span>
-                  </span>
-                  <span class="network-stat__value">{{ item.value }}</span>
-                  <span class="network-stat__total">{{ item.totalValue }}</span>
-                </article>
               </div>
             </div>
           </div>
@@ -278,9 +202,7 @@ import { computed, ref, watch, type CSSProperties, type PropType } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import ProcessManagerModal from './ProcessManagerModal.vue';
-import StatusMonitorCpuHistoryChart from './StatusMonitorCpuHistoryChart.vue';
 import StatusCharts from './StatusCharts.vue';
-import StatusMonitorNetworkHistoryChart from './StatusMonitorNetworkHistoryChart.vue';
 import { useSessionStore } from '../stores/session.store';
 import { useSettingsStore } from '../stores/settings.store';
 import { useConnectionsStore } from '../stores/connections.store';
@@ -320,11 +242,6 @@ const clampPercent = (value?: number): number => {
 
 const currentSessionState = computed(() => (props.activeSessionId ? sessions.value.get(props.activeSessionId) : null));
 const currentServerStatus = computed<ServerStatus | null>(() => currentSessionState.value?.statusMonitorManager?.serverStatus?.value ?? null);
-const currentCpuHistory = computed<readonly (number | null)[]>(() => currentSessionState.value?.statusMonitorManager?.cpuHistory?.value ?? Array(24).fill(null));
-const currentNetRxHistory = computed<readonly (number | null)[]>(() => currentSessionState.value?.statusMonitorManager?.netRxHistory?.value ?? Array(24).fill(null));
-const currentNetTxHistory = computed<readonly (number | null)[]>(() => currentSessionState.value?.statusMonitorManager?.netTxHistory?.value ?? Array(24).fill(null));
-
-const displayCpuPercent = computed(() => clampPercent(currentServerStatus.value?.cpuPercent));
 const displayMemoryPercent = computed(() => clampPercent(currentServerStatus.value?.memPercent));
 const displayDiskPercent = computed(() => clampPercent(currentServerStatus.value?.diskPercent));
 const currentStatusError = computed<string | null>(() => currentSessionState.value?.statusMonitorManager?.statusError?.value ?? null);
@@ -361,23 +278,6 @@ const displayCpuCores = computed(() => {
 });
 const displayOsName = computed(() => (currentServerStatus.value?.osName ?? cachedOsName.value) || t('statusMonitor.notAvailable'));
 const networkInterfaceDisplay = computed(() => currentServerStatus.value?.netInterface || t('statusMonitor.notAvailable'));
-
-const formatBytesPerSecond = (bytes?: number): string => {
-  if (bytes === undefined || bytes === null || isNaN(bytes)) return t('statusMonitor.notAvailable');
-  if (bytes < 1024) return `${bytes} ${t('statusMonitor.bytesPerSecond')}`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} ${t('statusMonitor.kiloBytesPerSecond')}`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} ${t('statusMonitor.megaBytesPerSecond')}`;
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} ${t('statusMonitor.gigaBytesPerSecond')}`;
-};
-
-const formatBytes = (bytes?: number): string => {
-  if (bytes === undefined || bytes === null || isNaN(bytes)) return t('statusMonitor.notAvailable');
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} ${t('statusMonitor.megaBytes')}`;
-  if (bytes < 1024 * 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} ${t('statusMonitor.gigaBytes')}`;
-  return `${(bytes / (1024 * 1024 * 1024 * 1024)).toFixed(1)} TB`;
-};
 
 const formatCompactBytes = (bytes?: number): string => {
   if (bytes === undefined || bytes === null || isNaN(bytes)) return t('statusMonitor.notAvailable');
@@ -513,55 +413,6 @@ const systemCardMetaItems = computed<MonitorOverviewItem[]>(() => [
   { key: 'timezone', label: t('statusMonitor.timezoneLabel'), value: timezoneDisplay.value },
   { key: 'uptime', label: t('statusMonitor.uptimeLabel'), value: uptimeDisplay.value },
 ]);
-
-const cpuCoreItems = computed(() => {
-  const rawPercents = currentServerStatus.value?.cpuCorePercents;
-  const fallbackCoreCount = (() => {
-    const currentCores = currentServerStatus.value?.cpuCores;
-    if (typeof currentCores !== 'number' || !Number.isFinite(currentCores) || currentCores <= 0) {
-      return 0;
-    }
-    return Math.round(currentCores);
-  })();
-
-  const normalizedPercents = Array.isArray(rawPercents) && rawPercents.length > 0
-    ? rawPercents
-    : Array.from({ length: fallbackCoreCount }, () => 0);
-
-  return normalizedPercents.map((percent, index) => {
-    const clampedPercent = clampPercent(percent);
-    return {
-      key: `cpu-core-${index + 1}`,
-      label: t('statusMonitor.cpuCoreLabel', { index: index + 1 }),
-      value: `${Math.round(clampedPercent)}%`,
-      percent: clampedPercent,
-    };
-  });
-});
-
-const networkFlowItems = computed(() => [
-  {
-    key: 'download',
-    label: t('statusMonitor.downloadLabel'),
-    value: formatBytesPerSecond(currentServerStatus.value?.netRxRate),
-    totalValue: formatBytes(currentServerStatus.value?.netRxTotalBytes),
-    tone: 'down',
-    icon: 'fa-arrow-down',
-  },
-  {
-    key: 'upload',
-    label: t('statusMonitor.uploadLabel'),
-    value: formatBytesPerSecond(currentServerStatus.value?.netTxRate),
-    totalValue: formatBytes(currentServerStatus.value?.netTxTotalBytes),
-    tone: 'up',
-    icon: 'fa-arrow-up',
-  },
-]);
-
-const networkRateUnitLabel = computed(() => {
-  const maxRate = Math.max(currentServerStatus.value?.netRxRate ?? 0, currentServerStatus.value?.netTxRate ?? 0);
-  return maxRate >= 1024 * 1024 ? 'MB/s' : 'KB/s';
-});
 
 const diskDeviceAccent = computed(() => {
   const raw = currentServerStatus.value?.diskDevice;
@@ -1012,13 +863,18 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
 .module-split--network {
   grid-template-columns: 1fr;
+  grid-template-rows: minmax(0, 146px) minmax(0, 1fr);
+  min-height: 0;
   align-content: start;
   gap: 8px;
+  overflow: hidden;
 }
 
 .monitor-module--network {
+  grid-template-rows: auto minmax(0, 1fr);
   max-height: 350px;
   gap: 8px;
+  overflow: hidden;
 }
 
 .memory-ring-panel,
@@ -1138,14 +994,14 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
 .network-table {
   display: grid;
-  gap: 6px;
-  height: auto;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 4px;
+  min-height: 0;
+  height: 100%;
   padding: 8px 10px;
+  overflow: hidden;
 }
 
-.network-table__header,
-.network-table__columns,
-.network-stat,
 .disk-summary-table__head,
 .disk-summary-table__row {
   display: flex;
@@ -1155,46 +1011,73 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 }
 
 .network-table__header {
-  padding-bottom: 6px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 4px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  font-size: 11px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 .network-table__columns {
+  display: grid;
+  grid-template-columns: minmax(0, 0.78fr) repeat(2, minmax(0, 0.61fr));
+  align-items: center;
+  gap: 6px;
   padding-top: 0;
   color: #9cb0c2;
+  font-size: 10px;
   font-weight: 700;
 }
 
 .network-stat-stack {
-  gap: 6px;
+  min-height: 0;
+  align-content: start;
+  gap: 4px;
 }
 
 .network-table__columns span,
 .network-stat span,
 .disk-summary-table__head span,
 .disk-summary-table__row span {
-  flex: 1 1 0;
   min-width: 0;
 }
 
+.network-table__header span:first-child,
 .network-table__columns span:first-child,
-.network-stat span:first-child {
-  flex-basis: 30%;
+.network-stat__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.network-table__header span:last-child,
+.network-table__columns span:not(:first-child),
+.network-stat__value,
+.network-stat__total {
+  justify-self: end;
+  text-align: right;
 }
 
 .network-stat {
+  display: grid;
+  grid-template-columns: minmax(0, 0.78fr) repeat(2, minmax(0, 0.61fr));
+  align-items: center;
+  gap: 6px;
   border-radius: 10px;
   border: 1px solid rgba(148, 163, 184, 0.06);
   background: rgba(255, 255, 255, 0.03);
-  padding: 8px 10px;
+  padding: 6px 8px;
 }
 
 .network-stat__label {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   color: #d9e5f1;
+  font-size: 11px;
 }
 
 .network-stat__label i {
@@ -1205,7 +1088,7 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 .network-stat__value,
 .network-stat__total {
   color: #f8fbff;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
@@ -1469,6 +1352,17 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   .disk-summary-table__row span {
     width: 100%;
     flex: none;
+  }
+
+  .monitor-module--network .network-table__header,
+  .monitor-module--network .network-table__columns,
+  .monitor-module--network .network-stat {
+    align-items: center;
+  }
+
+  .monitor-module--network .network-table__columns span,
+  .monitor-module--network .network-stat span {
+    width: auto;
   }
 }
 

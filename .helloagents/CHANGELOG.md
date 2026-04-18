@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- **[frontend]**: 删除状态监控默认视图中的 CPU 使用率卡与网络速度卡，保留内存 / 磁盘 / 进程管理作为常驻概览，减少右侧窄栏中的重复信息 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/StatusMonitor.vue:60-168,276-280,282-325
+
 - **[frontend]**: 将状态监控中的 CPU 卡片升级为总 CPU `canvas` 历史图 + 每核心实时条卡，并在极窄侧栏下自动切换为单列布局 — by yinjianm
   - 方案: [202604190351_status-monitor-cpu-total-and-per-core](archive/2026-04/202604190351_status-monitor-cpu-total-and-per-core/)
 
@@ -97,6 +101,9 @@
   - 方案: [202603250614_terminal-ansi-color-effects](archive/2026-03/202603250614_terminal-ansi-color-effects/)
 
 ### 快速修改
+- **[frontend]**: 将 CPU 历史图卡片从随父容器拉伸改为固定紧凑高度约 `188px`，并同步压缩标题区与 canvas 高度，避免在窄侧栏下被撑到约 `278px` — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/StatusMonitorCpuHistoryChart.vue:185-245
 - **[frontend]**: 将状态监控“进程管理”的“运行中 / 休眠中”也收纳进标题区胶囊组，和“总数”一起以内联小显示呈现，不再保留独立摘要行 - by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/StatusMonitor.vue:217-230,571-575,875-880
