@@ -101,6 +101,12 @@
   - 方案: [202603250614_terminal-ansi-color-effects](archive/2026-03/202603250614_terminal-ansi-color-effects/)
 
 ### 快速修改
+- **[frontend]**: 删除状态监控“进程管理”模块标题下的“默认概览 / 点击查看全部”副标题，只保留眉标与右侧操作区，收紧标题区纵向占用 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/StatusMonitor.vue:222-228
+- **[frontend]**: 将 CPU 历史图的 `canvas` 高度继续收紧到 `70px`，并同步缩短上方历史图区块行高，避免外层保留多余留白 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/StatusMonitor.vue, packages/frontend/src/components/StatusMonitorCpuHistoryChart.vue
 - **[frontend]**: 将 CPU 历史图卡片从随父容器拉伸改为固定紧凑高度约 `188px`，并同步压缩标题区与 canvas 高度，避免在窄侧栏下被撑到约 `278px` — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/StatusMonitorCpuHistoryChart.vue:185-245

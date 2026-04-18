@@ -69,22 +69,24 @@
         <div class="module-split module-split--cpu">
           <StatusMonitorCpuHistoryChart :cpu-history="currentCpuHistory" />
 
-          <div class="cpu-core-grid">
-            <article
-              v-for="item in cpuCoreItems"
-              :key="item.key"
-              class="usage-lane usage-lane--cpu"
-            >
-              <div class="usage-lane__content">
-                <div class="usage-lane__meta">
-                  <span class="usage-lane__label">{{ item.label }}</span>
-                  <span class="usage-lane__value-inline">{{ item.value }}</span>
+          <div class="cpu-core-panel">
+            <div class="cpu-core-grid">
+              <article
+                v-for="item in cpuCoreItems"
+                :key="item.key"
+                class="usage-lane usage-lane--cpu"
+              >
+                <div class="usage-lane__content">
+                  <div class="usage-lane__meta">
+                    <span class="usage-lane__label">{{ item.label }}</span>
+                    <span class="usage-lane__value-inline">{{ item.value }}</span>
+                  </div>
+                  <div class="usage-lane__track">
+                    <span class="usage-lane__fill" :style="{ width: `${item.percent}%` }"></span>
+                  </div>
                 </div>
-                <div class="usage-lane__track">
-                  <span class="usage-lane__fill" :style="{ width: `${item.percent}%` }"></span>
-                </div>
-              </div>
-            </article>
+              </article>
+            </div>
           </div>
         </div>
       </section>
@@ -221,7 +223,6 @@
           <div class="monitor-module__heading">
             <div>
               <span class="monitor-module__eyebrow">{{ t('statusMonitor.processManager.title') }}</span>
-              <h5 class="monitor-module__title">{{ t('statusMonitor.processManager.subtitle') }}</h5>
             </div>
             <div class="monitor-module__heading-actions">
               <div class="process-summary-pills">
@@ -851,6 +852,13 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   min-height: clamp(188px, 62cqw, 220px);
 }
 
+.monitor-module--usage {
+  grid-template-rows: auto minmax(0, 1fr);
+  max-height: 320px;
+  gap: 8px;
+  overflow: hidden;
+}
+
 .monitor-module--process {
   min-height: clamp(340px, 116cqw, 420px);
 }
@@ -977,14 +985,48 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   background: linear-gradient(90deg, #7dd3fc, #2563eb);
 }
 
+.usage-lane--cpu {
+  gap: 6px;
+  border-radius: 10px;
+  padding: 6px 8px;
+}
+
+.usage-lane--cpu .usage-lane__content {
+  gap: 6px;
+}
+
+.usage-lane--cpu .usage-lane__label {
+  font-size: 11px;
+}
+
+.usage-lane--cpu .usage-lane__value-inline {
+  font-size: 14px;
+}
+
+.usage-lane--cpu .usage-lane__track {
+  height: 6px;
+}
+
 .cpu-core-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(116px, 1fr));
   align-content: start;
-  gap: 8px;
-  max-height: 208px;
+  gap: 6px;
+  min-height: 0;
+  height: 100%;
   overflow-y: auto;
   padding-right: 2px;
+}
+
+.cpu-core-panel {
+  min-height: 0;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02)),
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.04), transparent 60%);
+  padding: 8px 10px;
+  overflow: hidden;
 }
 
 .module-split {
@@ -998,8 +1040,12 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 }
 
 .module-split--cpu {
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  align-items: stretch;
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(0, 126px) minmax(0, 112px);
+  min-height: 0;
+  align-content: start;
+  gap: 8px;
+  overflow: hidden;
 }
 
 .module-split--network {

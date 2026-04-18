@@ -2,7 +2,6 @@
   <div ref="chartHostRef" class="cpu-history-chart">
     <div class="cpu-history-chart__header">
       <div>
-        <p class="cpu-history-chart__subtitle">{{ t('statusMonitor.cpuHistoryRecentPoints', { count: displayPointCount }) }}</p>
         <h6 class="cpu-history-chart__title">{{ t('statusMonitor.cpuUsageTitle') }}</h6>
       </div>
       <span class="cpu-history-chart__latest">{{ t('statusMonitor.latestCpuValue', { value: latestCpuValue }) }}</span>
@@ -184,23 +183,25 @@ onBeforeUnmount(() => {
 <style scoped>
 .cpu-history-chart {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 8px;
   min-width: 0;
-  height: 188px;
-  align-self: start;
+  min-height: 0;
+  height: 100%;
   border-radius: 16px;
   border: 1px solid rgba(148, 163, 184, 0.08);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02)),
     radial-gradient(circle at top left, rgba(59, 130, 246, 0.08), transparent 62%);
   padding: 10px;
+  overflow: hidden;
 }
 
 .cpu-history-chart__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
 }
 
 .cpu-history-chart__subtitle {
@@ -213,22 +214,22 @@ onBeforeUnmount(() => {
 }
 
 .cpu-history-chart__title {
-  margin: 4px 0 0;
+  margin: 6px 0 0;
   color: #f8fbff;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   line-height: 1.2;
 }
 
 .cpu-history-chart__latest {
   display: inline-flex;
-  min-height: 24px;
+  min-height: 22px;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
   border: 1px solid rgba(96, 165, 250, 0.22);
   background: rgba(37, 99, 235, 0.18);
-  padding: 0 9px;
+  padding: 0 8px;
   color: #dbeafe;
   font-size: 11px;
   font-weight: 800;
@@ -237,8 +238,9 @@ onBeforeUnmount(() => {
 
 .cpu-history-chart__canvas {
   min-width: 0;
+  min-height: 0;
   width: 100%;
-  height: 112px;
+  height: 70px;
   overflow: hidden;
 }
 

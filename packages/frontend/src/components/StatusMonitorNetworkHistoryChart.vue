@@ -2,7 +2,6 @@
   <div ref="chartHostRef" class="network-history-chart">
     <div class="network-history-chart__header">
       <div>
-        <p class="network-history-chart__subtitle">{{ t('statusMonitor.networkHistoryRecentPoints', { count: displayPointCount }) }}</p>
         <h6 class="network-history-chart__title">
           {{ t('statusMonitor.networkSpeedTitleUnit', { unit: networkRateUnitIsMB ? 'MB/s' : 'KB/s' }) }}
         </h6>
@@ -331,7 +330,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   min-height: 0;
   width: 100%;
-  height: 88px;
+  height: 60px;
   overflow: hidden;
 }
 
