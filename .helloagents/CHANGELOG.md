@@ -101,6 +101,9 @@
   - 方案: [202603250614_terminal-ansi-color-effects](archive/2026-03/202603250614_terminal-ansi-color-effects/)
 
 ### 快速修改
+- **[frontend]**: 修正状态监控网络模块的上下布局分配，让历史图区按内容自适应、统计表区拿剩余空间并在极限高度下内部滚动，避免下半部分被直接裁切 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/StatusMonitor.vue, packages/frontend/src/components/StatusMonitorNetworkHistoryChart.vue
 - **[frontend]**: 删除状态监控“进程管理”模块标题下的“默认概览 / 点击查看全部”副标题，只保留眉标与右侧操作区，收紧标题区纵向占用 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/StatusMonitor.vue:222-228

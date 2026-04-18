@@ -259,7 +259,7 @@ onBeforeUnmount(() => {
 .network-history-chart {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
   min-height: 0;
   height: auto;
@@ -268,7 +268,7 @@ onBeforeUnmount(() => {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02)),
     radial-gradient(circle at top left, rgba(59, 130, 246, 0.06), transparent 62%);
-  padding: 10px;
+  padding: 8px 10px;
   overflow: hidden;
 }
 
@@ -289,9 +289,9 @@ onBeforeUnmount(() => {
 }
 
 .network-history-chart__title {
-  margin: 6px 0 0;
+  margin: 0;
   color: #f8fbff;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
   line-height: 1.2;
 }
@@ -306,9 +306,9 @@ onBeforeUnmount(() => {
 .network-history-chart__legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   color: #d9e5f1;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
 }
 

@@ -1050,7 +1050,7 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
 .module-split--network {
   grid-template-columns: 1fr;
-  grid-template-rows: minmax(0, 146px) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   min-height: 0;
   align-content: start;
   gap: 8px;
@@ -1059,7 +1059,9 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 
 .monitor-module--network {
   grid-template-rows: auto minmax(0, 1fr);
-  max-height: 350px;
+  height: 316px;
+  min-height: 316px;
+  max-height: 316px;
   gap: 8px;
   overflow: hidden;
 }
@@ -1182,10 +1184,10 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 .network-table {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 4px;
+  gap: 3px;
   min-height: 0;
   height: 100%;
-  padding: 8px 10px;
+  padding: 7px 9px;
   overflow: hidden;
 }
 
@@ -1202,7 +1204,7 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-  padding-bottom: 4px;
+  padding-bottom: 3px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.1);
   font-size: 11px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -1215,14 +1217,16 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   gap: 6px;
   padding-top: 0;
   color: #9cb0c2;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
 }
 
 .network-stat-stack {
   min-height: 0;
   align-content: start;
-  gap: 4px;
+  gap: 3px;
+  overflow-y: auto;
+  padding-right: 1px;
 }
 
 .network-table__columns span,
@@ -1256,7 +1260,7 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   border-radius: 10px;
   border: 1px solid rgba(148, 163, 184, 0.06);
   background: rgba(255, 255, 255, 0.03);
-  padding: 6px 8px;
+  padding: 5px 7px;
 }
 
 .network-stat__label {
