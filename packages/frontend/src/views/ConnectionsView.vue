@@ -1597,6 +1597,17 @@ onBeforeUnmount(() => {
                         <span>{{ t('connections.actions.connect', '连接') }}</span>
                       </button>
 
+                      <button
+                        v-if="conn.type === 'SSH'"
+                        :disabled="getSingleTestButtonInfo(conn.id, conn.type).disabled"
+                        :title="getSingleTestButtonInfo(conn.id, conn.type).title"
+                        class="px-4 py-2 rounded-lg border border-border bg-background text-foreground hover:bg-border transition-colors inline-flex items-center gap-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        @click.stop="handleTestSingleConnection(conn)"
+                      >
+                        <i :class="getSingleTestButtonInfo(conn.id, conn.type).iconClass"></i>
+                        <span>{{ getSingleTestButtonInfo(conn.id, conn.type).text }}</span>
+                      </button>
+
                       <div class="relative">
                         <button
                           @click.stop="toggleMoreMenu(conn.id)"
@@ -1617,16 +1628,6 @@ onBeforeUnmount(() => {
                           >
                             <i class="fas fa-pen w-4 text-center"></i>
                             <span>{{ t('connections.actions.edit', '编辑') }}</span>
-                          </button>
-                          <button
-                            v-if="conn.type === 'SSH'"
-                            :disabled="getSingleTestButtonInfo(conn.id, conn.type).disabled"
-                            :title="getSingleTestButtonInfo(conn.id, conn.type).title"
-                            class="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-header transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            @click.stop="handleTestSingleConnection(conn); closeMoreMenu()"
-                          >
-                            <i :class="[getSingleTestButtonInfo(conn.id, conn.type).iconClass, 'w-4 text-center']"></i>
-                            <span>{{ getSingleTestButtonInfo(conn.id, conn.type).text }}</span>
                           </button>
                           <button
                             class="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-header transition-colors flex items-center gap-2"

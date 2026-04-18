@@ -1,193 +1,247 @@
 import { getDbInstance, runDb, getDb as getDbRow, allDb } from '../database/connection';
 
-// 定义基础快捷指令接口
 export interface QuickCommand {
     id: number;
-    name: string | null; // 名称可选
+    name: string | null;
     command: string;
     usage_count: number;
-    variables?: string; // 存储 JSON 格式的变量键值对
-    created_at: number; // Unix 时间戳 (秒)
-    updated_at: number; // Unix 时间戳 (秒)
+    sort_order: number;
+    variables?: string | null;
+    created_at: number;
+    updated_at: number;
 }
 
-// 定义包含标签 ID 和解析后变量的接口
 export type QuickCommandWithTags = Omit<QuickCommand, 'variables'> & {
     tagIds: number[];
-    variables: Record<string, string> | null; // API 层面使用对象
+    tagOrders: Record<number, number>;
+    variables: Record<string, string> | null;
 };
 
-// 用于从数据库获取带 tag_ids_str 的行
-interface DbQuickCommandWithTagsRow extends QuickCommand {
-    tag_ids_str: string | null;
-    // variables 字段已包含在 QuickCommand 中，这里不需要重复定义，因为 QuickCommand 将包含 variables?: string
+interface QuickCommandTagOrderRow {
+    quick_command_id: number;
+    tag_id: number;
+    sort_order: number;
 }
 
+type QuickCommandSortBy = 'manual' | 'name' | 'usage_count';
 
-/**
- * 添加一条新的快捷指令
- * @param name - 指令名称 (可选)
- * @param command - 指令内容
- * @param variables - 变量对象 (可选)
- * @returns 返回插入记录的 ID
- */
-export const addQuickCommand = async (name: string | null, command: string, variables?: Record<string, string>): Promise<number> => {
-    const sql = `INSERT INTO quick_commands (name, command, variables, created_at, updated_at) VALUES (?, ?, ?, strftime('%s', 'now'), strftime('%s', 'now'))`;
+const parseVariables = (variables: string | null | undefined, commandId: number): Record<string, string> | null => {
+    if (!variables) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(variables);
+    } catch (error) {
+        console.error(`[QuickCommandsRepository] 解析快捷指令 ${commandId} 的 variables 失败:`, error);
+        return null;
+    }
+};
+
+const getNextQuickCommandSortOrder = async (db: Awaited<ReturnType<typeof getDbInstance>>): Promise<number> => {
+    const row = await getDbRow<{ nextSortOrder?: number }>(
+        db,
+        'SELECT COALESCE(MAX(sort_order), 0) + 1 AS nextSortOrder FROM quick_commands',
+    );
+    return row?.nextSortOrder ?? 1;
+};
+
+const getTagOrderMap = async (
+    db: Awaited<ReturnType<typeof getDbInstance>>,
+    commandIds: number[],
+): Promise<Map<number, { tagIds: number[]; tagOrders: Record<number, number> }>> => {
+    const tagState = new Map<number, { tagIds: number[]; tagOrders: Record<number, number> }>();
+
+    if (commandIds.length === 0) {
+        return tagState;
+    }
+
+    const placeholders = commandIds.map(() => '?').join(', ');
+    const rows = await allDb<QuickCommandTagOrderRow>(
+        db,
+        `SELECT quick_command_id, tag_id, sort_order
+         FROM quick_command_tag_associations
+         WHERE quick_command_id IN (${placeholders})
+         ORDER BY quick_command_id ASC, sort_order ASC, tag_id ASC`,
+        commandIds,
+    );
+
+    for (const row of rows) {
+        if (!tagState.has(row.quick_command_id)) {
+            tagState.set(row.quick_command_id, { tagIds: [], tagOrders: {} });
+        }
+
+        const currentState = tagState.get(row.quick_command_id)!;
+        currentState.tagIds.push(row.tag_id);
+        currentState.tagOrders[row.tag_id] = row.sort_order;
+    }
+
+    return tagState;
+};
+
+const buildQuickCommandsWithTags = async (
+    db: Awaited<ReturnType<typeof getDbInstance>>,
+    rows: QuickCommand[],
+): Promise<QuickCommandWithTags[]> => {
+    const commandIds = rows.map((row) => row.id);
+    const tagState = await getTagOrderMap(db, commandIds);
+
+    return rows.map((row) => {
+        const { variables, ...rest } = row;
+        const currentTagState = tagState.get(row.id);
+
+        return {
+            ...rest,
+            variables: parseVariables(variables, row.id),
+            tagIds: currentTagState?.tagIds ?? [],
+            tagOrders: currentTagState?.tagOrders ?? {},
+        };
+    });
+};
+
+export const addQuickCommand = async (
+    name: string | null,
+    command: string,
+    variables?: Record<string, string>,
+): Promise<number> => {
     try {
         const db = await getDbInstance();
         const variablesJson = variables ? JSON.stringify(variables) : null;
-        const result = await runDb(db, sql, [name, command, variablesJson]);
+        const sortOrder = await getNextQuickCommandSortOrder(db);
+        const result = await runDb(
+            db,
+            `INSERT INTO quick_commands (name, command, usage_count, variables, sort_order, created_at, updated_at)
+             VALUES (?, ?, 0, ?, ?, strftime('%s', 'now'), strftime('%s', 'now'))`,
+            [name, command, variablesJson, sortOrder],
+        );
+
         if (typeof result.lastID !== 'number' || result.lastID <= 0) {
-             throw new Error('添加快捷指令后未能获取有效的 lastID');
+            throw new Error('添加快捷指令后未能获取有效的 lastID');
         }
+
         return result.lastID;
     } catch (err: any) {
-        console.error('添加快捷指令时出错:', err.message);
+        console.error('[QuickCommandsRepository] 添加快捷指令失败:', err.message);
         throw new Error('无法添加快捷指令');
     }
 };
 
-/**
- * 更新指定的快捷指令
- * @param id - 要更新的记录 ID
- * @param name - 新的指令名称 (可选)
- * @param command - 新的指令内容
- * @param variables - 新的变量对象 (可选)
- * @returns 返回是否成功更新 (true/false)
- */
-export const updateQuickCommand = async (id: number, name: string | null, command: string, variables?: Record<string, string>): Promise<boolean> => {
-    const sql = `UPDATE quick_commands SET name = ?, command = ?, variables = ?, updated_at = strftime('%s', 'now') WHERE id = ?`;
+export const updateQuickCommand = async (
+    id: number,
+    name: string | null,
+    command: string,
+    variables?: Record<string, string>,
+): Promise<boolean> => {
     try {
         const db = await getDbInstance();
         const variablesJson = variables ? JSON.stringify(variables) : null;
-        const result = await runDb(db, sql, [name, command, variablesJson, id]);
+        const result = await runDb(
+            db,
+            'UPDATE quick_commands SET name = ?, command = ?, variables = ?, updated_at = strftime(\'%s\', \'now\') WHERE id = ?',
+            [name, command, variablesJson, id],
+        );
         return result.changes > 0;
     } catch (err: any) {
-        console.error('更新快捷指令时出错:', err.message);
+        console.error('[QuickCommandsRepository] 更新快捷指令失败:', err.message);
         throw new Error('无法更新快捷指令');
     }
 };
 
-/**
- * 根据 ID 删除指定的快捷指令
- * @param id - 要删除的记录 ID
- * @returns 返回是否成功删除 (true/false)
- */
 export const deleteQuickCommand = async (id: number): Promise<boolean> => {
-    const sql = `DELETE FROM quick_commands WHERE id = ?`;
     try {
         const db = await getDbInstance();
-        const result = await runDb(db, sql, [id]);
+        const result = await runDb(db, 'DELETE FROM quick_commands WHERE id = ?', [id]);
         return result.changes > 0;
     } catch (err: any) {
-        console.error('删除快捷指令时出错:', err.message);
+        console.error('[QuickCommandsRepository] 删除快捷指令失败:', err.message);
         throw new Error('无法删除快捷指令');
     }
 };
 
-/**
- * 获取所有快捷指令及其关联的标签 ID
- * @param sortBy - 排序字段 ('name' 或 'usage_count')
- * @returns 返回包含所有快捷指令条目及标签 ID 的数组
- */
-export const getAllQuickCommands = async (sortBy: 'name' | 'usage_count' = 'name'): Promise<QuickCommandWithTags[]> => {
-    let orderByClause = 'ORDER BY qc.name ASC'; // 默认按名称升序
+export const getAllQuickCommands = async (sortBy: QuickCommandSortBy = 'manual'): Promise<QuickCommandWithTags[]> => {
+    let orderByClause = 'ORDER BY sort_order ASC, id ASC';
     if (sortBy === 'usage_count') {
-        orderByClause = 'ORDER BY qc.usage_count DESC, qc.name ASC'; // 按使用频率降序，同频率按名称升序
+        orderByClause = 'ORDER BY usage_count DESC, name ASC, id ASC';
+    } else if (sortBy === 'name') {
+        orderByClause = 'ORDER BY name ASC, id ASC';
     }
-    // 使用 LEFT JOIN 连接关联表，并使用 GROUP_CONCAT 获取标签 ID 字符串
-    const sql = `
-        SELECT
-            qc.id, qc.name, qc.command, qc.usage_count, qc.variables, qc.created_at, qc.updated_at,
-            GROUP_CONCAT(qta.tag_id) as tag_ids_str
-         FROM quick_commands qc
-         LEFT JOIN quick_command_tag_associations qta ON qc.id = qta.quick_command_id
-         GROUP BY qc.id
-         ${orderByClause}`;
+
     try {
         const db = await getDbInstance();
-        const rows = await allDb<DbQuickCommandWithTagsRow>(db, sql);
-        // 将 tag_ids_str 解析为数字数组，并解析 variables
-        return rows.map(row => {
-            let parsedVariables: Record<string, string> | null = null;
-            if (row.variables) {
-                try {
-                    parsedVariables = JSON.parse(row.variables);
-                } catch (e) {
-                    console.error(`Error parsing variables for quick command ${row.id}:`, e);
-                    //保持 parsedVariables 为 null
-                }
-            }
-            const { variables, ...restOfRow } = row; // 从 row 中移除原始的 string 类型的 variables
-            return {
-                ...restOfRow,
-                variables: parsedVariables,
-                tagIds: row.tag_ids_str ? row.tag_ids_str.split(',').map(Number).filter(id => !isNaN(id)) : []
-            };
-        });
+        const rows = await allDb<QuickCommand>(
+            db,
+            `SELECT id, name, command, usage_count, sort_order, variables, created_at, updated_at
+             FROM quick_commands
+             ${orderByClause}`,
+        );
+        return await buildQuickCommandsWithTags(db, rows);
     } catch (err: any) {
-        console.error('获取快捷指令（带标签）时出错:', err.message);
+        console.error('[QuickCommandsRepository] 获取快捷指令失败:', err.message);
         throw new Error('无法获取快捷指令');
     }
 };
 
-/**
- * 增加指定快捷指令的使用次数
- * @param id - 要增加次数的记录 ID
- * @returns 返回是否成功更新 (true/false)
- */
 export const incrementUsageCount = async (id: number): Promise<boolean> => {
-    const sql = `UPDATE quick_commands SET usage_count = usage_count + 1, updated_at = strftime('%s', 'now') WHERE id = ?`;
     try {
         const db = await getDbInstance();
-        const result = await runDb(db, sql, [id]);
+        const result = await runDb(
+            db,
+            'UPDATE quick_commands SET usage_count = usage_count + 1, updated_at = strftime(\'%s\', \'now\') WHERE id = ?',
+            [id],
+        );
         return result.changes > 0;
     } catch (err: any) {
-        console.error('增加快捷指令使用次数时出错:', err.message);
+        console.error('[QuickCommandsRepository] 增加快捷指令使用次数失败:', err.message);
         throw new Error('无法增加快捷指令使用次数');
     }
 };
 
-/**
- * 根据 ID 查找快捷指令及其关联的标签 ID
- * @param id - 要查找的记录 ID
- * @returns 返回找到的快捷指令条目及标签 ID，如果未找到则返回 undefined
- */
 export const findQuickCommandById = async (id: number): Promise<QuickCommandWithTags | undefined> => {
-    // 使用 LEFT JOIN 连接关联表，并使用 GROUP_CONCAT 获取标签 ID 字符串
-    const sql = `
-        SELECT
-            qc.id, qc.name, qc.command, qc.usage_count, qc.variables, qc.created_at, qc.updated_at,
-            GROUP_CONCAT(qta.tag_id) as tag_ids_str
-         FROM quick_commands qc
-         LEFT JOIN quick_command_tag_associations qta ON qc.id = qta.quick_command_id
-         WHERE qc.id = ?
-         GROUP BY qc.id`;
     try {
         const db = await getDbInstance();
-        const row = await getDbRow<DbQuickCommandWithTagsRow>(db, sql, [id]);
-        if (row && typeof row.id !== 'undefined') {
-            // 将 tag_ids_str 解析为数字数组，并解析 variables
-            let parsedVariables: Record<string, string> | null = null;
-            if (row.variables) {
-                try {
-                    parsedVariables = JSON.parse(row.variables);
-                } catch (e) {
-                    console.error(`Error parsing variables for quick command ${row.id}:`, e);
-                     //保持 parsedVariables 为 null
-                }
-            }
-            const { variables, ...restOfRow } = row; // 从 row 中移除原始的 string 类型的 variables
-            return {
-                ...restOfRow,
-                variables: parsedVariables,
-                tagIds: row.tag_ids_str ? row.tag_ids_str.split(',').map(Number).filter(id => !isNaN(id)) : []
-            };
-        } else {
+        const row = await getDbRow<QuickCommand>(
+            db,
+            `SELECT id, name, command, usage_count, sort_order, variables, created_at, updated_at
+             FROM quick_commands
+             WHERE id = ?`,
+            [id],
+        );
+
+        if (!row) {
             return undefined;
         }
+
+        const [hydratedRow] = await buildQuickCommandsWithTags(db, [row]);
+        return hydratedRow;
     } catch (err: any) {
-        console.error('查找快捷指令（带标签）时出错:', err.message);
-        throw new Error('无法查找快捷指令');
+        console.error('[QuickCommandsRepository] 查询快捷指令失败:', err.message);
+        throw new Error('无法查询快捷指令');
+    }
+};
+
+export const reorderQuickCommands = async (commandIds: number[]): Promise<void> => {
+    const normalizedCommandIds = Array.from(
+        new Set(commandIds.filter((commandId) => Number.isInteger(commandId) && commandId > 0)),
+    );
+
+    if (normalizedCommandIds.length === 0) {
+        return;
+    }
+
+    const db = await getDbInstance();
+    try {
+        await runDb(db, 'BEGIN TRANSACTION');
+        for (let index = 0; index < normalizedCommandIds.length; index += 1) {
+            await runDb(
+                db,
+                'UPDATE quick_commands SET sort_order = ?, updated_at = strftime(\'%s\', \'now\') WHERE id = ?',
+                [index + 1, normalizedCommandIds[index]],
+            );
+        }
+        await runDb(db, 'COMMIT');
+    } catch (err: any) {
+        await runDb(db, 'ROLLBACK');
+        console.error('[QuickCommandsRepository] 重排快捷指令失败:', err.message);
+        throw new Error('无法更新快捷指令顺序');
     }
 };

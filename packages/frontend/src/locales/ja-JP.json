@@ -196,6 +196,8 @@
             "optional": "オプション",
             "passphrase": "パスフレーズ:",
             "password": "パスワード:",
+            "showPassword": "パスワードを表示",
+            "hidePassword": "パスワードを隠す",
             "port": "ポート:",
             "privateKey": "秘密鍵:",
             "noSshKey":"SSHキーなし",

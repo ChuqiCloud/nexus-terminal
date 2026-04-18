@@ -39,6 +39,19 @@ const initialFormData: LoginCredentialInput = {
 
 const formData = reactive({ ...initialFormData });
 const formError = ref<string | null>(null);
+const visiblePasswordFields = reactive({
+  sshPassword: false,
+  genericPassword: false,
+});
+
+const resetPasswordVisibility = (): void => {
+  visiblePasswordFields.sshPassword = false;
+  visiblePasswordFields.genericPassword = false;
+};
+
+const togglePasswordVisibility = (field: keyof typeof visiblePasswordFields): void => {
+  visiblePasswordFields[field] = !visiblePasswordFields[field];
+};
 
 watch(() => props.initialType, (newValue) => {
   if (!credentialToEdit.value && newValue) {
@@ -47,10 +60,15 @@ watch(() => props.initialType, (newValue) => {
 });
 
 watch(() => formData.type, (newType) => {
+  resetPasswordVisibility();
   if (newType !== 'SSH') {
     formData.auth_method = 'password';
     formData.ssh_key_id = null;
   }
+});
+
+watch(() => formData.auth_method, () => {
+  resetPasswordVisibility();
 });
 
 onMounted(() => {
@@ -60,6 +78,7 @@ onMounted(() => {
 const resetForm = () => {
   Object.assign(formData, initialFormData, { type: props.initialType || 'SSH' });
   formError.value = null;
+  resetPasswordVisibility();
 };
 
 const showAddForm = () => {
@@ -71,6 +90,7 @@ const showAddForm = () => {
 const showEditForm = async (credential: LoginCredentialBasicInfo) => {
   formError.value = null;
   credentialToEdit.value = credential;
+  resetPasswordVisibility();
 
   const details = await loginCredentialsStore.fetchLoginCredentialDetails(credential.id);
   if (!details) {
@@ -300,7 +320,19 @@ const cancelForm = () => {
             </div>
             <div v-if="formData.auth_method === 'password'">
               <label for="credential-password" class="block text-sm font-medium text-text-secondary mb-1">{{ t('connections.form.password', '密码') }}</label>
-              <input id="credential-password" v-model="formData.password" type="password" autocomplete="new-password" class="w-full px-3 py-2 border border-border rounded-md shadow-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" />
+              <div class="relative">
+                <input id="credential-password" v-model="formData.password" :type="visiblePasswordFields.sshPassword ? 'text' : 'password'" autocomplete="new-password" class="w-full px-3 py-2 pr-11 border border-border rounded-md shadow-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" />
+                <button
+                  type="button"
+                  class="absolute inset-y-0 right-0 flex items-center px-3 text-text-secondary hover:text-foreground focus:outline-none focus:text-foreground"
+                  :title="visiblePasswordFields.sshPassword ? t('connections.form.hidePassword', '隐藏密码') : t('connections.form.showPassword', '显示密码')"
+                  :aria-label="visiblePasswordFields.sshPassword ? t('connections.form.hidePassword', '隐藏密码') : t('connections.form.showPassword', '显示密码')"
+                  :aria-pressed="visiblePasswordFields.sshPassword"
+                  @click="togglePasswordVisibility('sshPassword')"
+                >
+                  <i :class="visiblePasswordFields.sshPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                </button>
+              </div>
             </div>
             <div v-else>
               <label class="block text-sm font-medium text-text-secondary mb-1">{{ t('connections.form.sshKey', 'SSH 密钥') }}</label>
@@ -313,7 +345,19 @@ const cancelForm = () => {
 
           <div v-else>
             <label for="credential-password-generic" class="block text-sm font-medium text-text-secondary mb-1">{{ t('connections.form.password', '密码') }}</label>
-            <input id="credential-password-generic" v-model="formData.password" type="password" autocomplete="new-password" class="w-full px-3 py-2 border border-border rounded-md shadow-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" />
+            <div class="relative">
+              <input id="credential-password-generic" v-model="formData.password" :type="visiblePasswordFields.genericPassword ? 'text' : 'password'" autocomplete="new-password" class="w-full px-3 py-2 pr-11 border border-border rounded-md shadow-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" />
+              <button
+                type="button"
+                class="absolute inset-y-0 right-0 flex items-center px-3 text-text-secondary hover:text-foreground focus:outline-none focus:text-foreground"
+                :title="visiblePasswordFields.genericPassword ? t('connections.form.hidePassword', '隐藏密码') : t('connections.form.showPassword', '显示密码')"
+                :aria-label="visiblePasswordFields.genericPassword ? t('connections.form.hidePassword', '隐藏密码') : t('connections.form.showPassword', '显示密码')"
+                :aria-pressed="visiblePasswordFields.genericPassword"
+                @click="togglePasswordVisibility('genericPassword')"
+              >
+                <i :class="visiblePasswordFields.genericPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+              </button>
+            </div>
           </div>
 
           <div>

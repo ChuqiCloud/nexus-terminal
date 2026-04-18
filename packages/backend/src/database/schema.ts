@@ -187,6 +187,7 @@ CREATE TABLE IF NOT EXISTS quick_commands (
     command TEXT NOT NULL, -- 指令必选
     usage_count INTEGER NOT NULL DEFAULT 0, -- 使用频率
     variables TEXT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
     updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
 );
@@ -198,6 +199,7 @@ export const createQuickCommandTagsTableSQL = `
 CREATE TABLE IF NOT EXISTS quick_command_tags (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
+    sort_order INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
     updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
 );
@@ -207,6 +209,7 @@ export const createQuickCommandTagAssociationsTableSQL = `
 CREATE TABLE IF NOT EXISTS quick_command_tag_associations (
     quick_command_id INTEGER NOT NULL,
     tag_id INTEGER NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (quick_command_id, tag_id),
     FOREIGN KEY (quick_command_id) REFERENCES quick_commands(id) ON DELETE CASCADE,
     FOREIGN KEY (tag_id) REFERENCES quick_command_tags(id) ON DELETE CASCADE

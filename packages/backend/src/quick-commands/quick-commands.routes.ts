@@ -9,7 +9,9 @@ router.use(isAuthenticated);
 
 // 定义路由
 router.post('/', QuickCommandsController.addQuickCommand); // POST /api/v1/quick-commands
-router.get('/', QuickCommandsController.getAllQuickCommands); // GET /api/v1/quick-commands?sortBy=name|usage_count
+router.get('/', QuickCommandsController.getAllQuickCommands); // GET /api/v1/quick-commands?sortBy=manual|name|usage_count
+router.put('/reorder', QuickCommandsController.reorderQuickCommands); // PUT /api/v1/quick-commands/reorder
+router.put('/reorder-by-tag', QuickCommandsController.reorderCommandsByTag); // PUT /api/v1/quick-commands/reorder-by-tag
 router.put('/:id', QuickCommandsController.updateQuickCommand); // PUT /api/v1/quick-commands/:id
 router.delete('/:id', QuickCommandsController.deleteQuickCommand); // DELETE /api/v1/quick-commands/:id
 router.post('/:id/increment-usage', QuickCommandsController.incrementUsage); // POST /api/v1/quick-commands/:id/increment-usage

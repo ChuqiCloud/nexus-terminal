@@ -265,6 +265,8 @@
       "authMethodPassword": "Password",
       "authMethodKey": "SSH Key",
       "password": "Password:",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
       "privateKey": "Private Key:",
       "passphrase": "Passphrase:",
       "vncPassword": "VNC Password",

@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+- **[frontend]**: 为快捷指令视图新增分组拖拽排序、组内命令拖拽排序与扁平命令列表拖拽排序，并在拖拽完成后自动切换到手动顺序视图以保持刷新后顺序一致 — by yinjianm
+  - 方案: [202604190208_quickcommands-drag-reorder](archive/2026-04/202604190208_quickcommands-drag-reorder/)
+
+- **[backend]**: 为快捷指令、快捷指令标签及其关联表补充 `sort_order` 持久化字段，并新增分组重排、全局命令重排和标签内命令重排接口，同时保留既有标签关联顺序 — by yinjianm
+  - 方案: [202604190208_quickcommands-drag-reorder](archive/2026-04/202604190208_quickcommands-drag-reorder/)
+
+- **[frontend]**: 将连接管理页 SSH 连接卡片的默认操作区调整为“连接 / 测试 / 更多”，并把重复的测试入口从更多菜单移除，减少常用测试操作的额外点击 — by yinjianm
+  - 方案: [202604190210_connection-card-default-test-button](archive/2026-04/202604190210_connection-card-default-test-button/)
+
+- **[frontend]**: 为连接新增/编辑表单以及登录凭证管理弹窗的直填密码输入补充“小眼睛”显隐切换，默认仍隐藏，仅在本地输入端切换明文核对 — by yinjianm
+  - 方案: [202604190201_connection-password-visibility-toggle](archive/2026-04/202604190201_connection-password-visibility-toggle/)
+
 - **[workspace-root]**: 为 Docker 镜像发布 workflow 增加按路径检测的动态构建矩阵，仅在共享根文件或对应服务目录变更时构建受影响镜像，手动触发仍保留全量发布能力 - by yinjianm
   - 方案: [202604160350_workflow-service-scoped-docker-builds](archive/2026-04/202604160350_workflow-service-scoped-docker-builds/)
 

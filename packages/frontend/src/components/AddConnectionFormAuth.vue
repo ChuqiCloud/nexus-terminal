@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reactive, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import SshKeySelector from './SshKeySelector.vue'; // Assuming SshKeySelector is used here
 import LoginCredentialSelector from './LoginCredentialSelector.vue';
@@ -19,6 +20,26 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+
+const visiblePasswordFields = reactive({
+  sshPassword: false,
+  rdpPassword: false,
+  vncPassword: false,
+});
+
+const resetPasswordVisibility = (): void => {
+  visiblePasswordFields.sshPassword = false;
+  visiblePasswordFields.rdpPassword = false;
+  visiblePasswordFields.vncPassword = false;
+};
+
+const togglePasswordVisibility = (field: keyof typeof visiblePasswordFields): void => {
+  visiblePasswordFields[field] = !visiblePasswordFields[field];
+};
+
+watch(() => props.formData.type, resetPasswordVisibility);
+watch(() => props.formData.auth_method, resetPasswordVisibility);
+watch(() => props.formData.credential_source, resetPasswordVisibility);
 </script>
 
 <template>
@@ -86,8 +107,20 @@ const { t } = useI18n();
 
       <div v-if="props.formData.auth_method === 'password'">
         <label for="conn-password" class="block text-sm font-medium text-text-secondary mb-1">{{ t('connections.form.password') }}</label>
-        <input type="password" id="conn-password" v-model="props.formData.password" :required="props.formData.auth_method === 'password' && !isEditMode" autocomplete="new-password"
-               class="w-full px-3 py-2 border border-border rounded-md shadow-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" />
+        <div class="relative">
+          <input :type="visiblePasswordFields.sshPassword ? 'text' : 'password'" id="conn-password" v-model="props.formData.password" :required="props.formData.auth_method === 'password' && !isEditMode" autocomplete="new-password"
+                 class="w-full px-3 py-2 pr-11 border border-border rounded-md shadow-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" />
+          <button
+            type="button"
+            class="absolute inset-y-0 right-0 flex items-center px-3 text-text-secondary hover:text-foreground focus:outline-none focus:text-foreground"
+            :title="visiblePasswordFields.sshPassword ? t('connections.form.hidePassword', '隐藏密码') : t('connections.form.showPassword', '显示密码')"
+            :aria-label="visiblePasswordFields.sshPassword ? t('connections.form.hidePassword', '隐藏密码') : t('connections.form.showPassword', '显示密码')"
+            :aria-pressed="visiblePasswordFields.sshPassword"
+            @click="togglePasswordVisibility('sshPassword')"
+          >
+            <i :class="visiblePasswordFields.sshPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+          </button>
+        </div>
       </div>
 
       <div v-if="props.formData.auth_method === 'key'" class="space-y-4">
@@ -102,8 +135,20 @@ const { t } = useI18n();
     <template v-if="props.formData.type === 'RDP'">
        <div>
          <label for="conn-password-rdp" class="block text-sm font-medium text-text-secondary mb-1">{{ t('connections.form.password') }}</label>
-         <input type="password" id="conn-password-rdp" v-model="props.formData.password" :required="!isEditMode" autocomplete="new-password"
-                class="w-full px-3 py-2 border border-border rounded-md shadow-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" />
+         <div class="relative">
+           <input :type="visiblePasswordFields.rdpPassword ? 'text' : 'password'" id="conn-password-rdp" v-model="props.formData.password" :required="!isEditMode" autocomplete="new-password"
+                  class="w-full px-3 py-2 pr-11 border border-border rounded-md shadow-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" />
+           <button
+             type="button"
+             class="absolute inset-y-0 right-0 flex items-center px-3 text-text-secondary hover:text-foreground focus:outline-none focus:text-foreground"
+             :title="visiblePasswordFields.rdpPassword ? t('connections.form.hidePassword', '隐藏密码') : t('connections.form.showPassword', '显示密码')"
+             :aria-label="visiblePasswordFields.rdpPassword ? t('connections.form.hidePassword', '隐藏密码') : t('connections.form.showPassword', '显示密码')"
+             :aria-pressed="visiblePasswordFields.rdpPassword"
+             @click="togglePasswordVisibility('rdpPassword')"
+           >
+             <i :class="visiblePasswordFields.rdpPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+           </button>
+         </div>
        </div>
      </template>
 
@@ -111,8 +156,20 @@ const { t } = useI18n();
     <template v-if="props.formData.type === 'VNC'">
       <div>
         <label for="conn-password-vnc" class="block text-sm font-medium text-text-secondary mb-1">{{ t('connections.form.vncPassword', 'VNC 密码') }}</label>
-        <input type="password" id="conn-password-vnc" v-model="props.formData.vncPassword" :required="!isEditMode" autocomplete="new-password"
-               class="w-full px-3 py-2 border border-border rounded-md shadow-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" />
+        <div class="relative">
+          <input :type="visiblePasswordFields.vncPassword ? 'text' : 'password'" id="conn-password-vnc" v-model="props.formData.vncPassword" :required="!isEditMode" autocomplete="new-password"
+                 class="w-full px-3 py-2 pr-11 border border-border rounded-md shadow-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" />
+          <button
+            type="button"
+            class="absolute inset-y-0 right-0 flex items-center px-3 text-text-secondary hover:text-foreground focus:outline-none focus:text-foreground"
+            :title="visiblePasswordFields.vncPassword ? t('connections.form.hidePassword', '隐藏密码') : t('connections.form.showPassword', '显示密码')"
+            :aria-label="visiblePasswordFields.vncPassword ? t('connections.form.hidePassword', '隐藏密码') : t('connections.form.showPassword', '显示密码')"
+            :aria-pressed="visiblePasswordFields.vncPassword"
+            @click="togglePasswordVisibility('vncPassword')"
+          >
+            <i :class="visiblePasswordFields.vncPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+          </button>
+        </div>
       </div>
     </template>
     </template>

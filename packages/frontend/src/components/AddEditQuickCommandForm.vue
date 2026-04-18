@@ -4,9 +4,9 @@
       ref="modalContentRef"
       class="bg-background text-foreground p-6 rounded-xl border border-border/50 shadow-2xl flex flex-col"
       :style="{
-        width: resizableWidth ? `${resizableWidth}px` : undefined,
+        width: resizableWidth ? `${resizableWidth}px` : `min(calc(100vw - ${MODAL_VIEWPORT_GUTTER_PX}px), ${MODAL_DEFAULT_WIDTH_RATIO * 100}vw)`,
         height: resizableHeight ? `${resizableHeight}px` : undefined,
-        maxWidth: 'calc(100vw - 2rem)',
+        maxWidth: `calc(100vw - ${MODAL_VIEWPORT_GUTTER_PX}px)`,
         maxHeight: 'calc(100vh - 2rem)',
       }"
     >
@@ -183,6 +183,8 @@ const modalContentRef = ref<HTMLElement | null>(null);
 const commandTextareaRef = ref<HTMLTextAreaElement | null>(null);
 const R_MIN_WIDTH = 580; // 可调整大小的最小宽度 (像素)
 const R_MIN_HEIGHT = 440; // 可调整大小的最小高度 (像素)
+const MODAL_DEFAULT_WIDTH_RATIO = 0.6;
+const MODAL_VIEWPORT_GUTTER_PX = 32;
 const placeholder = t('quickCommands.form.commandPlaceholder') + 'echo "Hello,\${USERNAME}"'
 
 const { width: resizableWidth, height: resizableHeight } = useResizable(modalContentRef, {
@@ -239,7 +241,7 @@ watch(() => formData.command, (newCommand) => {
 // 初始化表单数据 (如果是编辑模式)
 onMounted(() => {
   if (typeof window !== 'undefined') {
-    let initialW = Math.min(window.innerWidth * 0.74, 860); // 目标 74vw，最大 860px
+    let initialW = Math.min(window.innerWidth * MODAL_DEFAULT_WIDTH_RATIO, window.innerWidth - MODAL_VIEWPORT_GUTTER_PX);
     let initialH = Math.min(window.innerHeight * 0.68, 600); // 目标 68vh，最大 600px
 
     initialW = Math.max(R_MIN_WIDTH, initialW);

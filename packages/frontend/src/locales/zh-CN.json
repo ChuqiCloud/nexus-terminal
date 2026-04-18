@@ -266,6 +266,8 @@
       "authMethodPassword": "密码",
       "authMethodKey": "SSH 密钥",
       "password": "密码:",
+      "showPassword": "显示密码",
+      "hidePassword": "隐藏密码",
       "privateKey": "私钥:",
       "passphrase": "私钥密码:",
       "vncPassword": "VNC 密码:",

@@ -1,197 +1,268 @@
-import { Database } from 'sqlite3';
 import { getDbInstance, runDb, getDb as getDbRow, allDb } from '../database/connection';
 
-// 定义 Quick Command Tag 类型
 export interface QuickCommandTag {
     id: number;
     name: string;
+    sort_order: number;
     created_at: number;
     updated_at: number;
 }
 
-/**
- * 获取所有快捷指令标签
- */
+interface CommandTagAssociationRow {
+    tag_id: number;
+    sort_order: number;
+}
+
+const getNextTagSortOrder = async (db: Awaited<ReturnType<typeof getDbInstance>>): Promise<number> => {
+    const row = await getDbRow<{ nextSortOrder?: number }>(
+        db,
+        'SELECT COALESCE(MAX(sort_order), 0) + 1 AS nextSortOrder FROM quick_command_tags'
+    );
+    return row?.nextSortOrder ?? 1;
+};
+
+const getNextAssociationSortOrder = async (
+    db: Awaited<ReturnType<typeof getDbInstance>>,
+    tagId: number,
+): Promise<number> => {
+    const row = await getDbRow<{ nextSortOrder?: number }>(
+        db,
+        'SELECT COALESCE(MAX(sort_order), 0) + 1 AS nextSortOrder FROM quick_command_tag_associations WHERE tag_id = ?',
+        [tagId],
+    );
+    return row?.nextSortOrder ?? 1;
+};
+
 export const findAllQuickCommandTags = async (): Promise<QuickCommandTag[]> => {
     try {
         const db = await getDbInstance();
-        const rows = await allDb<QuickCommandTag>(db, `SELECT * FROM quick_command_tags ORDER BY name ASC`);
-        return rows;
+        return await allDb<QuickCommandTag>(
+            db,
+            'SELECT * FROM quick_command_tags ORDER BY sort_order ASC, name ASC',
+        );
     } catch (err: any) {
-        console.error('[仓库] 查询快捷指令标签列表时出错:', err.message);
+        console.error('[QuickCommandTagRepository] 查询快捷指令标签列表失败:', err.message);
         throw new Error('获取快捷指令标签列表失败');
     }
 };
 
-/**
- * 根据 ID 获取单个快捷指令标签
- */
 export const findQuickCommandTagById = async (id: number): Promise<QuickCommandTag | null> => {
-     try {
-        const db = await getDbInstance();
-        const row = await getDbRow<QuickCommandTag>(db, `SELECT * FROM quick_command_tags WHERE id = ?`, [id]);
-        return row || null;
-     } catch (err: any) {
-        console.error(`[仓库] 查询快捷指令标签 ${id} 时出错:`, err.message);
-        throw new Error('获取快捷指令标签信息失败');
-     }
- };
-
-/**
- * 创建新快捷指令标签
- */
-export const createQuickCommandTag = async (name: string): Promise<number> => {
-    const now = Math.floor(Date.now() / 1000);
-    const sql = `INSERT INTO quick_command_tags (name, created_at, updated_at) VALUES (?, ?, ?)`;
     try {
         const db = await getDbInstance();
-        const result = await runDb(db, sql, [name, now, now]);
+        const row = await getDbRow<QuickCommandTag>(db, 'SELECT * FROM quick_command_tags WHERE id = ?', [id]);
+        return row ?? null;
+    } catch (err: any) {
+        console.error(`[QuickCommandTagRepository] 查询快捷指令标签 ${id} 失败:`, err.message);
+        throw new Error('获取快捷指令标签信息失败');
+    }
+};
+
+export const createQuickCommandTag = async (name: string): Promise<number> => {
+    try {
+        const db = await getDbInstance();
+        const now = Math.floor(Date.now() / 1000);
+        const sortOrder = await getNextTagSortOrder(db);
+        const result = await runDb(
+            db,
+            'INSERT INTO quick_command_tags (name, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?)',
+            [name, sortOrder, now, now],
+        );
+
         if (typeof result.lastID !== 'number' || result.lastID <= 0) {
-             throw new Error('创建快捷指令标签后未能获取有效的 lastID');
+            throw new Error('创建快捷指令标签后未能获取有效的 lastID');
         }
+
         return result.lastID;
     } catch (err: any) {
-        console.error('[仓库] 创建快捷指令标签时出错:', err.message);
+        console.error('[QuickCommandTagRepository] 创建快捷指令标签失败:', err.message);
         if (err.message.includes('UNIQUE constraint failed')) {
-             throw new Error(`快捷指令标签名称 "${name}" 已存在。`);
+            throw new Error(`快捷指令标签名称 "${name}" 已存在。`);
         }
         throw new Error(`创建快捷指令标签失败: ${err.message}`);
     }
 };
 
-/**
- * 更新快捷指令标签名称
- */
 export const updateQuickCommandTag = async (id: number, name: string): Promise<boolean> => {
-    const now = Math.floor(Date.now() / 1000);
-    const sql = `UPDATE quick_command_tags SET name = ?, updated_at = ? WHERE id = ?`;
     try {
         const db = await getDbInstance();
-        const result = await runDb(db, sql, [name, now, id]);
+        const now = Math.floor(Date.now() / 1000);
+        const result = await runDb(
+            db,
+            'UPDATE quick_command_tags SET name = ?, updated_at = ? WHERE id = ?',
+            [name, now, id],
+        );
         return result.changes > 0;
     } catch (err: any) {
-         console.error(`[仓库] 更新快捷指令标签 ${id} 时出错:`, err.message);
-         if (err.message.includes('UNIQUE constraint failed')) {
-             throw new Error(`快捷指令标签名称 "${name}" 已存在。`);
-         }
-         throw new Error(`更新快捷指令标签失败: ${err.message}`);
+        console.error(`[QuickCommandTagRepository] 更新快捷指令标签 ${id} 失败:`, err.message);
+        if (err.message.includes('UNIQUE constraint failed')) {
+            throw new Error(`快捷指令标签名称 "${name}" 已存在。`);
+        }
+        throw new Error(`更新快捷指令标签失败: ${err.message}`);
     }
 };
 
-/**
- * 删除快捷指令标签 (同时会通过外键 CASCADE 删除关联)
- */
 export const deleteQuickCommandTag = async (id: number): Promise<boolean> => {
-    const sql = `DELETE FROM quick_command_tags WHERE id = ?`;
     try {
         const db = await getDbInstance();
-        // 由于 quick_command_tag_associations 设置了 ON DELETE CASCADE,
-        // 删除 quick_command_tags 中的记录会自动删除关联表中的相关记录。
-        const result = await runDb(db, sql, [id]);
+        const result = await runDb(db, 'DELETE FROM quick_command_tags WHERE id = ?', [id]);
         return result.changes > 0;
     } catch (err: any) {
-        console.error(`[仓库] 删除快捷指令标签 ${id} 时出错:`, err.message);
+        console.error(`[QuickCommandTagRepository] 删除快捷指令标签 ${id} 失败:`, err.message);
         throw new Error('删除快捷指令标签失败');
     }
 };
 
-/**
- * 设置单个快捷指令的标签关联 (先删除旧关联，再插入新关联)
- * @param commandId - 快捷指令 ID
- * @param tagIds - 新的标签 ID 数组 (空数组表示清除所有关联)
- * @returns Promise<void>
- */
-export const setCommandTagAssociations = async (commandId: number, tagIds: number[]): Promise<void> => {
-    const db = await getDbInstance();
-    const deleteSql = `DELETE FROM quick_command_tag_associations WHERE quick_command_id = ?`;
-    const insertSql = `INSERT INTO quick_command_tag_associations (quick_command_id, tag_id) VALUES (?, ?)`;
+export const reorderQuickCommandTags = async (tagIds: number[]): Promise<void> => {
+    const normalizedTagIds = Array.from(new Set(tagIds.filter((tagId) => Number.isInteger(tagId) && tagId > 0)));
+    if (normalizedTagIds.length === 0) {
+        return;
+    }
 
+    const db = await getDbInstance();
     try {
         await runDb(db, 'BEGIN TRANSACTION');
-        // 1. 删除该指令的所有旧关联
-        await runDb(db, deleteSql, [commandId]);
-
-        // 2. 插入新关联 (如果 tagIds 不为空)
-        if (tagIds && tagIds.length > 0) {
-            const stmt = await db.prepare(insertSql);
-            for (const tagId of tagIds) {
-                 // 验证 tagId 是否为有效数字
-                 if (typeof tagId !== 'number' || isNaN(tagId)) {
-                     console.warn(`[Repo] setCommandTagAssociations: 无效的 tagId (${tagId})，跳过关联到指令 ${commandId}。`);
-                     continue;
-                 }
-                await stmt.run(commandId, tagId);
-            }
-            await stmt.finalize();
+        for (let index = 0; index < normalizedTagIds.length; index += 1) {
+            await runDb(
+                db,
+                'UPDATE quick_command_tags SET sort_order = ?, updated_at = strftime(\'%s\', \'now\') WHERE id = ?',
+                [index + 1, normalizedTagIds[index]],
+            );
         }
         await runDb(db, 'COMMIT');
     } catch (err: any) {
-        console.error('设置快捷指令标签关联时出错:', err.message);
-        await runDb(db, 'ROLLBACK'); // 出错时回滚
+        await runDb(db, 'ROLLBACK');
+        console.error('[QuickCommandTagRepository] 重排快捷指令标签失败:', err.message);
+        throw new Error('无法更新快捷指令标签顺序');
+    }
+};
+
+export const setCommandTagAssociations = async (commandId: number, tagIds: number[]): Promise<void> => {
+    const normalizedTagIds = Array.from(new Set(tagIds.filter((tagId) => Number.isInteger(tagId) && tagId > 0)));
+    const db = await getDbInstance();
+
+    try {
+        const existingAssociations = await allDb<CommandTagAssociationRow>(
+            db,
+            'SELECT tag_id, sort_order FROM quick_command_tag_associations WHERE quick_command_id = ?',
+            [commandId],
+        );
+        const existingTagIds = new Set(existingAssociations.map((association) => association.tag_id));
+
+        await runDb(db, 'BEGIN TRANSACTION');
+
+        if (normalizedTagIds.length === 0) {
+            await runDb(db, 'DELETE FROM quick_command_tag_associations WHERE quick_command_id = ?', [commandId]);
+        } else {
+            const placeholders = normalizedTagIds.map(() => '?').join(', ');
+            await runDb(
+                db,
+                `DELETE FROM quick_command_tag_associations WHERE quick_command_id = ? AND tag_id NOT IN (${placeholders})`,
+                [commandId, ...normalizedTagIds],
+            );
+
+            for (const tagId of normalizedTagIds) {
+                if (existingTagIds.has(tagId)) {
+                    continue;
+                }
+
+                const nextSortOrder = await getNextAssociationSortOrder(db, tagId);
+                await runDb(
+                    db,
+                    'INSERT INTO quick_command_tag_associations (quick_command_id, tag_id, sort_order) VALUES (?, ?, ?)',
+                    [commandId, tagId, nextSortOrder],
+                );
+            }
+        }
+
+        await runDb(db, 'COMMIT');
+    } catch (err: any) {
+        await runDb(db, 'ROLLBACK');
+        console.error('[QuickCommandTagRepository] 设置快捷指令标签关联失败:', err.message);
         throw new Error('无法设置快捷指令标签关联');
     }
 };
 
-/**
- * 将单个标签批量添加到多个快捷指令
- * @param commandIds - 需要添加标签的快捷指令 ID 数组
- * @param tagId - 要添加的标签 ID
- * @returns Promise<void>
- */
 export const addTagToCommands = async (commandIds: number[], tagId: number): Promise<void> => {
-    if (!commandIds || commandIds.length === 0) {
-        return; // 没有指令需要关联
+    const normalizedCommandIds = Array.from(
+        new Set(commandIds.filter((commandId) => Number.isInteger(commandId) && commandId > 0)),
+    );
+
+    if (normalizedCommandIds.length === 0 || !Number.isInteger(tagId) || tagId <= 0) {
+        return;
     }
+
     const db = await getDbInstance();
-    const insertSql = `INSERT OR IGNORE INTO quick_command_tag_associations (quick_command_id, tag_id) VALUES (?, ?)`;
 
     try {
         await runDb(db, 'BEGIN TRANSACTION');
-        // 准备批量插入语句
-        const stmt = await db.prepare(insertSql);
-        for (const commandId of commandIds) {
-            // 验证 commandId 和 tagId 是否为有效数字（可选，但推荐）
-            if (typeof commandId !== 'number' || isNaN(commandId) || typeof tagId !== 'number' || isNaN(tagId)) {
-                 console.warn(`[Repo] addTagToCommands: 无效的 commandId (${commandId}) 或 tagId (${tagId})，跳过关联。`);
-                 continue;
+        for (const commandId of normalizedCommandIds) {
+            const existingAssociation = await getDbRow<{ quick_command_id: number }>(
+                db,
+                'SELECT quick_command_id FROM quick_command_tag_associations WHERE quick_command_id = ? AND tag_id = ?',
+                [commandId, tagId],
+            );
+
+            if (existingAssociation) {
+                continue;
             }
-            await stmt.run(commandId, tagId);
+
+            const nextSortOrder = await getNextAssociationSortOrder(db, tagId);
+            await runDb(
+                db,
+                'INSERT INTO quick_command_tag_associations (quick_command_id, tag_id, sort_order) VALUES (?, ?, ?)',
+                [commandId, tagId, nextSortOrder],
+            );
         }
-        await stmt.finalize(); // 完成批量插入
+
         await runDb(db, 'COMMIT');
-        console.log(`[Repo] addTagToCommands: 成功将标签 ${tagId} 关联到 ${commandIds.length} 个指令。`);
     } catch (err: any) {
-        console.error(`[Repo] addTagToCommands: 批量关联标签 ${tagId} 到指令时出错:`, err.message);
         await runDb(db, 'ROLLBACK');
+        console.error(`[QuickCommandTagRepository] 批量关联标签 ${tagId} 失败:`, err.message);
         throw new Error('无法批量关联标签到快捷指令');
     }
 };
 
-/**
- * 更新指定快捷指令的标签关联 (使用事务)
- * @param commandId 快捷指令 ID
- * @param tagIds 新的快捷指令标签 ID 数组 (空数组表示清除所有标签)
- */
-// Removed the duplicate function declaration that returned Promise<boolean>
+export const reorderCommandsInTag = async (tagId: number, commandIds: number[]): Promise<void> => {
+    const normalizedCommandIds = Array.from(
+        new Set(commandIds.filter((commandId) => Number.isInteger(commandId) && commandId > 0)),
+    );
 
-/**
- * 查找指定快捷指令的所有标签
- * @param commandId 快捷指令 ID
- * @returns 标签对象数组 { id: number, name: string }[]
- */
+    if (!Number.isInteger(tagId) || tagId <= 0 || normalizedCommandIds.length === 0) {
+        return;
+    }
+
+    const db = await getDbInstance();
+
+    try {
+        await runDb(db, 'BEGIN TRANSACTION');
+        for (let index = 0; index < normalizedCommandIds.length; index += 1) {
+            await runDb(
+                db,
+                'UPDATE quick_command_tag_associations SET sort_order = ? WHERE tag_id = ? AND quick_command_id = ?',
+                [index + 1, tagId, normalizedCommandIds[index]],
+            );
+        }
+        await runDb(db, 'COMMIT');
+    } catch (err: any) {
+        await runDb(db, 'ROLLBACK');
+        console.error(`[QuickCommandTagRepository] 重排标签 ${tagId} 内命令失败:`, err.message);
+        throw new Error('无法更新标签内快捷指令顺序');
+    }
+};
+
 export const findTagsByCommandId = async (commandId: number): Promise<QuickCommandTag[]> => {
     const sql = `
-        SELECT t.id, t.name, t.created_at, t.updated_at
+        SELECT t.id, t.name, t.sort_order, t.created_at, t.updated_at
         FROM quick_command_tags t
         JOIN quick_command_tag_associations ta ON t.id = ta.tag_id
         WHERE ta.quick_command_id = ?
-        ORDER BY t.name ASC`;
+        ORDER BY ta.sort_order ASC, t.name ASC`;
+
     try {
         const db = await getDbInstance();
-        const rows = await allDb<QuickCommandTag>(db, sql, [commandId]);
-        return rows;
+        return await allDb<QuickCommandTag>(db, sql, [commandId]);
     } catch (err: any) {
-        console.error(`Repository: 查询快捷指令 ${commandId} 的标签时出错:`, err.message);
+        console.error(`[QuickCommandTagRepository] 查询快捷指令 ${commandId} 的标签失败:`, err.message);
         throw new Error('获取快捷指令标签失败');
     }
 };

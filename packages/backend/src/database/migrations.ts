@@ -334,6 +334,42 @@ const definedMigrations: Migration[] = [
 
             ALTER TABLE connections ADD COLUMN login_credential_id INTEGER NULL REFERENCES login_credentials(id) ON DELETE SET NULL;
         `
+    },
+    {
+        id: 12,
+        name: 'Add sort_order column to quick_commands table',
+        check: async (db: Database): Promise<boolean> => {
+            const columnAlreadyExists = await columnExists(db, 'quick_commands', 'sort_order');
+            return !columnAlreadyExists;
+        },
+        sql: `
+            ALTER TABLE quick_commands ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0;
+            UPDATE quick_commands SET sort_order = id WHERE sort_order = 0;
+        `
+    },
+    {
+        id: 13,
+        name: 'Add sort_order column to quick_command_tags table',
+        check: async (db: Database): Promise<boolean> => {
+            const columnAlreadyExists = await columnExists(db, 'quick_command_tags', 'sort_order');
+            return !columnAlreadyExists;
+        },
+        sql: `
+            ALTER TABLE quick_command_tags ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0;
+            UPDATE quick_command_tags SET sort_order = id WHERE sort_order = 0;
+        `
+    },
+    {
+        id: 14,
+        name: 'Add sort_order column to quick_command_tag_associations table',
+        check: async (db: Database): Promise<boolean> => {
+            const columnAlreadyExists = await columnExists(db, 'quick_command_tag_associations', 'sort_order');
+            return !columnAlreadyExists;
+        },
+        sql: `
+            ALTER TABLE quick_command_tag_associations ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0;
+            UPDATE quick_command_tag_associations SET sort_order = rowid WHERE sort_order = 0;
+        `
     }
 ];
 

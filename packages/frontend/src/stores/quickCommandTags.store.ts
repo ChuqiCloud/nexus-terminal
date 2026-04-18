@@ -3,13 +3,23 @@ import { ref } from 'vue';
 import apiClient from '../utils/apiClient';
 import { useUiNotificationsStore } from './uiNotifications.store';
 
-// 定义快捷指令标签接口 (与后端 QuickCommandTag 对应)
 export interface QuickCommandTag {
     id: number;
     name: string;
+    sort_order: number;
     created_at: number;
     updated_at: number;
 }
+
+const TAG_CACHE_KEY = 'quickCommandTagsCache';
+
+const normalizeTag = (tag: any): QuickCommandTag => ({
+    id: Number(tag.id),
+    name: typeof tag.name === 'string' ? tag.name : '',
+    sort_order: Number.isFinite(tag.sort_order) ? Number(tag.sort_order) : 0,
+    created_at: Number(tag.created_at ?? 0),
+    updated_at: Number(tag.updated_at ?? 0),
+});
 
 export const useQuickCommandTagsStore = defineStore('quickCommandTags', () => {
     const tags = ref<QuickCommandTag[]>([]);
@@ -17,48 +27,34 @@ export const useQuickCommandTagsStore = defineStore('quickCommandTags', () => {
     const error = ref<string | null>(null);
     const uiNotificationsStore = useUiNotificationsStore();
 
-    // 获取快捷指令标签列表 (带缓存)
     async function fetchTags() {
-        const cacheKey = 'quickCommandTagsCache';
         error.value = null;
 
-        // 1. 尝试从 localStorage 加载缓存
         try {
-            const cachedData = localStorage.getItem(cacheKey);
+            const cachedData = localStorage.getItem(TAG_CACHE_KEY);
             if (cachedData) {
-                tags.value = JSON.parse(cachedData);
-                isLoading.value = false;
-            } else {
-                isLoading.value = true;
+                const parsedData = JSON.parse(cachedData);
+                if (Array.isArray(parsedData)) {
+                    tags.value = parsedData.map(normalizeTag);
+                }
             }
-        } catch (e) {
-            console.error('[QuickCmdTagStore] Failed to load or parse cache:', e);
-            localStorage.removeItem(cacheKey);
-            isLoading.value = true;
+        } catch (cacheError) {
+            console.error('[QuickCommandTagsStore] 读取标签缓存失败:', cacheError);
+            localStorage.removeItem(TAG_CACHE_KEY);
         }
 
-        // 2. 后台获取最新数据
         isLoading.value = true;
         try {
-            // 使用新的 API 端点
             const response = await apiClient.get<QuickCommandTag[]>('/quick-command-tags');
-            const freshData = response.data;
-            const freshDataString = JSON.stringify(freshData);
-
-            // 3. 对比并更新
-            const currentDataString = JSON.stringify(tags.value);
-            if (currentDataString !== freshDataString) {
-                tags.value = freshData;
-                localStorage.setItem(cacheKey, freshDataString);
-            } else {
-            }
-            error.value = null;
+            const freshTags = Array.isArray(response.data) ? response.data.map(normalizeTag) : [];
+            tags.value = freshTags;
+            localStorage.setItem(TAG_CACHE_KEY, JSON.stringify(freshTags));
             return true;
         } catch (err: any) {
-            console.error('[QuickCmdTagStore] Failed to fetch tags:', err);
+            console.error('[QuickCommandTagsStore] 获取标签失败:', err);
             error.value = err.response?.data?.message || err.message || '获取快捷指令标签列表失败';
-            if (error.value) { // Check if error.value is not null
-                uiNotificationsStore.showError(error.value); // 显示错误通知
+            if (error.value) {
+                uiNotificationsStore.showError(error.value);
             }
             return false;
         } finally {
@@ -66,22 +62,19 @@ export const useQuickCommandTagsStore = defineStore('quickCommandTags', () => {
         }
     }
 
-    // 添加新快捷指令标签 (添加后清除缓存)
     async function addTag(name: string): Promise<QuickCommandTag | null> {
         isLoading.value = true;
         error.value = null;
         try {
-            // 使用新的 API 端点
-            const response = await apiClient.post<{ message: string, tag: QuickCommandTag }>('/quick-command-tags', { name });
-            const newTag = response.data.tag;
-            localStorage.removeItem('quickCommandTagsCache'); // 清除缓存
-            await fetchTags(); // 重新获取以更新列表
+            const response = await apiClient.post<{ message: string; tag: QuickCommandTag }>('/quick-command-tags', { name });
+            localStorage.removeItem(TAG_CACHE_KEY);
+            await fetchTags();
             uiNotificationsStore.showSuccess('快捷指令标签已添加');
-            return newTag;
+            return response.data.tag ? normalizeTag(response.data.tag) : null;
         } catch (err: any) {
-            console.error('[QuickCmdTagStore] Failed to add tag:', err);
+            console.error('[QuickCommandTagsStore] 添加标签失败:', err);
             error.value = err.response?.data?.message || err.message || '添加快捷指令标签失败';
-            if (error.value) { // Check if error.value is not null
+            if (error.value) {
                 uiNotificationsStore.showError(error.value);
             }
             return null;
@@ -90,21 +83,19 @@ export const useQuickCommandTagsStore = defineStore('quickCommandTags', () => {
         }
     }
 
-    // 更新快捷指令标签
     async function updateTag(id: number, name: string): Promise<boolean> {
         isLoading.value = true;
         error.value = null;
         try {
-            // 使用新的 API 端点
             await apiClient.put(`/quick-command-tags/${id}`, { name });
-            localStorage.removeItem('quickCommandTagsCache');
+            localStorage.removeItem(TAG_CACHE_KEY);
             await fetchTags();
             uiNotificationsStore.showSuccess('快捷指令标签已更新');
             return true;
         } catch (err: any) {
-            console.error('[QuickCmdTagStore] Failed to update tag:', err);
+            console.error('[QuickCommandTagsStore] 更新标签失败:', err);
             error.value = err.response?.data?.message || err.message || '更新快捷指令标签失败';
-            if (error.value) { // Check if error.value is not null
+            if (error.value) {
                 uiNotificationsStore.showError(error.value);
             }
             return false;
@@ -113,21 +104,43 @@ export const useQuickCommandTagsStore = defineStore('quickCommandTags', () => {
         }
     }
 
-    // 删除快捷指令标签
     async function deleteTag(id: number): Promise<boolean> {
         isLoading.value = true;
         error.value = null;
         try {
-            // 使用新的 API 端点
             await apiClient.delete(`/quick-command-tags/${id}`);
-            localStorage.removeItem('quickCommandTagsCache');
+            localStorage.removeItem(TAG_CACHE_KEY);
             await fetchTags();
             uiNotificationsStore.showSuccess('快捷指令标签已删除');
             return true;
         } catch (err: any) {
-            console.error('[QuickCmdTagStore] Failed to delete tag:', err);
+            console.error('[QuickCommandTagsStore] 删除标签失败:', err);
             error.value = err.response?.data?.message || err.message || '删除快捷指令标签失败';
-            if (error.value) { // Check if error.value is not null
+            if (error.value) {
+                uiNotificationsStore.showError(error.value);
+            }
+            return false;
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
+    async function reorderTags(tagIds: number[]): Promise<boolean> {
+        if (!Array.isArray(tagIds) || tagIds.length === 0) {
+            return false;
+        }
+
+        isLoading.value = true;
+        error.value = null;
+        try {
+            await apiClient.put('/quick-command-tags/reorder', { tagIds });
+            localStorage.removeItem(TAG_CACHE_KEY);
+            await fetchTags();
+            return true;
+        } catch (err: any) {
+            console.error('[QuickCommandTagsStore] 更新标签顺序失败:', err);
+            error.value = err.response?.data?.message || err.message || '更新快捷指令标签顺序失败';
+            if (error.value) {
                 uiNotificationsStore.showError(error.value);
             }
             return false;
@@ -144,5 +157,6 @@ export const useQuickCommandTagsStore = defineStore('quickCommandTags', () => {
         addTag,
         updateTag,
         deleteTag,
+        reorderTags,
     };
 });

@@ -80,3 +80,8 @@
 **条件**: `StatusMonitorService` 为前端工作区持续轮询服务器状态。  
 **行为**: 当前状态采集链路除 `free`、`df`、`/proc/stat` 与 `/proc/net/dev` 外，还会补充解析 `memFree`、`memCached`、`diskAvailable`、`diskMountPoint`、`diskFsType`、`diskDevice`，并基于 `/proc/diskstats` 计算根设备的磁盘读写速率；CPU 规格信息则会先读取 CPU 型号，再通过 `nproc`、`getconf _NPROCESSORS_ONLN`、`grep -c '^processor' /proc/cpuinfo` 与 `lscpu` 多级回退获取 `cpuCores`；本轮还新增服务器时区、运行时间和默认进程摘要采集。与此同时，`websocket/connection.ts` 新增 `process:list` 与 `process:signal` 消息分发，后端会在当前活动 SSH 会话上下文中执行 `ps` 与 `kill` 指令，返回完整进程列表及结束/强制结束结果。  
 **结果**: 前端默认状态监控可以展示更完整的小屏监控信息，而“查看全部”进程管理 modal 也能沿同一 SSH 会话上下文安全复用进程查询与操作能力。
+
+### 快捷指令顺序持久化
+**条件**: 前端快捷指令视图提交分组拖拽、标签内命令拖拽或扁平列表命令拖拽结果。  
+**行为**: packages/backend/src/database/schema.ts 与 migrations.ts 现在为 quick_commands、quick_command_tags 与 quick_command_tag_associations 三张表补齐 sort_order 字段；quick-commands 业务域新增 /api/v1/quick-commands/reorder 与 /api/v1/quick-commands/reorder-by-tag，quick-command-tags 业务域新增 /api/v1/quick-command-tags/reorder。同时标签关联写入从“先删后插”调整为增量同步，保留命令已存在标签关联的原组内顺序，仅为新增关联追加新的末尾顺序。  
+**结果**: 后端可以稳定表达“标签顺序”“命令全局顺序”和“命令在某个标签组内的局部顺序”三层语义，并保证历史数据库升级后也能直接承接前端拖拽排序能力。  

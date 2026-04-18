@@ -68,8 +68,17 @@
                     <div
                         class="group font-semibold flex items-center text-foreground rounded-md hover:bg-header/80 transition-colors duration-150"
                         :style="{ padding: isCompactMode ? `calc(0.25rem * var(--qc-row-size-multiplier)) calc(0.75rem * var(--qc-row-size-multiplier))` : `calc(0.5rem * var(--qc-row-size-multiplier)) calc(0.75rem * var(--qc-row-size-multiplier))` }"
-                        :class="{ 'cursor-pointer': editingTagId !== (groupData.tagId === null ? 'untagged' : groupData.tagId) }"
+                        :draggable="groupData.tagId !== null && !dragDisabledBySearch"
+                        :class="{
+                            'cursor-pointer': editingTagId !== (groupData.tagId === null ? 'untagged' : groupData.tagId),
+                            'cursor-grab': groupData.tagId !== null && !dragDisabledBySearch,
+                            'qc-drop-target': isGroupDropTarget(groupData.tagId),
+                        }"
                         @click="editingTagId !== (groupData.tagId === null ? 'untagged' : groupData.tagId) ? toggleGroup(groupData.groupName) : null"
+                        @dragstart="handleGroupDragStart($event, groupData.tagId)"
+                        @dragover.prevent="handleGroupDragOver(groupData.tagId)"
+                        @drop.prevent="handleGroupDrop(groupData.tagId)"
+                        @dragend="resetDragState"
                     >
                         <i
                             :class="['fas', expandedGroups[groupData.groupName] ? 'fa-chevron-down' : 'fa-chevron-right', 'mr-2 w-4 text-center text-text-secondary group-hover:text-foreground transition-transform duration-200 ease-in-out', {'transform rotate-0': !expandedGroups[groupData.groupName]}]"
@@ -114,10 +123,20 @@
                             :title="cmd.command"
                             class="group flex justify-between items-center mb-1 cursor-pointer rounded-md hover:bg-primary/10 transition-colors duration-150"
                             :style="{ padding: isCompactMode ? `calc(0.1rem * var(--qc-row-size-multiplier)) calc(0.75rem * var(--qc-row-size-multiplier))` : `calc(0.625rem * var(--qc-row-size-multiplier)) calc(0.75rem * var(--qc-row-size-multiplier))` }"
-                            :class="{ 'bg-primary/20 font-medium': isCommandSelected(cmd.id) }"
+                            :draggable="!dragDisabledBySearch"
+                            :class="{
+                                'bg-primary/20 font-medium': isCommandSelected(cmd.id),
+                                'cursor-grab': !dragDisabledBySearch,
+                                'qc-drop-target': isCommandDropTarget(cmd.id, groupData.tagId),
+                                'opacity-70': isDraggingCommand(cmd.id, groupData.tagId),
+                            }"
                             @click="selectCommand(cmd.id)"
                             @dblclick="executeCommand(cmd)"
                             @contextmenu.prevent="showQuickCommandContextMenu($event, cmd)"
+                            @dragstart="handleCommandDragStart($event, cmd.id, groupData.tagId)"
+                            @dragover.prevent="handleCommandDragOver(cmd.id, groupData.tagId)"
+                            @drop.prevent="handleCommandDrop(cmd.id, groupData.tagId)"
+                            @dragend="resetDragState"
                         >
                             <!-- Command Info -->
                             <div class="flex flex-col overflow-hidden mr-2 flex-grow">
@@ -162,10 +181,20 @@
                     :title="cmd.command"
                     class="group flex justify-between items-center mb-1 cursor-pointer rounded-md hover:bg-primary/10 transition-colors duration-150"
                     :style="{ padding: isCompactMode ? `calc(0.1rem * var(--qc-row-size-multiplier)) calc(0.75rem * var(--qc-row-size-multiplier))` : `calc(0.625rem * var(--qc-row-size-multiplier)) calc(0.75rem * var(--qc-row-size-multiplier))` }"
-                    :class="{ 'bg-primary/20 font-medium': isCommandSelected(cmd.id) }"
+                    :draggable="!dragDisabledBySearch"
+                    :class="{
+                        'bg-primary/20 font-medium': isCommandSelected(cmd.id),
+                        'cursor-grab': !dragDisabledBySearch,
+                        'qc-drop-target': isCommandDropTarget(cmd.id, null),
+                        'opacity-70': isDraggingCommand(cmd.id, null),
+                    }"
                     @click="selectCommand(cmd.id)"
                     @dblclick="executeCommand(cmd)"
                     @contextmenu.prevent="showQuickCommandContextMenu($event, cmd)"
+                    @dragstart="handleCommandDragStart($event, cmd.id, null)"
+                    @dragover.prevent="handleCommandDragOver(cmd.id, null)"
+                    @drop.prevent="handleCommandDrop(cmd.id, null)"
+                    @dragend="resetDragState"
                 >
                     <!-- Command Info -->
                     <div class="flex flex-col overflow-hidden mr-2 flex-grow">
@@ -379,6 +408,17 @@ const flatFilteredCommands = computed(() => {
     return quickCommandsStore.flatVisibleCommands;
 });
 
+const dragDisabledBySearch = computed(() => searchTerm.value.trim().length > 0);
+const draggingGroupTagId = ref<number | null>(null);
+const groupDropTargetTagId = ref<number | null>(null);
+const draggingCommand = ref<{ commandId: number; groupTagId: number | null } | null>(null);
+const commandDropTarget = ref<{ commandId: number; groupTagId: number | null } | null>(null);
+const dragDisabledTitle = computed(() =>
+  dragDisabledBySearch.value
+    ? t('quickCommands.dragDisabledBySearch', '搜索结果中不可拖动排序')
+    : t('quickCommands.dragCommand', '拖动排序快捷指令')
+);
+
 // --- Compact Mode ---
 const isCompactMode = computed(() => quickCommandsCompactModeBoolean.value);
 
@@ -403,6 +443,163 @@ const selectCommand = (commandId: number) => {
 
 
 // --- 生命周期钩子 ---
+const resetDragState = () => {
+  draggingGroupTagId.value = null;
+  groupDropTargetTagId.value = null;
+  draggingCommand.value = null;
+  commandDropTarget.value = null;
+};
+
+const moveById = <T extends { id: number }>(items: T[], sourceId: number, targetId: number): T[] => {
+  const clonedItems = [...items];
+  const sourceIndex = clonedItems.findIndex((item) => item.id === sourceId);
+  const targetIndex = clonedItems.findIndex((item) => item.id === targetId);
+
+  if (sourceIndex === -1 || targetIndex === -1 || sourceIndex === targetIndex) {
+    return clonedItems;
+  }
+
+  const [sourceItem] = clonedItems.splice(sourceIndex, 1);
+  clonedItems.splice(targetIndex, 0, sourceItem);
+  return clonedItems;
+};
+
+const isGroupDropTarget = (tagId: number | null): boolean =>
+  tagId !== null && groupDropTargetTagId.value === tagId;
+
+const isDraggingCommand = (commandId: number, groupTagId: number | null): boolean =>
+  draggingCommand.value?.commandId === commandId && draggingCommand.value?.groupTagId === groupTagId;
+
+const isCommandDropTarget = (commandId: number, groupTagId: number | null): boolean =>
+  commandDropTarget.value?.commandId === commandId && commandDropTarget.value?.groupTagId === groupTagId;
+
+const handleGroupDragStart = (event: DragEvent, tagId: number | null) => {
+  if (dragDisabledBySearch.value || tagId === null) {
+    event.preventDefault();
+    return;
+  }
+
+  draggingGroupTagId.value = tagId;
+  groupDropTargetTagId.value = null;
+  event.dataTransfer?.setData('text/plain', String(tagId));
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+  }
+};
+
+const handleGroupDragOver = (tagId: number | null) => {
+  if (draggingGroupTagId.value === null || dragDisabledBySearch.value || tagId === null || tagId === draggingGroupTagId.value) {
+    return;
+  }
+
+  groupDropTargetTagId.value = tagId;
+};
+
+const handleGroupDrop = async (tagId: number | null) => {
+  if (draggingGroupTagId.value === null || dragDisabledBySearch.value || tagId === null || tagId === draggingGroupTagId.value) {
+    resetDragState();
+    return;
+  }
+
+  const taggedGroups = filteredAndGroupedCommands.value
+    .filter((group) => group.tagId !== null)
+    .map((group) => ({ ...group, id: group.tagId as number }));
+  const reorderedGroups = moveById(taggedGroups, draggingGroupTagId.value, tagId);
+  const reorderedVisibleTagIds = reorderedGroups.map((group) => group.id);
+  const globalTagIds = [...quickCommandTagsStore.tags]
+    .sort((a, b) => (a.sort_order - b.sort_order) || (a.id - b.id))
+    .map((tag) => tag.id);
+  const visibleTagIdSet = new Set(reorderedVisibleTagIds);
+  let visibleIndex = 0;
+  const mergedTagIds = globalTagIds.map((existingTagId) => {
+    if (!visibleTagIdSet.has(existingTagId)) {
+      return existingTagId;
+    }
+
+    const nextVisibleTagId = reorderedVisibleTagIds[visibleIndex];
+    visibleIndex += 1;
+    return nextVisibleTagId ?? existingTagId;
+  });
+
+  await quickCommandTagsStore.reorderTags(mergedTagIds);
+  resetDragState();
+};
+
+const handleCommandDragStart = (event: DragEvent, commandId: number, groupTagId: number | null) => {
+  if (dragDisabledBySearch.value) {
+    event.preventDefault();
+    return;
+  }
+
+  draggingCommand.value = { commandId, groupTagId };
+  commandDropTarget.value = null;
+  event.dataTransfer?.setData('text/plain', String(commandId));
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move';
+  }
+};
+
+const handleCommandDragOver = (commandId: number, groupTagId: number | null) => {
+  if (!draggingCommand.value || dragDisabledBySearch.value) {
+    return;
+  }
+
+  if (draggingCommand.value.groupTagId !== groupTagId || draggingCommand.value.commandId === commandId) {
+    return;
+  }
+
+  commandDropTarget.value = { commandId, groupTagId };
+};
+
+const handleCommandDrop = async (commandId: number, groupTagId: number | null) => {
+  if (!draggingCommand.value || dragDisabledBySearch.value) {
+    resetDragState();
+    return;
+  }
+
+  if (draggingCommand.value.groupTagId !== groupTagId || draggingCommand.value.commandId === commandId) {
+    resetDragState();
+    return;
+  }
+
+  let currentCommands: QuickCommandFE[] = [];
+  if (showQuickCommandTagsBoolean.value) {
+    currentCommands = filteredAndGroupedCommands.value.find((group) => group.tagId === groupTagId)?.commands ?? [];
+  } else {
+    currentCommands = flatFilteredCommands.value;
+  }
+
+  const reorderedCommands = moveById(currentCommands, draggingCommand.value.commandId, commandId);
+  if (showQuickCommandTagsBoolean.value) {
+    if (groupTagId !== null) {
+      await quickCommandsStore.reorderCommandsInTag(groupTagId, reorderedCommands.map((item) => item.id));
+    } else {
+      const reorderedUntaggedIds = reorderedCommands.map((item) => item.id);
+      const globalCommandIds = [...quickCommandsStore.quickCommandsList]
+        .sort((a, b) => (a.sort_order - b.sort_order) || (a.id - b.id))
+        .map((command) => command.id);
+
+      let untaggedIndex = 0;
+      const mergedCommandIds = globalCommandIds.map((existingCommandId) => {
+        const command = quickCommandsStore.quickCommandsList.find((item) => item.id === existingCommandId);
+        if (!command || command.tagIds.length > 0) {
+          return existingCommandId;
+        }
+
+        const nextUntaggedId = reorderedUntaggedIds[untaggedIndex];
+        untaggedIndex += 1;
+        return nextUntaggedId ?? existingCommandId;
+      });
+
+      await quickCommandsStore.reorderQuickCommands(mergedCommandIds);
+    }
+  } else {
+    await quickCommandsStore.reorderQuickCommands(reorderedCommands.map((item) => item.id));
+  }
+
+  resetDragState();
+};
+
 onMounted(async () => { // Make onMounted async
     // Load expanded groups state first
     quickCommandsStore.loadExpandedGroups();
@@ -518,8 +715,10 @@ const handleSearchInputBlur = () => {
 
 // 切换排序方式 (Action remains the same, store handles the logic change)
 const toggleSortBy = () => {
-    const newSortBy = sortBy.value === 'name' ? 'last_used' : 'name';
-    quickCommandsStore.setSortBy(newSortBy);
+    const sortModes: QuickCommandSortByType[] = ['manual', 'name', 'last_used'];
+    const currentIndex = sortModes.indexOf(sortBy.value);
+    const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % sortModes.length;
+    quickCommandsStore.setSortBy(sortModes[nextIndex]);
 };
 
 // +++ Action to toggle group expansion +++
@@ -896,3 +1095,10 @@ const handleQuickCommandMenuAction = async (action: QuickCommandContextAction, c
 };
 
 </script>
+
+<style scoped>
+.qc-drop-target {
+  outline: 1px dashed color-mix(in srgb, var(--color-primary, #3b82f6) 72%, transparent);
+  outline-offset: -2px;
+}
+</style>
