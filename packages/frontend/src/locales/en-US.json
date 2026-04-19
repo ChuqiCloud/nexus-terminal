@@ -1700,7 +1700,9 @@
     "openConnectionPickerTooltip": "Choose another server",
     "terminalBadge": "Terminal {index}",
     "serverEntryTitle": "{name} · {count} terminals",
-    "terminalCount": "{count} terminals"
+    "terminalCount": "{count} terminals",
+    "commandRunningIndicator": "Command running",
+    "commandRunningIndicatorCount": "{count} terminal(s) running"
   },
   "globalConnectionSearch": {
     "shortcut": "Ctrl+Shift+F",

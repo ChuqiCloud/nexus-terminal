@@ -100,6 +100,14 @@ const getRepresentativeSessionId = (connectionId: string, fallbackSessionId: str
 
 const getConnectionSessionCount = (connectionId: string) => getConnectionSessions(connectionId).length;
 
+const getConnectionRunningSessionCount = (connectionId: string) =>
+  getConnectionSessions(connectionId).filter((session) => session.isCommandRunning).length;
+
+const isConnectionRunning = (connectionId: string) => getConnectionRunningSessionCount(connectionId) > 0;
+
+const getConnectionRunningIndicatorTitle = (connectionId: string) =>
+  t('terminalTabBar.commandRunningIndicatorCount', { count: getConnectionRunningSessionCount(connectionId) });
+
 const shouldRenderTopLevelItem = (session: SessionTabInfoWithStatus, index: number) => {
   if (!isSshConnection(session.connectionId)) {
     return true;
@@ -563,6 +571,13 @@ onBeforeUnmount(() => {
                 <i class="fas fa-server text-[11px] text-primary/80"></i>
                 <span class="max-w-[180px] truncate text-xs font-semibold tracking-wide">
                   {{ session.connectionName }}
+                </span>
+                <span
+                  v-if="isConnectionRunning(session.connectionId)"
+                  class="rounded-sm px-1 text-[10px] font-semibold uppercase tracking-wide text-amber-400"
+                  :title="getConnectionRunningIndicatorTitle(session.connectionId)"
+                >
+                  %
                 </span>
                 <span
                   :class="[

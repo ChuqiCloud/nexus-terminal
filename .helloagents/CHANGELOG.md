@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- **[frontend]**: 为 SSH 顶部服务器标签与服务器内终端标签补充 `%` 命令运行中提示，并基于前端发送链路与 shell prompt 输出派生运行态 — by yinjianm
+  - 方案: [202604192106_terminal-running-indicator](archive/2026-04/202604192106_terminal-running-indicator/)
+  - 决策: terminal-running-indicator#D001(运行态继续作为前端派生状态实现), terminal-running-indicator#D002(采用发送置位加 prompt 清除的混合检测策略)
+
 - **[frontend]**: 移除状态监控默认 CPU 卡里重复的 `CPU 使用率` 标题，并修正 CPU 摘要区固定高度导致的卡片/按钮截断问题 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/StatusMonitor.vue:61-88,1035-1100,1565-1580

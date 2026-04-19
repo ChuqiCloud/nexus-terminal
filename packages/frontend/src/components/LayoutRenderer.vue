@@ -654,6 +654,13 @@ onBeforeUnmount(() => {
                                    <span class="whitespace-nowrap">
                                        {{ t('terminalTabBar.terminalBadge', { index: session.terminalIndex }) }}
                                    </span>
+                                   <span
+                                       v-if="session.isCommandRunning"
+                                       class="ml-2 rounded-sm px-1 text-[10px] font-semibold uppercase tracking-wide text-amber-400"
+                                       :title="t('terminalTabBar.commandRunningIndicator')"
+                                   >
+                                       %
+                                   </span>
                                    <button
                                        type="button"
                                        class="ml-2 rounded-full p-0.5 text-text-secondary opacity-0 transition-opacity duration-150 hover:bg-header hover:text-foreground group-hover:opacity-100"

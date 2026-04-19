@@ -148,6 +148,8 @@ export const openNewSession = (
       editorTabs: ref([]),
       activeEditorTabId: ref(null),
       commandInputContent: ref(''),
+      isCommandRunning: ref(false),
+      terminalInputBuffer: ref(''),
       isMarkedForSuspend: false,
       createdAt: Date.now(),
       disposables: [],

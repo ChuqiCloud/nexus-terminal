@@ -7,6 +7,7 @@
 
 | 时间戳 | 名称 | 类型 | 涉及模块 | 决策 | 结果 |
 |--------|------|------|---------|------|------|
+| 202604192106 | terminal-running-indicator | - | - | - | ✅完成 |
 | 202604190520 | status-monitor-cpu-summary-modal | - | - | - | ✅完成 |
 | 202604190351 | status-monitor-cpu-total-and-per-core | implementation | frontend, backend | status-monitor-cpu-total-and-per-core#D001 | ✅完成 |
 | 202604190358 | status-monitor-network-vertical-stack | implementation | frontend | - | ✅完成 |

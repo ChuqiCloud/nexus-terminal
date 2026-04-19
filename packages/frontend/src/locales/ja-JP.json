@@ -1624,7 +1624,9 @@
           "newTerminalTooltip": "現在のサーバーに新しいターミナルを追加",
           "closeConnectionGroupTooltip": "{name} の端末をすべて閉じる ({count} 件)",
           "openConnectionPickerTooltip": "別のサーバーを選択",
-          "terminalBadge": "端末 {index}"
+          "terminalBadge": "端末 {index}",
+          "commandRunningIndicator": "コマンド実行中",
+          "commandRunningIndicatorCount": "{count} 個の端末でコマンド実行中"
       },
       "globalConnectionSearch": {
         "shortcut": "Ctrl+Shift+F",
