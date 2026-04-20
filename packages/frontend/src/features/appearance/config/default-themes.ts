@@ -25,31 +25,40 @@ export const defaultXtermTheme: ITheme = {
   brightWhite: '#f3fff0'
 };
 
-// 默认 UI 主题 (CSS 变量)
+// 默认 UI 主题 (CSS 变量) — Apple Design System Light
 // (与 backend/src/config/default-themes.ts 中的定义保持一致)
 export const defaultUiTheme: Record<string, string> = {
-  '--app-bg-color': '#ffffff',
-  '--text-color': '#333333',
-  '--text-color-secondary': '#666666',
-  '--border-color': '#cccccc',
-  '--link-color': '#8E44AD', // 现代紫色 (Amethyst 变种)
-  '--link-hover-color': '#B180E0', // 现代紫色 - 悬停 (更亮)
-  '--link-active-color': '#A06CD5', // 现代紫色 - 激活 (基础)
-  '--link-active-bg-color': '#F3EBFB', /* 现代紫色 - 激活背景 (非常浅) */
-  '--nav-item-active-bg-color': 'var(--link-active-bg-color)', /* Added */
-  '--header-bg-color': '#f0f0f0',
-  '--footer-bg-color': '#f0f0f0',
-  '--button-bg-color': '#A06CD5', // 现代紫色 - 激活 (基础)
+  '--app-bg-color': '#f5f5f7',                         // Apple Light Gray
+  '--text-color': '#1d1d1f',                            // Near Black
+  '--text-color-secondary': 'rgba(0, 0, 0, 0.8)',      // Black 80%
+  '--text-color-tertiary': 'rgba(0, 0, 0, 0.48)',      // Black 48%
+  '--border-color': 'rgba(0, 0, 0, 0.08)',             // Ultra-subtle border
+  '--link-color': '#0066cc',                            // Link Blue
+  '--link-hover-color': '#0071e3',                      // Apple Blue
+  '--link-active-color': '#0071e3',                     // Apple Blue
+  '--link-active-bg-color': 'rgba(0, 113, 227, 0.08)', // Blue 8%
+  '--nav-item-active-bg-color': 'var(--link-active-bg-color)',
+  '--header-bg-color': '#e8e8ed',
+  '--footer-bg-color': '#f5f5f7',
+  '--card-bg-color': '#ffffff',
+  '--button-bg-color': '#0071e3',                       // Apple Blue CTA
   '--button-text-color': '#ffffff',
-  '--button-hover-bg-color': '#8E44AD', // 现代紫色 - 悬停 (稍暗)
-  '--icon-color': 'var(--text-color-secondary)', // 图标颜色
-  '--icon-hover-color': 'var(--link-hover-color)', // 图标悬停颜色 (自动更新)
-  '--split-line-color': 'var(--border-color)', /* 分割线颜色 */
-  '--split-line-hover-color': 'var(--border-color)', /* 分割线悬停颜色 */
-  '--input-focus-border-color': 'var(--link-active-color)', /* 输入框聚焦边框颜色 (自动更新) */
-  '--input-focus-glow': 'var(--link-active-color)', /* 输入框聚焦光晕值 (自动更新) */
-  '--overlay-bg-color': 'rgba(0, 0, 0, 0.6)', /* Added Overlay Background - 恢复 rgba 以支持透明度 */
-  '--font-family-sans-serif': 'sans-serif',
+  '--button-hover-bg-color': '#0077ed',
+  '--button-secondary-bg-color': '#e8e8ed',
+  '--icon-color': 'rgba(0, 0, 0, 0.48)',
+  '--icon-hover-color': '#0071e3',
+  '--split-line-color': 'rgba(0, 0, 0, 0.08)',
+  '--split-line-hover-color': 'rgba(0, 0, 0, 0.16)',
+  '--input-focus-border-color': '#0071e3',
+  '--input-focus-glow': '#0071e3',
+  '--overlay-bg-color': 'rgba(0, 0, 0, 0.4)',
+  '--color-success': '#30d158',
+  '--color-error': '#ff453a',
+  '--color-warning': '#ff9f0a',
+  '--color-success-text': '#ffffff',
+  '--color-error-text': '#ffffff',
+  '--color-warning-text': '#1d1d1f',
+  '--font-family-sans-serif': "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif",
   '--base-padding': '1rem',
   '--base-margin': '0.5rem',
 };

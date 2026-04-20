@@ -1,1 +1,13 @@
-{"status":"completed","completed":5,"failed":0,"pending":0,"total":5,"done":5,"percent":100,"current":"文件管理删除、上传和菜单稳定性修复已完成","updated_at":"2026-03-26 04:14:00"}
+{
+  "status": "completed",
+  "completed": 6,
+  "failed": 0,
+  "skipped": 0,
+  "pending": 0,
+  "uncertain": 0,
+  "total": 6,
+  "done": 6,
+  "percent": 100,
+  "current": "-",
+  "updated_at": "2026-04-21 04:28:38"
+}

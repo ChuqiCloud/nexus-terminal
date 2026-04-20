@@ -1,28 +1,31 @@
 @import "tailwindcss";
 
-/* Tailwind Theme Variables Mapping */
+/* Tailwind Theme Variables Mapping — Apple Design System */
 @theme inline {
   /* Base Colors */
-  --color-background: var(--app-bg-color); /* More generic name */
-  --color-foreground: var(--text-color); /* More generic name */
-  --color-app: var(--app-bg-color); /* Keep specific if needed */
-  --color-text-default: var(--text-color); /* Keep specific if needed */
+  --color-background: var(--app-bg-color);
+  --color-foreground: var(--text-color);
+  --color-app: var(--app-bg-color);
+  --color-text-default: var(--text-color);
   --color-text-secondary: var(--text-color-secondary);
-  --color-border: var(--border-color); /* Simplified name */
-  --color-border-default: var(--border-color); /* Keep specific if needed */
+  --color-text-tertiary: var(--text-color-tertiary);
+  --color-border: var(--border-color);
+  --color-border-default: var(--border-color);
   --color-link: var(--link-color);
   --color-link-hover: var(--link-hover-color);
-  --color-link-active: var(--link-active-color); /* Also used as primary/theme color */
-  --color-primary: var(--link-active-color); /* Map primary to active link color */
-  --color-link-active-bg: var(--link-active-bg-color); /* Map active link background */
-  --color-nav-active-bg: var(--nav-item-active-bg-color); /* Map specific nav active background */
+  --color-link-active: var(--link-active-color);
+  --color-primary: var(--link-active-color);
+  --color-link-active-bg: var(--link-active-bg-color);
+  --color-nav-active-bg: var(--nav-item-active-bg-color);
 
   /* Component Colors */
   --color-header: var(--header-bg-color);
   --color-footer: var(--footer-bg-color);
+  --color-card: var(--card-bg-color);
   --color-button: var(--button-bg-color);
   --color-button-text: var(--button-text-color);
   --color-button-hover: var(--button-hover-bg-color);
+  --color-button-secondary: var(--button-secondary-bg-color);
   --color-icon: var(--icon-color);
   --color-icon-hover: var(--icon-hover-color);
   --color-split-line: var(--split-line-color);
@@ -35,58 +38,77 @@
   --color-success-text: var(--color-success-text);
   --color-warning-text: var(--color-warning-text);
   --color-error-text: var(--color-error-text);
+
+  /* Radius Scale (Apple) */
+  --radius-micro: 5px;
+  --radius-standard: 8px;
+  --radius-comfortable: 11px;
+  --radius-large: 12px;
+  --radius-pill: 980px;
+
+  /* Shadow (Apple) */
+  --shadow-card: rgba(0, 0, 0, 0.22) 3px 5px 30px 0px;
+  --shadow-subtle: rgba(0, 0, 0, 0.04) 0px 1px 3px 0px;
 }
 
-/* 全局样式和 CSS 变量定义 */
+/* ─────────────────────────────────────────────
+   Apple Design System — Light Theme Variables
+   ───────────────────────────────────────────── */
 :root {
-  /* 基础颜色 */
-  --app-bg-color: #ffffff;       /* 应用背景色 */
-  --text-color: #333333;         /* 主要文字颜色 */
-  --text-color-secondary: #666666; /* 次要文字颜色 */
-  --border-color: #cccccc;       /* 边框颜色 */
-  --link-color: #333;            /* 链接颜色 */
-  --link-hover-color: #0056b3;   /* 链接悬停颜色 */
-  --link-active-color: #007bff;   /* 激活链接/主题色 */
-  --link-active-bg-color: #e0e0ff; /* 激活链接背景色 (类似 indigo-50) */
-  --nav-item-active-bg-color: var(--link-active-bg-color); /* 导航选中项背景色, 默认同激活链接背景 */
+  /* Base Colors (Apple Light) */
+  --app-bg-color: #f5f5f7;                         /* Apple Light Gray — main canvas */
+  --text-color: #1d1d1f;                            /* Near Black — primary text */
+  --text-color-secondary: rgba(0, 0, 0, 0.8);      /* Black 80% — secondary text */
+  --text-color-tertiary: rgba(0, 0, 0, 0.48);      /* Black 48% — tertiary, disabled */
+  --border-color: rgba(0, 0, 0, 0.08);             /* Ultra-subtle border */
+  --link-color: #0066cc;                            /* Link Blue on light bg */
+  --link-hover-color: #0071e3;                      /* Apple Blue — hover */
+  --link-active-color: #0071e3;                     /* Apple Blue — primary accent */
+  --link-active-bg-color: rgba(0, 113, 227, 0.08); /* Blue 8% — active bg */
+  --nav-item-active-bg-color: var(--link-active-bg-color);
 
-  /* 组件颜色 */
-  --header-bg-color: #f0f0f0;     /* 头部背景色 */
-  --footer-bg-color: #f0f0f0;     /* 底部背景色 */
-  --button-bg-color: #007bff;     /* 按钮背景色 */
-  --button-text-color: #ffffff;   /* 按钮文字颜色 */
-  --button-hover-bg-color: #0056b3;/* 按钮悬停背景色 */
-  --icon-color: var(--text-color-secondary); /* 图标颜色 */
-  --icon-hover-color: var(--link-hover-color); /* 图标悬停颜色 */
-  --split-line-color: var(--border-color); /* 分割线颜色 */
-  --split-line-hover-color: var(--border-color); /* 分割线悬停颜色 */
-  --input-focus-border-color: var(--link-active-color); /* 输入框聚焦边框颜色 */
-  --input-focus-glow: var(--link-active-color); /* 输入框聚焦光晕值 */
-  --overlay-bg-color: rgba(0, 0, 0, 0.6); /* Added Overlay Background Color */
+  /* Component Colors (Apple Light) */
+  --header-bg-color: #e8e8ed;                      /* Slightly darker than canvas */
+  --footer-bg-color: #f5f5f7;
+  --card-bg-color: #ffffff;                         /* White cards on gray canvas */
+  --button-bg-color: #0071e3;                       /* Apple Blue CTA */
+  --button-text-color: #ffffff;
+  --button-hover-bg-color: #0077ed;                 /* Brighter Blue on hover */
+  --button-secondary-bg-color: #e8e8ed;             /* Light secondary button */
+  --icon-color: rgba(0, 0, 0, 0.48);               /* Tertiary icons */
+  --icon-hover-color: #0071e3;                      /* Apple Blue on hover */
+  --split-line-color: rgba(0, 0, 0, 0.08);
+  --split-line-hover-color: rgba(0, 0, 0, 0.16);
+  --input-focus-border-color: #0071e3;              /* Apple Blue focus ring */
+  --input-focus-glow: #0071e3;
+  --overlay-bg-color: rgba(0, 0, 0, 0.4);          /* Lighter overlay for light theme */
 
-  /* Status Colors */
-  --color-success: #28a745; /* Green */
-  --color-warning: #ffc107; /* Yellow */
-  --color-error: #dc3545;   /* Red */
-  --color-success-text: #ffffff; /* White text for green bg */
-  --color-warning-text: #212529; /* Dark text for yellow bg */
-  --color-error-text: #ffffff;   /* White text for red bg */
+  /* Status Colors (Apple-inspired) */
+  --color-success: #30d158;                         /* Apple Green */
+  --color-warning: #ff9f0a;                         /* Apple Orange */
+  --color-error: #ff453a;                           /* Apple Red */
+  --color-success-text: #ffffff;
+  --color-warning-text: #1d1d1f;
+  --color-error-text: #ffffff;
 
-  /* 字体 */
-  --font-family-sans-serif: sans-serif; /* 默认字体 */
+  /* Typography (Apple SF Pro System Stack) */
+  --font-family-sans-serif: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 
-  /* 其他 */
-  --base-padding: 1rem;          /* 基础内边距 */
-  --base-margin: 0.5rem;         /* 基础外边距 */
+  /* Spacing */
+  --base-padding: 1rem;
+  --base-margin: 0.5rem;
 }
 
 /* 应用基础样式 */
 body {
-  margin: 0; /* 移除默认 body margin */
+  margin: 0;
   font-family: var(--font-family-sans-serif);
   background-color: var(--app-bg-color);
   color: var(--text-color);
-  line-height: 1.6; /* 改善可读性 */
+  line-height: 1.47; /* Apple body line-height */
+  letter-spacing: -0.022em; /* Apple body tracking */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* 全局链接样式 */
@@ -165,32 +187,31 @@ hr {
   border-bottom: 1px solid var(--border-color);
 }
 
-/* Style scrollbars */
+/* Style scrollbars — Apple minimal */
 ::-webkit-scrollbar {
-  width: 8px; /* Width of vertical scrollbar */
-  height: 8px; /* Height of horizontal scrollbar */
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--app-bg-color); /* Scrollbar track background */
-  border-radius: 4px;
+  background: transparent;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: var(--border-color); /* Scrollbar handle color */
-  border-radius: 4px;
-  border: 2px solid var(--app-bg-color); /* Creates padding around thumb */
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--text-color-secondary); /* Scrollbar handle hover color */
+  background-color: rgba(0, 0, 0, 0.3);
 }
 
-/* Input focus styles */
+/* Input focus styles — Apple Blue ring */
 input:focus, textarea:focus, select:focus {
-    border-color: var(--input-focus-border-color) !important; /* Use new variable, !important might be needed depending on specificity */
+    border-color: var(--input-focus-border-color) !important;
     outline: 0;
-    box-shadow: 0 0 0 3px rgba(var(--input-focus-glow-rgb), 0.2) !important; /* Use new variable, !important might be needed */
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2) !important;
 }
 
 /* Ensure icons inside primary buttons are white */
