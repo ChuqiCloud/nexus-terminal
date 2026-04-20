@@ -16,35 +16,78 @@ const editableUiTheme = ref<Record<string, string>>({});
 const editableUiThemeString = ref('');
 const themeParseError = ref<string | null>(null);
 
-// 定义黑暗模式主题变量
+// NVIDIA Design System — Dark Theme
 const darkModeTheme = {
-  '--app-bg-color': '#161816',
-  '--text-color': '#d8e6d2',
-  '--text-color-secondary': '#8d9887',
-  '--border-color': '#2b332c',
-  '--link-color': '#37c66a',
-  '--link-hover-color': '#62e38e',
-  '--link-active-color': '#45d978',
-  '--link-active-bg-color': 'rgba(69, 217, 120, 0.14)',
+  '--app-bg-color': '#000000',                         // True Black
+  '--text-color': '#ffffff',                           // White on dark
+  '--text-color-secondary': '#a7a7a7',                 // Gray 300
+  '--text-color-tertiary': '#757575',                  // Gray 500
+  '--border-color': '#5e5e5e',                         // Gray Border
+  '--link-color': '#ffffff',                           // White links on dark
+  '--link-hover-color': '#3860be',                     // Blue hover
+  '--link-active-color': '#76b900',                    // NVIDIA Green
+  '--link-active-bg-color': 'rgba(118, 185, 0, 0.12)',// Green 12%
   '--nav-item-active-bg-color': 'var(--link-active-bg-color)',
-  '--header-bg-color': '#1b1f1b',
-  '--footer-bg-color': '#1b1f1b',
-  '--button-bg-color': '#203126',
-  '--button-text-color': '#9aefad',
-  '--button-hover-bg-color': '#294232',
-  '--icon-color': 'var(--text-color-secondary)',
-  '--icon-hover-color': 'var(--link-hover-color)',
-  '--split-line-color': 'var(--border-color)',
-  '--split-line-hover-color': '#3b6045',
-  '--input-focus-border-color': 'var(--link-active-color)',
-  '--input-focus-glow': 'var(--link-active-color)',
-  '--overlay-bg-color': 'rgba(0, 0, 0, 0.84)',
-  '--color-success': '#3fdc78',
-  '--color-error': '#d86a4d',
-  '--color-warning': '#d1a445',
-  '--font-family-sans-serif': 'sans-serif',
+  '--header-bg-color': '#000000',                      // True Black
+  '--footer-bg-color': '#000000',
+  '--card-bg-color': '#1a1a1a',                        // Near Black cards
+  '--button-bg-color': '#76b900',                      // NVIDIA Green CTA
+  '--button-text-color': '#000000',                    // Black on green
+  '--button-hover-bg-color': '#1eaedb',                // Teal hover
+  '--button-secondary-bg-color': '#1a1a1a',            // Near Black secondary
+  '--icon-color': '#757575',                           // Gray 500
+  '--icon-hover-color': '#76b900',                     // NVIDIA Green
+  '--split-line-color': '#5e5e5e',
+  '--split-line-hover-color': '#76b900',
+  '--input-focus-border-color': '#76b900',             // Green focus ring
+  '--input-focus-glow': '#76b900',
+  '--overlay-bg-color': 'rgba(0, 0, 0, 0.85)',
+  '--color-success': '#3f8500',                        // NVIDIA Green 500
+  '--color-error': '#e52020',                          // NVIDIA Red 500
+  '--color-warning': '#ef9100',                        // NVIDIA Yellow 300
+  '--color-success-text': '#ffffff',
+  '--color-error-text': '#ffffff',
+  '--color-warning-text': '#1a1a1a',
+  '--font-family-sans-serif': "Arial, Helvetica, sans-serif",
   '--base-padding': '1rem',
   '--base-margin': '0.5rem'
+};
+
+// Apple Design System — Light Theme
+const lightModeTheme = {
+  '--app-bg-color': '#f5f5f7',                         // Apple Light Gray
+  '--text-color': '#1d1d1f',                            // Near Black
+  '--text-color-secondary': 'rgba(0, 0, 0, 0.8)',      // Black 80%
+  '--text-color-tertiary': 'rgba(0, 0, 0, 0.48)',      // Black 48%
+  '--border-color': 'rgba(0, 0, 0, 0.08)',             // Ultra-subtle border
+  '--link-color': '#0066cc',                            // Link Blue
+  '--link-hover-color': '#0071e3',                      // Apple Blue
+  '--link-active-color': '#0071e3',                     // Apple Blue
+  '--link-active-bg-color': 'rgba(0, 113, 227, 0.08)', // Blue 8%
+  '--nav-item-active-bg-color': 'var(--link-active-bg-color)',
+  '--header-bg-color': '#e8e8ed',
+  '--footer-bg-color': '#f5f5f7',
+  '--card-bg-color': '#ffffff',
+  '--button-bg-color': '#0071e3',                       // Apple Blue CTA
+  '--button-text-color': '#ffffff',
+  '--button-hover-bg-color': '#0077ed',
+  '--button-secondary-bg-color': '#e8e8ed',
+  '--icon-color': 'rgba(0, 0, 0, 0.48)',
+  '--icon-hover-color': '#0071e3',
+  '--split-line-color': 'rgba(0, 0, 0, 0.08)',
+  '--split-line-hover-color': 'rgba(0, 0, 0, 0.16)',
+  '--input-focus-border-color': '#0071e3',
+  '--input-focus-glow': '#0071e3',
+  '--overlay-bg-color': 'rgba(0, 0, 0, 0.4)',
+  '--color-success': '#30d158',
+  '--color-error': '#ff453a',
+  '--color-warning': '#ff9f0a',
+  '--color-success-text': '#ffffff',
+  '--color-error-text': '#ffffff',
+  '--color-warning-text': '#1d1d1f',
+  '--font-family-sans-serif': "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+  '--base-padding': '1rem',
+  '--base-margin': '0.5rem',
 };
 
 const initializeEditableState = () => {
@@ -103,6 +146,17 @@ const applyDarkMode = async () => {
   } catch (error: any) {
     console.error("应用黑暗模式失败:", error);
     notificationsStore.addNotification({ type: 'error', message: t('styleCustomizer.darkModeApplyFailed', { message: error.message || '未知错误' }) });
+  }
+};
+
+const applyLightMode = async () => {
+  try {
+    editableUiTheme.value = JSON.parse(JSON.stringify(lightModeTheme));
+    await appearanceStore.saveCustomUiTheme(editableUiTheme.value);
+    notificationsStore.addNotification({ type: 'success', message: t('styleCustomizer.lightModeApplied', '白天模式已应用') });
+  } catch (error: any) {
+    console.error("应用白天模式失败:", error);
+    notificationsStore.addNotification({ type: 'error', message: t('styleCustomizer.lightModeApplyFailed', { message: error.message || '未知错误' }) });
   }
 };
 
@@ -217,7 +271,7 @@ defineExpose({
         <label class="text-left text-foreground text-sm font-medium mb-1 md:mb-0">{{ t('styleCustomizer.themeModeLabel', '主题模式:') }}</label>
         <div class="flex gap-2 justify-start flex-wrap">
             <button @click="handleResetUiTheme" class="px-3 py-1.5 text-sm border border-border rounded bg-header hover:bg-border transition duration-200 ease-in-out whitespace-nowrap">{{ t('styleCustomizer.defaultMode', '默认模式') }}</button>
-            <button @click="applyDarkMode" class="px-3 py-1.5 text-sm border border-border rounded bg-header hover:bg-border transition duration-200 ease-in-out whitespace-nowrap">{{ t('styleCustomizer.darkMode', '黑暗模式') }}</button>
+            <button @click="applyLightMode" class="px-3 py-1.5 text-sm border border-border rounded bg-header hover:bg-border transition duration-200 ease-in-out whitespace-nowrap">{{ t('styleCustomizer.lightMode', '白天模式') }}</button>
         </div>
     </div>
     <p class="text-text-secondary text-sm leading-relaxed mb-3">{{ t('styleCustomizer.uiDescription') }}</p>

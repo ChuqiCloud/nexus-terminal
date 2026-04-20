@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Tailwind Theme Variables Mapping — Apple Design System */
+/* Tailwind Theme Variables Mapping — NVIDIA Design System */
 @theme inline {
   /* Base Colors */
   --color-background: var(--app-bg-color);
@@ -46,53 +46,53 @@
   --radius-large: 12px;
   --radius-pill: 980px;
 
-  /* Shadow (Apple) */
-  --shadow-card: rgba(0, 0, 0, 0.22) 3px 5px 30px 0px;
-  --shadow-subtle: rgba(0, 0, 0, 0.04) 0px 1px 3px 0px;
+  /* Shadow (NVIDIA) */
+  --shadow-card: rgba(0, 0, 0, 0.3) 0px 0px 5px 0px;
+  --shadow-subtle: rgba(0, 0, 0, 0.2) 0px 1px 3px 0px;
 }
 
 /* ─────────────────────────────────────────────
-   Apple Design System — Light Theme Variables
+   NVIDIA Design System — Dark Theme (Default)
    ───────────────────────────────────────────── */
 :root {
-  /* Base Colors (Apple Light) */
-  --app-bg-color: #f5f5f7;                         /* Apple Light Gray — main canvas */
-  --text-color: #1d1d1f;                            /* Near Black — primary text */
-  --text-color-secondary: rgba(0, 0, 0, 0.8);      /* Black 80% — secondary text */
-  --text-color-tertiary: rgba(0, 0, 0, 0.48);      /* Black 48% — tertiary, disabled */
-  --border-color: rgba(0, 0, 0, 0.08);             /* Ultra-subtle border */
-  --link-color: #0066cc;                            /* Link Blue on light bg */
-  --link-hover-color: #0071e3;                      /* Apple Blue — hover */
-  --link-active-color: #0071e3;                     /* Apple Blue — primary accent */
-  --link-active-bg-color: rgba(0, 113, 227, 0.08); /* Blue 8% — active bg */
+  /* Base Colors (NVIDIA Dark) */
+  --app-bg-color: #000000;                             /* True Black */
+  --text-color: #ffffff;                               /* White on dark */
+  --text-color-secondary: #a7a7a7;                     /* Gray 300 */
+  --text-color-tertiary: #757575;                      /* Gray 500 */
+  --border-color: #5e5e5e;                             /* Gray Border */
+  --link-color: #ffffff;                               /* White links on dark */
+  --link-hover-color: #3860be;                         /* Blue hover */
+  --link-active-color: #76b900;                        /* NVIDIA Green */
+  --link-active-bg-color: rgba(118, 185, 0, 0.12);    /* Green 12% */
   --nav-item-active-bg-color: var(--link-active-bg-color);
 
-  /* Component Colors (Apple Light) */
-  --header-bg-color: #e8e8ed;                      /* Slightly darker than canvas */
-  --footer-bg-color: #f5f5f7;
-  --card-bg-color: #ffffff;                         /* White cards on gray canvas */
-  --button-bg-color: #0071e3;                       /* Apple Blue CTA */
-  --button-text-color: #ffffff;
-  --button-hover-bg-color: #0077ed;                 /* Brighter Blue on hover */
-  --button-secondary-bg-color: #e8e8ed;             /* Light secondary button */
-  --icon-color: rgba(0, 0, 0, 0.48);               /* Tertiary icons */
-  --icon-hover-color: #0071e3;                      /* Apple Blue on hover */
-  --split-line-color: rgba(0, 0, 0, 0.08);
-  --split-line-hover-color: rgba(0, 0, 0, 0.16);
-  --input-focus-border-color: #0071e3;              /* Apple Blue focus ring */
-  --input-focus-glow: #0071e3;
-  --overlay-bg-color: rgba(0, 0, 0, 0.4);          /* Lighter overlay for light theme */
+  /* Component Colors (NVIDIA Dark) */
+  --header-bg-color: #000000;
+  --footer-bg-color: #000000;
+  --card-bg-color: #1a1a1a;                            /* Near Black cards */
+  --button-bg-color: #76b900;                          /* NVIDIA Green CTA */
+  --button-text-color: #000000;                        /* Black on green */
+  --button-hover-bg-color: #1eaedb;                    /* Teal hover */
+  --button-secondary-bg-color: #1a1a1a;
+  --icon-color: #757575;                               /* Gray 500 */
+  --icon-hover-color: #76b900;                         /* NVIDIA Green */
+  --split-line-color: #5e5e5e;
+  --split-line-hover-color: #76b900;
+  --input-focus-border-color: #76b900;                 /* Green focus ring */
+  --input-focus-glow: #76b900;
+  --overlay-bg-color: rgba(0, 0, 0, 0.85);
 
-  /* Status Colors (Apple-inspired) */
-  --color-success: #30d158;                         /* Apple Green */
-  --color-warning: #ff9f0a;                         /* Apple Orange */
-  --color-error: #ff453a;                           /* Apple Red */
+  /* Status Colors (NVIDIA) */
+  --color-success: #3f8500;
+  --color-warning: #ef9100;
+  --color-error: #e52020;
   --color-success-text: #ffffff;
-  --color-warning-text: #1d1d1f;
+  --color-warning-text: #1a1a1a;
   --color-error-text: #ffffff;
 
-  /* Typography (Apple SF Pro System Stack) */
-  --font-family-sans-serif: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  /* Typography */
+  --font-family-sans-serif: Arial, Helvetica, sans-serif;
 
   /* Spacing */
   --base-padding: 1rem;
@@ -105,8 +105,7 @@ body {
   font-family: var(--font-family-sans-serif);
   background-color: var(--app-bg-color);
   color: var(--text-color);
-  line-height: 1.47; /* Apple body line-height */
-  letter-spacing: -0.022em; /* Apple body tracking */
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -187,31 +186,31 @@ hr {
   border-bottom: 1px solid var(--border-color);
 }
 
-/* Style scrollbars — Apple minimal */
+/* Style scrollbars — dark theme */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #1a1a1a;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.15);
+  background-color: #5e5e5e;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: #76b900;
 }
 
-/* Input focus styles — Apple Blue ring */
+/* Input focus styles — NVIDIA Green ring */
 input:focus, textarea:focus, select:focus {
     border-color: var(--input-focus-border-color) !important;
     outline: 0;
-    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2) !important;
+    box-shadow: 0 0 0 2px rgba(118, 185, 0, 0.25) !important;
 }
 
 /* Ensure icons inside primary buttons are white */

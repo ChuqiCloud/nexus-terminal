@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- **[frontend]**: 将 `packages/frontend` 的 Vite 开发代理改为支持通过 `VITE_DEV_PROXY_TARGET`、`VITE_DEV_WS_PROXY_TARGET` 与 `VITE_API_BASE_URL` 切换远端联调目标，并验证 `focus-switcher-sequence`、登录链路与默认白色主题可在本地前端联调时正常工作 — by yinjianm
+  - 方案: [202604210440_frontend-dev-api-theme-verification](archive/2026-04/202604210440_frontend-dev-api-theme-verification/)
+
 - **[frontend]**: 为 SSH 顶部服务器标签与服务器内终端标签补充 `%` 命令运行中提示，并基于前端发送链路与 shell prompt 输出派生运行态 — by yinjianm
   - 方案: [202604192106_terminal-running-indicator](archive/2026-04/202604192106_terminal-running-indicator/)
   - 决策: terminal-running-indicator#D001(运行态继续作为前端派生状态实现), terminal-running-indicator#D002(采用发送置位加 prompt 清除的混合检测策略)

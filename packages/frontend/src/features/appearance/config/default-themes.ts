@@ -25,40 +25,40 @@ export const defaultXtermTheme: ITheme = {
   brightWhite: '#f3fff0'
 };
 
-// 默认 UI 主题 (CSS 变量) — Apple Design System Light
+// 默认 UI 主题 (CSS 变量) — NVIDIA Design System Dark
 // (与 backend/src/config/default-themes.ts 中的定义保持一致)
 export const defaultUiTheme: Record<string, string> = {
-  '--app-bg-color': '#f5f5f7',                         // Apple Light Gray
-  '--text-color': '#1d1d1f',                            // Near Black
-  '--text-color-secondary': 'rgba(0, 0, 0, 0.8)',      // Black 80%
-  '--text-color-tertiary': 'rgba(0, 0, 0, 0.48)',      // Black 48%
-  '--border-color': 'rgba(0, 0, 0, 0.08)',             // Ultra-subtle border
-  '--link-color': '#0066cc',                            // Link Blue
-  '--link-hover-color': '#0071e3',                      // Apple Blue
-  '--link-active-color': '#0071e3',                     // Apple Blue
-  '--link-active-bg-color': 'rgba(0, 113, 227, 0.08)', // Blue 8%
+  '--app-bg-color': '#000000',                         // True Black
+  '--text-color': '#ffffff',                           // White on dark
+  '--text-color-secondary': '#a7a7a7',                 // Gray 300
+  '--text-color-tertiary': '#757575',                  // Gray 500
+  '--border-color': '#5e5e5e',                         // Gray Border
+  '--link-color': '#ffffff',                           // White links on dark
+  '--link-hover-color': '#3860be',                     // Blue hover
+  '--link-active-color': '#76b900',                    // NVIDIA Green
+  '--link-active-bg-color': 'rgba(118, 185, 0, 0.12)',// Green 12%
   '--nav-item-active-bg-color': 'var(--link-active-bg-color)',
-  '--header-bg-color': '#e8e8ed',
-  '--footer-bg-color': '#f5f5f7',
-  '--card-bg-color': '#ffffff',
-  '--button-bg-color': '#0071e3',                       // Apple Blue CTA
-  '--button-text-color': '#ffffff',
-  '--button-hover-bg-color': '#0077ed',
-  '--button-secondary-bg-color': '#e8e8ed',
-  '--icon-color': 'rgba(0, 0, 0, 0.48)',
-  '--icon-hover-color': '#0071e3',
-  '--split-line-color': 'rgba(0, 0, 0, 0.08)',
-  '--split-line-hover-color': 'rgba(0, 0, 0, 0.16)',
-  '--input-focus-border-color': '#0071e3',
-  '--input-focus-glow': '#0071e3',
-  '--overlay-bg-color': 'rgba(0, 0, 0, 0.4)',
-  '--color-success': '#30d158',
-  '--color-error': '#ff453a',
-  '--color-warning': '#ff9f0a',
+  '--header-bg-color': '#000000',
+  '--footer-bg-color': '#000000',
+  '--card-bg-color': '#1a1a1a',                        // Near Black cards
+  '--button-bg-color': '#76b900',                      // NVIDIA Green CTA
+  '--button-text-color': '#000000',                    // Black on green
+  '--button-hover-bg-color': '#1eaedb',                // Teal hover
+  '--button-secondary-bg-color': '#1a1a1a',
+  '--icon-color': '#757575',
+  '--icon-hover-color': '#76b900',
+  '--split-line-color': '#5e5e5e',
+  '--split-line-hover-color': '#76b900',
+  '--input-focus-border-color': '#76b900',
+  '--input-focus-glow': '#76b900',
+  '--overlay-bg-color': 'rgba(0, 0, 0, 0.85)',
+  '--color-success': '#3f8500',
+  '--color-error': '#e52020',
+  '--color-warning': '#ef9100',
   '--color-success-text': '#ffffff',
   '--color-error-text': '#ffffff',
-  '--color-warning-text': '#1d1d1f',
-  '--font-family-sans-serif': "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+  '--color-warning-text': '#1a1a1a',
+  '--font-family-sans-serif': "Arial, Helvetica, sans-serif",
   '--base-padding': '1rem',
   '--base-margin': '0.5rem',
 };
