@@ -15,6 +15,7 @@ import { useFileManagerDragAndDrop } from '../composables/file-manager/useFileMa
 import { useFileManagerKeyboardNavigation } from '../composables/file-manager/useFileManagerKeyboardNavigation';
 import { createFolderArchive, type FolderArchiveSource } from '../composables/file-manager/useFolderArchiveUpload';
 import FileUploadPopup from './FileUploadPopup.vue';
+import TransferPanel from './TransferPanel.vue';
 import FileManagerContextMenu from './FileManagerContextMenu.vue';
 import FileManagerActionModal from './FileManagerActionModal.vue';
 import type { FileListItem } from '../types/sftp.types';
@@ -150,6 +151,8 @@ const editablePath = ref('');
 const fileListContainerRef = ref<HTMLDivElement | null>(null); // 文件列表容器引用
 const dropOverlayRef = ref<HTMLDivElement | null>(null); // +++ 拖拽蒙版引用 +++
 const isFolderUploadBusy = ref(false);
+const uploadMenuOpen = ref(false);
+const showTransferPanel = ref(false);
 
 // +++ Favorite Paths Modal State +++
 const showFavoritePathsModal = ref(false);
@@ -1741,6 +1744,7 @@ onMounted(() => {
   };
   unregisterPathFocusAction = focusSwitcherStore.registerFocusAction('fileManagerPathInput', focusPathActionWrapper);
   document.addEventListener('click', handleClickOutsidePathInput);
+  document.addEventListener('click', handleClickOutsideUploadMenu);
 });
 
 onBeforeUnmount(() => {
@@ -1758,6 +1762,7 @@ onBeforeUnmount(() => {
  }
  unregisterPathFocusAction = null;
  document.removeEventListener('click', handleClickOutsidePathInput);
+ document.removeEventListener('click', handleClickOutsideUploadMenu);
  sessionStore.removeSftpManager(props.sessionId, props.instanceId);
 });
 
@@ -1997,6 +2002,12 @@ const handleClickOutsidePathInput = (event: MouseEvent) => {
         isEditingPath.value = false;
         closePathHistory();
     }
+  }
+};
+
+const handleClickOutsideUploadMenu = (event: MouseEvent) => {
+  if (uploadMenuOpen.value) {
+    uploadMenuOpen.value = false;
   }
 };
 
@@ -2368,7 +2379,7 @@ watch(
             </div>
        </div> <!-- End Wrapper -->
        <!-- Main Actions Bar -->
-       <div class="flex items-center gap-2 flex-shrink-0">
+       <div class="flex items-center gap-0.5 flex-shrink-0">
             <input type="file" ref="fileInputRef" @change="handleFileSelected" multiple class="hidden" />
             <input type="file" ref="folderInputRef" @change="handleFolderSelected" webkitdirectory directory multiple class="hidden" />
             <!-- 打开编辑器按钮 -->
@@ -2377,62 +2388,63 @@ watch(
               @click="openPopupEditor"
               :disabled="!currentSftpManager || !props.wsDeps.isConnected.value"
               :title="t('fileManager.actions.openEditor', 'Open Popup Editor')"
-              class="flex items-center gap-1 px-2.5 py-1 bg-background border border-border rounded text-foreground text-xs transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:bg-header hover:enabled:border-primary hover:enabled:text-primary"
-              :class="{ 'px-1.5': props.isMobile }"
+              class="flex items-center justify-center w-7 h-7 text-text-secondary rounded transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:bg-black/10 hover:enabled:text-foreground"
             >
-              <i class="far fa-edit text-sm"></i> <!-- 使用编辑图标 -->
-              <span v-if="!props.isMobile">{{ t('fileManager.actions.openEditor', 'Open Editor') }}</span> <!-- 添加 i18n key -->
+              <i class="far fa-edit text-sm"></i>
             </button>
-            <!-- 上传按钮 -->
-            <button
-              @click="triggerFileUpload"
-              :disabled="!currentSftpManager || !props.wsDeps.isConnected.value"
-              :title="t('fileManager.actions.uploadFile')"
-              class="flex items-center gap-1 px-2.5 py-1 bg-background border border-border rounded text-foreground text-xs transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:bg-header hover:enabled:border-primary hover:enabled:text-primary"
-              :class="{ 'px-1.5': props.isMobile }"
-            >
-              <i class="fas fa-upload text-sm"></i>
-              <span v-if="!props.isMobile">{{ t('fileManager.actions.uploadFile') }}</span>
-            </button>
-            <button
-              @click="triggerFolderUpload"
-              :disabled="!currentSftpManager || !props.wsDeps.isConnected.value || isFolderUploadBusy"
-              :title="t('fileManager.actions.uploadFolder')"
-              class="flex items-center gap-1 px-2.5 py-1 bg-background border border-border rounded text-foreground text-xs transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:bg-header hover:enabled:border-primary hover:enabled:text-primary"
-              :class="{ 'px-1.5': props.isMobile }"
-            >
-              <i :class="isFolderUploadBusy ? 'fas fa-spinner fa-spin text-sm' : 'fas fa-folder-open text-sm'"></i>
-              <span v-if="!props.isMobile">{{ t('fileManager.actions.uploadFolder') }}</span>
-            </button>
+            <!-- 上传下拉菜单 -->
+            <div class="relative">
+              <button
+                @click="uploadMenuOpen = !uploadMenuOpen"
+                :disabled="!currentSftpManager || !props.wsDeps.isConnected.value"
+                :title="t('fileManager.actions.uploadFile')"
+                class="flex items-center justify-center w-7 h-7 text-text-secondary rounded transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:bg-black/10 hover:enabled:text-foreground"
+              >
+                <i class="fas fa-upload text-sm"></i>
+              </button>
+              <div v-if="uploadMenuOpen" class="absolute right-0 top-full mt-1 bg-background border border-border rounded-md shadow-lg z-50 py-1 min-w-[140px]">
+                <button
+                  @click="triggerFileUpload(); uploadMenuOpen = false"
+                  class="w-full text-left px-3 py-1.5 text-xs text-foreground hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
+                >
+                  <i class="fas fa-file-upload w-4 text-center"></i>
+                  {{ t('fileManager.actions.uploadFile') }}
+                </button>
+                <button
+                  @click="triggerFolderUpload(); uploadMenuOpen = false"
+                  :disabled="isFolderUploadBusy"
+                  class="w-full text-left px-3 py-1.5 text-xs text-foreground hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <i :class="isFolderUploadBusy ? 'fas fa-spinner fa-spin w-4 text-center' : 'fas fa-folder-open w-4 text-center'"></i>
+                  {{ t('fileManager.actions.uploadFolder') }}
+                </button>
+              </div>
+            </div>
             <button
               @click="handleNewFolderContextMenuClick"
               :disabled="!currentSftpManager || !props.wsDeps.isConnected.value"
               :title="t('fileManager.actions.newFolder')"
-              class="flex items-center gap-1 px-2.5 py-1 bg-background border border-border rounded text-foreground text-xs transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:bg-header hover:enabled:border-primary hover:enabled:text-primary"
-              :class="{ 'px-1.5': props.isMobile }"
+              class="flex items-center justify-center w-7 h-7 text-text-secondary rounded transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:bg-black/10 hover:enabled:text-foreground"
             >
               <i class="fas fa-folder-plus text-sm"></i>
-              <span v-if="!props.isMobile">{{ t('fileManager.actions.newFolder') }}</span>
             </button>
             <button
               @click="handleNewFileContextMenuClick"
               :disabled="!currentSftpManager || !props.wsDeps.isConnected.value"
               :title="t('fileManager.actions.newFile')"
-              class="flex items-center gap-1 px-2.5 py-1 bg-background border border-border rounded text-foreground text-xs transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:bg-header hover:enabled:border-primary hover:enabled:text-primary"
-              :class="{ 'px-1.5': props.isMobile }"
+              class="flex items-center justify-center w-7 h-7 text-text-secondary rounded transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:bg-black/10 hover:enabled:text-foreground"
             >
               <i class="far fa-file-alt text-sm"></i>
-              <span v-if="!props.isMobile">{{ t('fileManager.actions.newFile') }}</span>
             </button>
             <!-- 多选模式切换按钮 (仅移动端) -->
             <button
               v-if="props.isMobile"
               @click="toggleMultiSelectMode"
               :title="isMultiSelectMode ? t('fileManager.actions.exitMultiSelect', 'Exit Multi-Select Mode') : t('fileManager.actions.multiSelect', 'Enter Multi-Select Mode')"
-              class="flex items-center gap-1 px-1.5 py-1 bg-background border border-border rounded text-foreground text-xs transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="flex items-center justify-center w-7 h-7 rounded text-xs transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               :class="{
-                'hover:bg-header hover:border-primary hover:text-primary': !isMultiSelectMode,
-                'bg-primary text-white border-primary': isMultiSelectMode
+                'text-text-secondary hover:bg-black/10 hover:text-foreground': !isMultiSelectMode,
+                'bg-primary text-white': isMultiSelectMode
               }"
             >
               <i class="fas fa-check-square text-sm"></i>
@@ -2442,13 +2454,8 @@ watch(
 
     <div class="flex flex-grow min-h-0 overflow-hidden border-t border-border/60">
       <div class="flex-1 bg-header/20 flex flex-col min-h-0">
-        <div class="px-3 py-3 border-b border-border/60">
-          <div class="flex items-center justify-between gap-2">
-            <div>
-              <div class="text-[11px] uppercase tracking-[0.18em] text-text-secondary">{{ t('fileManager.explorer.title', '目录资源管理器') }}</div>
-              <div class="mt-1 text-xs text-text-secondary">1 {{ t('fileManager.explorer.rootCount', '个根目录') }}</div>
-            </div>
-          </div>
+        <div class="px-2 py-1.5 border-b border-border/60">
+          <div class="text-[11px] uppercase tracking-[0.15em] text-text-secondary font-medium">{{ t('fileManager.explorer.title', '目录资源管理器') }}</div>
         </div>
 
         <div
@@ -2473,24 +2480,24 @@ watch(
             {{ t('fileManager.dropFilesHere', 'Drop files here to upload') }}
           </div>
 
-          <div class="p-2 space-y-1">
+          <div class="px-1 py-0.5">
             <div
               v-for="row in explorerTreeRows"
               :key="row.id"
               :data-drop-path="row.path"
               :data-is-directory="row.isDirectory"
               :class="[
-                'group flex items-center gap-2 rounded-lg border px-2 py-1.5 transition-colors cursor-pointer',
+                'group flex items-center gap-1.5 px-1 py-[3px] transition-colors cursor-pointer rounded-sm',
                 showExternalDropOverlay && externalDropTargetPath === row.path
-                  ? 'border-primary bg-primary/15 text-foreground'
+                  ? 'bg-primary/15 text-foreground'
                   : '',
                 isExplorerRowActive(row)
-                  ? 'bg-primary text-white border-primary shadow-sm'
+                  ? 'bg-emerald-600/20 text-emerald-400'
                   : isExplorerRowRelated(row)
-                    ? 'border-primary/20 bg-primary/8 text-foreground'
-                    : 'border-transparent text-text-secondary hover:bg-background hover:text-foreground'
+                    ? 'bg-primary/8 text-foreground'
+                    : 'text-text-secondary hover:bg-white/5 hover:text-foreground'
               ]"
-              :style="{ paddingLeft: `${0.6 + row.depth * 0.85}rem` }"
+              :style="{ paddingLeft: `${0.25 + row.depth * 0.75}rem` }"
               @click="handleExplorerSelect(row)"
               @dblclick="handleExplorerOpen(row)"
               @contextmenu.prevent.stop="handleExplorerContextMenu($event, row)"
@@ -2498,42 +2505,38 @@ watch(
               <button
                 v-if="row.isDirectory"
                 @click.stop="handleExplorerToggle(row)"
-                class="w-4 h-4 flex items-center justify-center flex-shrink-0 text-[10px]"
+                class="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0 text-[9px] opacity-60 hover:opacity-100"
               >
                 <i :class="row.expanded ? 'fas fa-chevron-down' : 'fas fa-chevron-right'"></i>
               </button>
-              <span v-else class="w-4 h-4 flex items-center justify-center flex-shrink-0 text-[9px] opacity-60">
-                <i class="fas fa-minus"></i>
-              </span>
+              <span v-else class="w-3.5 h-3.5 flex-shrink-0"></span>
 
               <i
                 :class="[
                   row.isDirectory
-                    ? (row.isRoot ? 'fas fa-folder-tree' : 'fas fa-folder')
+                    ? (row.expanded ? 'fas fa-folder-open' : 'fas fa-folder')
                     : getFileIconClassBase(row.name),
-                  'w-4 text-center flex-shrink-0',
-                  isExplorerRowActive(row) ? 'text-white' : (row.isDirectory ? 'text-primary' : 'text-text-secondary')
+                  'w-4 text-center flex-shrink-0 text-xs',
+                  isExplorerRowActive(row)
+                    ? 'text-emerald-400'
+                    : (row.isDirectory ? 'text-yellow-500' : 'text-text-secondary/70')
                 ]"
               ></i>
 
-              <div class="min-w-0 flex-1">
-                <div class="truncate text-sm font-medium" :title="row.description || row.path">{{ row.name }}</div>
-                <div
-                  v-if="row.isRoot || !row.isDirectory"
-                  class="truncate text-[10px]"
-                  :class="isExplorerRowActive(row) ? 'text-white/75' : 'text-text-secondary/80'"
-                >
-                  {{ row.path }}
-                </div>
-              </div>
+              <span class="truncate text-[13px] leading-tight" :title="row.description || row.path">{{ row.name }}<span v-if="row.item?.attrs?.isSymbolicLink && row.description" class="text-text-secondary/60 ml-1 text-[11px]">→ {{ row.description }}</span></span>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-     <!-- 使用 FileUploadPopup 组件 -->
-     <FileUploadPopup :uploads="uploads" @cancel-upload="cancelUpload" />
+    <!-- Transfer Panel -->
+    <TransferPanel
+      :uploads="uploads"
+      :visible="showTransferPanel"
+      @update:visible="showTransferPanel = $event"
+      @cancel-upload="cancelUpload"
+    />
 
     <FileManagerContextMenu
       ref="contextMenuRef"

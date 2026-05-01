@@ -1799,6 +1799,15 @@
     "unknownTargetPath": "[宛先パス不明]",
     "taskIdFallback": "タスクID: {taskId}"
   },
+  "transferPanel": {
+    "title": "転送",
+    "tabs": {
+      "all": "すべて",
+      "upload": "アップロード",
+      "download": "ダウンロード"
+    },
+    "empty": "転送タスクはありません"
+  },
   "sendFilesModal": {
     "title": "ファイル送信",
     "searchConnectionsPlaceholder": "接続を検索...",
@@ -1823,34 +1832,45 @@
     "transferFailedError": "転送の開始に失敗しました。もう一度お試しください。"
   },
 "favoritePaths": {
+    "title": "ブックマーク",
     "addEditForm": {
       "validation": {
-        "pathRequired": "Path is required."
+        "pathRequired": "パスは必須です。"
       },
-      "editTitle": "Edit Favorite Path",
-      "addTitle": "Add New Favorite Path",
-      "pathLabel": "Path",
+      "editTitle": "ブックマークを編集",
+      "addTitle": "ブックマークを追加",
+      "pathLabel": "パス",
       "pathPlaceholder": "/example/folder/path",
-      "nameLabel": "Name (Optional)",
-      "namePlaceholder": "My Documents",
+      "nameLabel": "名前（任意）",
+      "namePlaceholder": "マイドキュメント",
+      "scopeLabel": "保存場所",
       "errors": {
-        "genericSaveError": "Failed to save favorite path."
+        "genericSaveError": "ブックマークの保存に失敗しました。"
       }
     },
-    "confirmDelete": "Are you sure you want to delete \"{name}\"?",
-    "searchPlaceholder": "Search by name or path...",
-    "addNew": "Add new favorite path",
-    "loading": "Loading favorites...",
-    "noResults": "No matching favorites found.",
-    "noFavorites": "No favorite paths yet. Add one!",
+    "confirmDelete": "「{name}」を削除してもよろしいですか？",
+    "searchPlaceholder": "ブックマークを検索...",
+    "addNew": "ブックマークを追加",
+    "loading": "ブックマークを読み込み中...",
+    "noResults": "一致するブックマークが見つかりません。",
+    "noFavorites": "ブックマークはありません",
+    "sendToTerminal": "ターミナルに送信",
+    "sortByName": "名前順",
+    "sortByUsage": "使用順",
+    "scopeAll": "すべて",
+    "scopeLocal": "ローカル",
+    "scopeGlobal": "クラウド",
+    "scopeLocalLabel": "このサーバーのみ",
+    "scopeGlobalLabel": "グローバル共有",
     "notifications": {
-      "fetchError": "Failed to load favorite paths.",
-      "addSuccess": "Favorite path added successfully.",
-      "addError": "Failed to add favorite path.",
-      "updateSuccess": "Favorite path updated successfully.",
-      "updateError": "Failed to update favorite path.",
-      "deleteSuccess": "Favorite path deleted successfully.",
-      "deleteError": "Failed to delete favorite path."
+      "fetchError": "ブックマークの読み込みに失敗しました。",
+      "addSuccess": "ブックマークを追加しました。",
+      "addError": "ブックマークの追加に失敗しました。",
+      "updateSuccess": "ブックマークを更新しました。",
+      "updateError": "ブックマークの更新に失敗しました。",
+      "deleteSuccess": "ブックマークを削除しました。",
+      "deleteError": "ブックマークの削除に失敗しました。",
+      "markAsUsedError": "使用時間の更新に失敗しました。"
     }
   },
   "pathHistory": {

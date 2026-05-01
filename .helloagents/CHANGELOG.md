@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- **[frontend]**: 将 SSH 终端 `%` 运行中提示从单布尔派生升级为显式 `commandRuntimePhase` 状态机，并为极短命令补上最短可见窗口，避免标签提示一闪而过几乎不可感知 — by yinjianm
+  - 方案: [202604210531_ssh-terminal-runtime-state-machine](archive/2026-04/202604210531_ssh-terminal-runtime-state-machine/)
+
 - **[frontend]**: 将 `packages/frontend` 的 Vite 开发代理改为支持通过 `VITE_DEV_PROXY_TARGET`、`VITE_DEV_WS_PROXY_TARGET` 与 `VITE_API_BASE_URL` 切换远端联调目标，并验证 `focus-switcher-sequence`、登录链路与默认白色主题可在本地前端联调时正常工作 — by yinjianm
   - 方案: [202604210440_frontend-dev-api-theme-verification](archive/2026-04/202604210440_frontend-dev-api-theme-verification/)
 

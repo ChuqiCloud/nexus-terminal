@@ -6,6 +6,7 @@ import type { createWebSocketConnectionManager } from '../../composables/useWebS
 import type { createSftpActionsManager } from '../../composables/useSftpActions';
 import type { createSshTerminalManager } from '../../composables/useSshTerminal';
 import type { createStatusMonitorManager } from '../../composables/useStatusMonitor';
+import type { SshCommandRuntimePhase, SshCommandRuntimeSnapshot } from './runtime';
 
 export type WsManagerInstance = ReturnType<typeof createWebSocketConnectionManager>;
 export type SftpManagerInstance = ReturnType<typeof createSftpActionsManager>;
@@ -27,7 +28,7 @@ export interface SessionState {
   editorTabs: Ref<FileTab[]>;
   activeEditorTabId: Ref<string | null>;
   commandInputContent: Ref<string>;
-  isCommandRunning: Ref<boolean>;
+  commandRuntime: Ref<SshCommandRuntimeSnapshot>;
   terminalInputBuffer: Ref<string>;
   isResuming?: boolean;
   isMarkedForSuspend?: boolean;
@@ -43,5 +44,6 @@ export interface SessionTabInfoWithStatus {
   terminalIndex: number;
   status: WsConnectionStatus;
   isMarkedForSuspend?: boolean;
+  commandRuntimePhase: SshCommandRuntimePhase;
   isCommandRunning: boolean;
 }

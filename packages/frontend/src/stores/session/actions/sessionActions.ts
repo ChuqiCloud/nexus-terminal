@@ -14,6 +14,7 @@ import { createSshTerminalManager, type SshTerminalDependencies } from '../../..
 import { createStatusMonitorManager, type StatusMonitorDependencies } from '../../../composables/useStatusMonitor';
 import { createDockerManager, type DockerManagerDependencies } from '../../../composables/useDockerManager';
 import { registerSshSuspendHandlers } from './sshSuspendActions'; 
+import { createSshCommandRuntimeSnapshot } from '../runtime';
 
 const SESSION_ORDER_STORAGE_KEY = 'sessionOrder';
 
@@ -148,7 +149,7 @@ export const openNewSession = (
       editorTabs: ref([]),
       activeEditorTabId: ref(null),
       commandInputContent: ref(''),
-      isCommandRunning: ref(false),
+      commandRuntime: ref(createSshCommandRuntimeSnapshot()),
       terminalInputBuffer: ref(''),
       isMarkedForSuspend: false,
       createdAt: Date.now(),

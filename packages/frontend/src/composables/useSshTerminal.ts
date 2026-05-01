@@ -4,6 +4,13 @@ import { sessions as globalSessionsRef } from '../stores/session/state';
 import type { Terminal } from 'xterm';
 import type { SearchAddon, ISearchOptions } from '@xterm/addon-search';
 import type { WebSocketMessage, MessagePayload } from '../types/websocket.types';
+import {
+    SSH_COMMAND_RUNTIME_MIN_VISIBLE_MS,
+    createSshCommandRuntimeSnapshot,
+    isSshCommandRuntimeActive,
+    type SshCommandRuntimePhase,
+    type SshCommandRuntimeReason,
+} from '../stores/session/runtime';
 
 export interface SshTerminalDependencies {
     sendMessage: (message: WebSocketMessage) => void;
@@ -32,14 +39,41 @@ const stripTerminalControlSequences = (text: string): string =>
 
 const getSessionState = (sessionId: string) => globalSessionsRef.value.get(sessionId);
 
-const resetSessionCommandRuntime = (sessionId: string) => {
+const setSessionCommandRuntime = (
+    sessionId: string,
+    nextPhase: SshCommandRuntimePhase,
+    reason: SshCommandRuntimeReason,
+    timestamp: number,
+    visibleUntil?: number,
+) => {
     const session = getSessionState(sessionId);
     if (!session) {
         return;
     }
 
-    session.isCommandRunning.value = false;
+    const currentRuntime = session.commandRuntime.value ?? createSshCommandRuntimeSnapshot();
+    session.commandRuntime.value = {
+        ...currentRuntime,
+        phase: nextPhase,
+        reason,
+        lastTransitionAt: timestamp,
+        visibleUntil: visibleUntil ?? currentRuntime.visibleUntil,
+    };
+};
+
+const clearSessionCommandRuntime = (
+    sessionId: string,
+    reason: Extract<SshCommandRuntimeReason, 'prompt' | 'interrupt' | 'disconnect' | 'error' | 'connected' | 'input'>,
+    nextPhase: Extract<SshCommandRuntimePhase, 'idle' | 'disconnected' | 'error'>,
+    timestamp: number,
+) => {
+    const session = getSessionState(sessionId);
+    if (!session) {
+        return;
+    }
+
     session.terminalInputBuffer.value = '';
+    setSessionCommandRuntime(sessionId, nextPhase, reason, timestamp, 0);
 };
 
 const syncSessionCommandRuntimeFromInput = (sessionId: string, data: string) => {
@@ -53,13 +87,14 @@ const syncSessionCommandRuntimeFromInput = (sessionId: string, data: string) => 
         return { submittedCommand: false, interrupted: false };
     }
 
+    const now = Date.now();
+    const currentPhase = session.commandRuntime.value.phase;
     let nextBuffer = session.terminalInputBuffer.value;
     let submittedCommand = false;
     let interrupted = false;
 
     for (const char of normalizedData) {
         if (char === '\x03') {
-            session.isCommandRunning.value = false;
             nextBuffer = '';
             interrupted = true;
             continue;
@@ -67,7 +102,6 @@ const syncSessionCommandRuntimeFromInput = (sessionId: string, data: string) => 
 
         if (char === '\r' || char === '\n') {
             if (nextBuffer.trim().length > 0) {
-                session.isCommandRunning.value = true;
                 submittedCommand = true;
             }
             nextBuffer = '';
@@ -83,14 +117,36 @@ const syncSessionCommandRuntimeFromInput = (sessionId: string, data: string) => 
             continue;
         }
 
-        if (nextBuffer.length === 0 && session.isCommandRunning.value) {
-            session.isCommandRunning.value = false;
-        }
-
         nextBuffer += char;
     }
 
     session.terminalInputBuffer.value = nextBuffer;
+
+    if (interrupted) {
+        clearSessionCommandRuntime(sessionId, 'interrupt', 'idle', now);
+        return { submittedCommand: false, interrupted: true };
+    }
+
+    if (submittedCommand) {
+        const nextPhase = isSshCommandRuntimeActive(currentPhase) ? 'running' : 'pending';
+        setSessionCommandRuntime(
+            sessionId,
+            nextPhase,
+            'submit',
+            now,
+            Math.max(session.commandRuntime.value.visibleUntil, now + SSH_COMMAND_RUNTIME_MIN_VISIBLE_MS),
+        );
+        return { submittedCommand: true, interrupted: false };
+    }
+
+    if (nextBuffer.length > 0) {
+        if (!isSshCommandRuntimeActive(currentPhase) && currentPhase !== 'disconnected' && currentPhase !== 'error') {
+            setSessionCommandRuntime(sessionId, 'typing', 'input', now);
+        }
+    } else if (currentPhase === 'typing') {
+        clearSessionCommandRuntime(sessionId, 'input', 'idle', now);
+    }
+
     return { submittedCommand, interrupted };
 };
 
@@ -139,6 +195,42 @@ export function createSshTerminalManager(sessionId: string, wsDeps: SshTerminalD
     const terminalOutputBuffer = ref<(string | Uint8Array)[]>([]);
     const isSshConnected = ref(false);
     const promptProbeBuffer = ref('');
+    let runtimeResolutionTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const clearRuntimeResolutionTimer = () => {
+        if (runtimeResolutionTimer !== null) {
+            clearTimeout(runtimeResolutionTimer);
+            runtimeResolutionTimer = null;
+        }
+    };
+
+    const resolveRuntimePhase = (
+        nextPhase: Extract<SshCommandRuntimePhase, 'idle' | 'disconnected' | 'error'>,
+        reason: Extract<SshCommandRuntimeReason, 'connected' | 'disconnect' | 'error'>,
+    ) => {
+        clearRuntimeResolutionTimer();
+        clearSessionCommandRuntime(sessionId, reason, nextPhase, Date.now());
+    };
+
+    const schedulePromptResolution = () => {
+        const session = getSessionState(sessionId);
+        if (!session) {
+            return;
+        }
+
+        clearRuntimeResolutionTimer();
+        const now = Date.now();
+        const delay = Math.max(0, session.commandRuntime.value.visibleUntil - now);
+        if (delay === 0) {
+            clearSessionCommandRuntime(sessionId, 'prompt', 'idle', now);
+            return;
+        }
+
+        runtimeResolutionTimer = setTimeout(() => {
+            runtimeResolutionTimer = null;
+            clearSessionCommandRuntime(sessionId, 'prompt', 'idle', Date.now());
+        }, delay);
+    };
 
     const getTerminalText = (key: string, params?: Record<string, unknown>): string => {
         const translationKey = `workspace.terminal.${key}`;
@@ -176,6 +268,10 @@ export function createSshTerminalManager(sessionId: string, wsDeps: SshTerminalD
         const runtimeUpdate = syncSessionCommandRuntimeFromInput(sessionId, data);
         if (runtimeUpdate.submittedCommand || runtimeUpdate.interrupted) {
             promptProbeBuffer.value = '';
+            clearRuntimeResolutionTimer();
+        } else if (runtimeResolutionTimer !== null && (getSessionState(sessionId)?.terminalInputBuffer.value.length ?? 0) > 0) {
+            clearRuntimeResolutionTimer();
+            setSessionCommandRuntime(sessionId, 'typing', 'input', Date.now(), 0);
         }
         sendMessage({ type: 'ssh:input', sessionId, payload: { data } });
     };
@@ -222,12 +318,21 @@ export function createSshTerminalManager(sessionId: string, wsDeps: SshTerminalD
             terminalOutputBuffer.value.push(outputData);
         }
 
-        if (getSessionState(sessionId)?.isCommandRunning.value) {
+        const session = getSessionState(sessionId);
+        if (session && isSshCommandRuntimeActive(session.commandRuntime.value.phase)) {
             const promptProbeText = getPromptProbeText(outputData);
             if (promptProbeText) {
+                clearRuntimeResolutionTimer();
                 promptProbeBuffer.value = `${promptProbeBuffer.value}${promptProbeText}`.slice(-320);
                 if (isPromptTail(promptProbeBuffer.value)) {
-                    resetSessionCommandRuntime(sessionId);
+                    schedulePromptResolution();
+                    promptProbeBuffer.value = '';
+                    return;
+                }
+
+                const strippedOutput = stripTerminalControlSequences(promptProbeText).trim();
+                if (strippedOutput && session.commandRuntime.value.phase === 'pending') {
+                    setSessionCommandRuntime(sessionId, 'running', 'output', Date.now());
                 }
             }
         }
@@ -241,6 +346,7 @@ export function createSshTerminalManager(sessionId: string, wsDeps: SshTerminalD
         console.log(`[会话 ${sessionId}][SSH终端模块] SSH 会话已连接。 Payload:`, payload, 'Full message:', message);
         isSshConnected.value = true;
         promptProbeBuffer.value = '';
+        resolveRuntimePhase('idle', 'connected');
         terminalInstance.value?.focus();
 
         if (terminalInstance.value) {
@@ -271,7 +377,7 @@ export function createSshTerminalManager(sessionId: string, wsDeps: SshTerminalD
         console.log(`[会话 ${sessionId}][SSH终端模块] SSH 会话已断开:`, reason);
         isSshConnected.value = false;
         promptProbeBuffer.value = '';
-        resetSessionCommandRuntime(sessionId);
+        resolveRuntimePhase('disconnected', 'disconnect');
         terminalInstance.value?.writeln(`\r\n\x1b[31m${getTerminalText('disconnectMsg', { reason })}\x1b[0m`);
     };
 
@@ -284,7 +390,7 @@ export function createSshTerminalManager(sessionId: string, wsDeps: SshTerminalD
         console.error(`[会话 ${sessionId}][SSH终端模块] SSH 错误:`, errorMsg);
         isSshConnected.value = false;
         promptProbeBuffer.value = '';
-        resetSessionCommandRuntime(sessionId);
+        resolveRuntimePhase('error', 'error');
         terminalInstance.value?.writeln(`\r\n\x1b[31m${getTerminalText('genericErrorMsg', { message: errorMsg })}\x1b[0m`);
     };
 
@@ -339,6 +445,7 @@ export function createSshTerminalManager(sessionId: string, wsDeps: SshTerminalD
     registerSshHandlers();
 
     const cleanup = () => {
+        clearRuntimeResolutionTimer();
         unregisterAllSshHandlers();
         terminalInstance.value = null;
         console.log(`[会话 ${sessionId}][SSH终端模块] 已清理。`);
@@ -352,6 +459,10 @@ export function createSshTerminalManager(sessionId: string, wsDeps: SshTerminalD
         const runtimeUpdate = syncSessionCommandRuntimeFromInput(sessionId, data);
         if (runtimeUpdate.submittedCommand || runtimeUpdate.interrupted) {
             promptProbeBuffer.value = '';
+            clearRuntimeResolutionTimer();
+        } else if (runtimeResolutionTimer !== null && (getSessionState(sessionId)?.terminalInputBuffer.value.length ?? 0) > 0) {
+            clearRuntimeResolutionTimer();
+            setSessionCommandRuntime(sessionId, 'typing', 'input', Date.now(), 0);
         }
         sendMessage({ type: 'ssh:input', sessionId, payload: { data } });
     };

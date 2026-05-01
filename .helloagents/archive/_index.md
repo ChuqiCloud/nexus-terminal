@@ -7,6 +7,7 @@
 
 | 时间戳 | 名称 | 类型 | 涉及模块 | 决策 | 结果 |
 |--------|------|------|---------|------|------|
+| 202604210531 | ssh-terminal-runtime-state-machine | - | - | - | ✅完成 |
 | 202604210440 | frontend-dev-api-theme-verification | - | - | - | ✅完成 |
 | 202604192106 | terminal-running-indicator | - | - | - | ✅完成 |
 | 202604190520 | status-monitor-cpu-summary-modal | - | - | - | ✅完成 |

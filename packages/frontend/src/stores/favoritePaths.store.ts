@@ -9,8 +9,9 @@ export interface FavoritePathItem {
   id: string;
   path: string;
   name?: string;
-  last_used_at?: number | null; // Added last_used_at
-  // Add other relevant fields from the API if any
+  scope?: string;
+  connection_id?: number | null;
+  last_used_at?: number | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -20,7 +21,8 @@ export interface FavoritePathsState {
   isLoading: boolean;
   error: string | null;
   searchTerm: string;
-  currentSortBy: FavoritePathSortType; 
+  currentSortBy: FavoritePathSortType;
+  activeScope: 'all' | 'local' | 'global';
   isInitialized: boolean;
 }
 
@@ -33,18 +35,24 @@ export const useFavoritePathsStore = defineStore('favoritePaths', {
       error: null,
       searchTerm: '',
       currentSortBy: savedSortBy || 'name',
+      activeScope: 'all',
       isInitialized: false,
     };
   },
   getters: {
     // The filteredFavoritePaths getter will now operate on the already sorted list
     filteredFavoritePaths(state): FavoritePathItem[] {
+      let paths = state.favoritePaths;
+      if (state.activeScope === 'local') {
+        paths = paths.filter(fav => fav.scope === 'local');
+      } else if (state.activeScope === 'global') {
+        paths = paths.filter(fav => !fav.scope || fav.scope === 'global');
+      }
       if (!state.searchTerm) {
-        return state.favoritePaths;
+        return paths;
       }
       const lowerCaseSearchTerm = state.searchTerm.toLowerCase();
-      // Note: state.favoritePaths is now always sorted by this.currentSortBy
-      return state.favoritePaths.filter(fav =>
+      return paths.filter(fav =>
         fav.path.toLowerCase().includes(lowerCaseSearchTerm) ||
         (fav.name && fav.name.toLowerCase().includes(lowerCaseSearchTerm))
       );
@@ -101,7 +109,10 @@ export const useFavoritePathsStore = defineStore('favoritePaths', {
     setSortBy(sortBy: FavoritePathSortType) {
       this.currentSortBy = sortBy;
       localStorage.setItem('favoritePathSortBy', sortBy);
-      this._sortFavoritePaths(); // Re-sort locally
+      this._sortFavoritePaths();
+    },
+    setActiveScope(scope: 'all' | 'local' | 'global') {
+      this.activeScope = scope;
     },
     async markPathAsUsed(pathId: string, t: (key: string, defaultMessage: string) => string) {
       const notificationsStore = useUiNotificationsStore();

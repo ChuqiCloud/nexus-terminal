@@ -15,247 +15,220 @@
       <span class="status-state__title">{{ t('statusMonitor.loading') }}</span>
     </div>
 
-    <section v-else class="status-monitor-shell">
-      <header class="monitor-header">
-        <div class="monitor-header__top">
-          <div class="monitor-header__identity">
-            <span class="monitor-header__eyebrow">{{ t('statusMonitor.title') }}</span>
-            <h4 class="monitor-header__title">{{ displayOsName }}</h4>
+    <section v-else class="sm-shell">
+      <!-- System Header -->
+      <header class="sm-header">
+        <div class="sm-header__row">
+          <div class="sm-header__left">
+            <i class="fas fa-desktop sm-header__icon"></i>
+            <span class="sm-header__label">{{ t('statusMonitor.title') }}</span>
           </div>
-
-          <div class="monitor-header__status">
+          <div class="sm-header__right">
             <button
               v-if="statusMonitorShowIpBoolean && activeSessionId && sessionIpAddress"
-              class="monitor-chip monitor-chip--interactive"
+              class="sm-chip sm-chip--interactive"
               type="button"
               :title="sessionIpAddress"
               @click="copyIpToClipboard(sessionIpAddress)"
             >
-              <span class="monitor-chip__label">IP</span>
-              <span class="monitor-chip__value">{{ sessionIpAddress }}</span>
+              {{ sessionIpAddress }}
             </button>
-
-            <span class="monitor-live-pill">
-              <span class="monitor-live-pill__dot"></span>
-              LIVE
-            </span>
+            <span class="sm-live-dot"></span>
           </div>
         </div>
 
-        <div class="monitor-header__chip-row">
-          <span class="monitor-header__badge">{{ networkInterfaceDisplay }}</span>
-          <span class="monitor-header__badge monitor-header__badge--subtle">{{ displayCpuCores }}</span>
+        <div class="sm-header__tags">
+          <span class="sm-tag">{{ displayOsName }}</span>
         </div>
 
-        <p class="monitor-header__subtitle">{{ displayCpuModel }}</p>
-
-        <div class="monitor-header__meta-line">
-          <div v-for="item in systemCardMetaItems" :key="item.key" class="monitor-header__meta-item">
-            <span class="monitor-header__meta-label">{{ item.label }}</span>
-            <span class="monitor-header__meta-value">{{ item.value }}</span>
-          </div>
+        <div class="sm-header__meta">
+          <span class="sm-meta">{{ t('statusMonitor.timezoneLabel') }} {{ timezoneDisplay }}</span>
+          <span class="sm-meta">{{ t('statusMonitor.uptimeLabel') }} {{ uptimeDisplay }}</span>
         </div>
       </header>
 
-      <section class="monitor-module monitor-module--usage">
-        <div class="monitor-module__heading">
-          <div>
-            <span class="monitor-module__eyebrow">{{ t('statusMonitor.cpuLabel') }}</span>
+      <!-- CPU Module -->
+      <section class="sm-section">
+        <div class="sm-section__head">
+          <div class="sm-section__title-row">
+            <i class="fas fa-microchip sm-section__icon"></i>
+            <span class="sm-section__title">CPU</span>
           </div>
-          <span class="monitor-module__pill">{{ displayCpuCores }}</span>
+          <StatusMonitorCpuHistoryChart :cpu-history="currentCpuHistory" :compact="true" class="sm-mini-chart" />
         </div>
 
-        <div class="module-split module-split--cpu">
-          <StatusMonitorCpuHistoryChart :cpu-history="currentCpuHistory" />
-
-          <div class="cpu-summary-panel">
-            <div class="cpu-summary-grid">
-              <article
-                v-for="item in cpuSummaryItems"
-                :key="item.key"
-                class="cpu-summary-card"
-              >
-                <span class="cpu-summary-card__label">{{ item.label }}</span>
-                <span class="cpu-summary-card__value">{{ item.value }}</span>
-              </article>
+        <div class="sm-cpu-cores">
+          <div
+            v-for="item in cpuCoreItems"
+            :key="item.key"
+            class="sm-cpu-core"
+          >
+            <span class="sm-cpu-core__index">{{ item.index }}</span>
+            <div class="sm-cpu-core__bar">
+              <div
+                class="sm-cpu-core__fill"
+                :class="getCpuFillClass(item.percent)"
+                :style="{ width: `${item.percent}%` }"
+              ></div>
             </div>
-            <button
-              type="button"
-              class="monitor-action-button cpu-summary-action"
-              @click="isCpuCoreModalVisible = true"
-            >
-              {{ t('statusMonitor.cpuViewAllCores') }}
-            </button>
+            <span class="sm-cpu-core__val">{{ item.value }}</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="sm-link-btn"
+          @click="isCpuCoreModalVisible = true"
+        >
+          {{ t('statusMonitor.cpuViewAllCores') }}
+        </button>
+      </section>
+
+      <!-- Memory Module -->
+      <section class="sm-section">
+        <div class="sm-section__head">
+          <div class="sm-section__title-row">
+            <i class="fas fa-memory sm-section__icon"></i>
+            <span class="sm-section__title">{{ t('statusMonitor.memoryCardTitle') }}</span>
+          </div>
+          <span class="sm-badge">{{ memoryTotalDisplay }}</span>
+        </div>
+
+        <div class="sm-memory-row">
+          <div class="sm-memory-ring" :style="memoryRingStyle">
+            <div class="sm-memory-ring__center">{{ memoryPercentDisplay }}</div>
+          </div>
+
+          <div class="sm-memory-stats">
+            <div v-for="item in memoryStatItems" :key="item.key" class="sm-memory-stat">
+              <span class="sm-dot" :class="`sm-dot--${item.key}`"></span>
+              <span class="sm-memory-stat__label">{{ item.label }}</span>
+              <span class="sm-memory-stat__value">{{ item.value }}</span>
+            </div>
           </div>
         </div>
       </section>
 
-      <div class="monitor-module-grid">
-        <section class="monitor-module monitor-module--memory">
-          <div class="monitor-module__heading">
-            <div>
-              <span class="monitor-module__eyebrow">{{ t('statusMonitor.memoryCardTitle') }}</span>
-              <h5 class="monitor-module__title">{{ t('statusMonitor.memoryUsedStat') }} / {{ t('statusMonitor.memoryFreeStat') }}</h5>
-            </div>
-            <span class="monitor-module__pill">{{ memoryTotalDisplay }}</span>
+      <!-- Network Module -->
+      <section class="sm-section">
+        <div class="sm-section__head">
+          <div class="sm-section__title-row">
+            <i class="fas fa-network-wired sm-section__icon"></i>
+            <span class="sm-section__title">{{ t('statusMonitor.networkLabel') }}</span>
           </div>
+          <StatusMonitorNetworkHistoryChart
+            :download-history="currentNetRxHistory"
+            :upload-history="currentNetTxHistory"
+            :compact="true"
+            class="sm-mini-chart"
+          />
+        </div>
 
-          <div class="module-split module-split--memory">
-            <div class="memory-ring-panel">
-              <div class="memory-ring" :style="memoryRingStyle">
-                <div class="memory-ring__center">{{ memoryPercentDisplay }}</div>
-              </div>
-              <span class="memory-ring-panel__caption">{{ t('statusMonitor.memoryCardTitle') }}</span>
-            </div>
-
-            <div class="memory-stat-stack">
-              <div
-                v-for="item in memoryStatItems"
-                :key="item.key"
-                class="memory-stat"
-              >
-                <div class="memory-stat__label">
-                  <span class="memory-stat__dot" :class="`memory-stat__dot--${item.key}`"></span>
-                  <span>{{ item.label }}</span>
-                </div>
-                <div class="memory-stat__value">{{ item.value }}</div>
-              </div>
-            </div>
+        <div class="sm-net-table">
+          <div class="sm-net-table__head">
+            <span></span>
+            <span>{{ t('statusMonitor.networkSpeedTitleUnit', { unit: '' }).replace(/[()]/g, '').trim() }}</span>
+            <span>{{ t('statusMonitor.totalTrafficLabel') }}</span>
           </div>
-        </section>
-
-        <section class="monitor-module monitor-module--network">
-          <div class="monitor-module__heading">
-            <div>
-              <span class="monitor-module__eyebrow">{{ t('statusMonitor.networkLabel') }}</span>
-            </div>
-            <span class="monitor-module__pill">{{ t('statusMonitor.networkSpeedTitleUnit', { unit: networkRateUnitLabel }) }}</span>
+          <div
+            v-for="item in networkFlowItems"
+            :key="item.key"
+            class="sm-net-row"
+          >
+            <span class="sm-net-row__label" :class="`sm-net-row__label--${item.tone}`">
+              <i :class="['fas', item.icon]"></i>
+              {{ item.label }}
+            </span>
+            <span class="sm-net-row__val">{{ item.value }}</span>
+            <span class="sm-net-row__total">{{ item.totalValue }}</span>
           </div>
+        </div>
+      </section>
 
-          <div class="module-split module-split--network">
-            <StatusMonitorNetworkHistoryChart
-              :download-history="currentNetRxHistory"
-              :upload-history="currentNetTxHistory"
-            />
-
-            <div class="network-table">
-              <div class="network-table__header">
-                <span>{{ networkInterfaceDisplay }}</span>
-                <span>{{ t('statusMonitor.downloadLabel') }} / {{ t('statusMonitor.uploadLabel') }}</span>
-              </div>
-              <div class="network-table__columns">
-                <span></span>
-                <span>{{ t('statusMonitor.networkSpeedTitleUnit', { unit: networkRateUnitLabel }) }}</span>
-                <span>{{ t('statusMonitor.totalTrafficLabel') }}</span>
-              </div>
-
-              <div class="network-stat-stack">
-                <article
-                  v-for="item in networkFlowItems"
-                  :key="item.key"
-                  :class="['network-stat', `network-stat--${item.tone}`]"
-                >
-                  <span class="network-stat__label">
-                    <i :class="['fas', item.icon]"></i>
-                    <span>{{ item.label }}</span>
-                  </span>
-                  <span class="network-stat__value">{{ item.value }}</span>
-                  <span class="network-stat__total">{{ item.totalValue }}</span>
-                </article>
-              </div>
-            </div>
+      <!-- Process Module -->
+      <section class="sm-section">
+        <div class="sm-section__head">
+          <div class="sm-section__title-row">
+            <i class="fas fa-list-ul sm-section__icon"></i>
+            <span class="sm-section__title">{{ t('statusMonitor.processManager.title') }}</span>
           </div>
-        </section>
+          <button class="sm-link-btn sm-link-btn--icon" type="button" @click="isProcessManagerVisible = true">
+            <i class="fas fa-th-list"></i>
+            {{ t('statusMonitor.processManager.viewAll') }}
+          </button>
+        </div>
 
-        <section class="monitor-module monitor-module--disk">
-          <div class="monitor-module__heading">
-            <div>
-              <span class="monitor-module__eyebrow">{{ t('statusMonitor.diskCardTitle') }}</span>
-              <h5 class="monitor-module__title">{{ diskUsageDisplay }}</h5>
-            </div>
-            <span class="monitor-module__pill">{{ diskPercentDisplay }}</span>
+        <div class="sm-proc-table" v-if="processPreviewItems.length > 0">
+          <div class="sm-proc-head">
+            <span>CPU</span>
+            <span>MEM</span>
+            <span>CMD</span>
           </div>
+          <div
+            v-for="item in processPreviewItems"
+            :key="item.pid"
+            class="sm-proc-row"
+          >
+            <span class="sm-proc-row__cpu" :class="{ 'sm-proc-row__cpu--hot': item.cpu > 50 }">{{ item.cpu.toFixed(1) }}%</span>
+            <span class="sm-proc-row__mem">{{ item.memPercent !== undefined ? item.memPercent.toFixed(1) + '%' : formatProcessMemory(item.memMb) }}</span>
+            <span class="sm-proc-row__cmd">
+              <span class="sm-proc-row__cmd-text" :title="item.command">{{ truncateCommand(item.command) }}</span>
+              <span class="sm-proc-row__pid">PID {{ item.pid }}</span>
+            </span>
+          </div>
+        </div>
+        <div v-else class="sm-empty">
+          {{ t('statusMonitor.processManager.empty') }}
+        </div>
+      </section>
 
-          <div class="disk-compact-top">
-            <div class="disk-device-card">
-              <div class="disk-device-card__head">
-                <span class="disk-device-card__mount">{{ diskMountPointDisplay }}</span>
-                <span class="disk-device-card__type">{{ diskFsTypeDisplay }}</span>
-              </div>
-              <div class="disk-device-card__body">
-                <div class="disk-device-card__icon">
-                  <div class="disk-device-card__icon-fill" :style="{ height: `${Math.max(10, displayDiskPercent)}%` }"></div>
-                </div>
-                <div class="disk-device-card__device">{{ diskDeviceAccent }}</div>
-              </div>
-            </div>
+      <!-- Disk Module -->
+      <section class="sm-section">
+        <div class="sm-section__head">
+          <div class="sm-section__title-row">
+            <i class="fas fa-hdd sm-section__icon"></i>
+            <span class="sm-section__title">{{ t('statusMonitor.diskCardTitle') }}</span>
+          </div>
+          <span class="sm-badge">{{ diskUsageDisplay }}</span>
+        </div>
 
-            <div class="disk-io-card">
-              <span class="disk-io-card__label">{{ t('statusMonitor.diskReadRateLabel') }}</span>
-              <span class="disk-io-card__value">{{ diskReadRateDisplay }}</span>
-            </div>
+        <div class="sm-disk-device">
+          <span class="sm-disk-device__mount">{{ diskMountPointDisplay }}</span>
+          <span class="sm-disk-device__type">{{ t('statusMonitor.diskTypeLabel') }} {{ diskFsTypeDisplay }}</span>
+        </div>
 
-            <div class="disk-io-card">
-              <span class="disk-io-card__label">{{ t('statusMonitor.diskWriteRateLabel') }}</span>
-              <span class="disk-io-card__value">{{ diskWriteRateDisplay }}</span>
+        <div class="sm-disk-io">
+          <div class="sm-disk-io__item">
+            <div class="sm-disk-io__icon"></div>
+            <div class="sm-disk-io__col">
+              <span class="sm-disk-io__label">{{ t('statusMonitor.diskReadRateLabel') }}</span>
+              <span class="sm-disk-io__val">{{ diskReadRateDisplay }}</span>
             </div>
           </div>
-
-          <div class="disk-summary-table">
-            <div class="disk-summary-table__head">
-              <span>{{ t('statusMonitor.diskMountLabel') }}</span>
-              <span>{{ t('statusMonitor.diskSizeLabel') }}</span>
-              <span>{{ t('statusMonitor.diskAvailableLabel') }}</span>
-              <span>{{ t('statusMonitor.diskUsedPercentLabel') }}</span>
-            </div>
-            <div class="disk-summary-table__row">
-              <span class="disk-summary-table__mount">{{ diskMountPointDisplay }}</span>
-              <span>{{ diskSizeDisplay }}</span>
-              <span>{{ diskAvailableDisplay }}</span>
-              <span class="disk-summary-table__used">{{ diskPercentDisplay }}</span>
+          <div class="sm-disk-io__item">
+            <div class="sm-disk-io__icon"></div>
+            <div class="sm-disk-io__col">
+              <span class="sm-disk-io__label">{{ t('statusMonitor.diskWriteRateLabel') }}</span>
+              <span class="sm-disk-io__val">{{ diskWriteRateDisplay }}</span>
             </div>
           </div>
-        </section>
+        </div>
 
-        <section class="monitor-module monitor-module--process">
-          <div class="monitor-module__heading">
-            <div>
-              <span class="monitor-module__eyebrow">{{ t('statusMonitor.processManager.title') }}</span>
-            </div>
-            <div class="monitor-module__heading-actions">
-              <div class="process-summary-pills">
-                <span v-for="item in processSummaryItems" :key="item.key" class="monitor-module__pill">
-                  {{ item.label }} {{ item.value }}
-                </span>
-              </div>
-              <button class="monitor-action-button" type="button" @click="isProcessManagerVisible = true">
-                {{ t('statusMonitor.processManager.viewAll') }}
-              </button>
-            </div>
+        <div class="sm-disk-summary">
+          <div class="sm-disk-summary__head">
+            <span>{{ t('statusMonitor.diskMountLabel') }}</span>
+            <span>{{ t('statusMonitor.diskSizeLabel') }}</span>
+            <span>{{ t('statusMonitor.diskAvailableLabel') }}</span>
+            <span>{{ t('statusMonitor.diskUsedPercentLabel') }}</span>
           </div>
-
-          <div v-if="processPreviewItems.length > 0" class="process-preview-list">
-            <article v-for="item in processPreviewItems" :key="item.pid" class="process-preview-item">
-              <div class="process-preview-item__rail">
-                <span class="process-preview-item__pid">PID {{ item.pid }}</span>
-                <span class="process-preview-item__user">{{ item.user }}</span>
-                <span class="process-preview-item__state">{{ item.state }}</span>
-              </div>
-              <div class="process-preview-item__main">
-                <div class="process-preview-item__command" :title="item.command">{{ item.command }}</div>
-                <div class="process-preview-item__stats">
-                  <span class="process-preview-item__cpu">{{ item.cpu.toFixed(1) }}%</span>
-                  <span class="process-preview-item__mem">{{ formatProcessMemory(item.memMb) }}</span>
-                </div>
-              </div>
-            </article>
+          <div class="sm-disk-summary__row">
+            <span class="sm-disk-summary__mount">{{ diskMountPointDisplay }}</span>
+            <span>{{ diskSizeDisplay }}</span>
+            <span>{{ diskAvailableDisplay }}</span>
+            <span class="sm-disk-summary__pct">{{ diskPercentDisplay }}</span>
           </div>
-          <div v-else class="process-preview-empty">
-            {{ t('statusMonitor.processManager.empty') }}
-          </div>
-        </section>
-      </div>
-
+        </div>
+      </section>
     </section>
 
     <ProcessManagerModal
@@ -286,13 +259,6 @@ import { useConnectionsStore } from '../stores/connections.store';
 import { useUiNotificationsStore } from '../stores/uiNotifications.store';
 import type { ProcessListItem, ServerStatus } from '../types/server.types';
 
-interface MonitorOverviewItem {
-  key: string;
-  label: string;
-  value: string;
-  clickable?: boolean;
-}
-
 const { t } = useI18n();
 const sessionStore = useSessionStore();
 const settingsStore = useSettingsStore();
@@ -312,9 +278,7 @@ const props = defineProps({
 });
 
 const clampPercent = (value?: number): number => {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return 0;
-  }
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(100, value));
 };
 
@@ -339,28 +303,12 @@ const cachedOsName = ref<string | null>(null);
 
 watch(currentServerStatus, newData => {
   if (!newData) return;
-  if (newData.cpuModel) {
-    cachedCpuModel.value = newData.cpuModel;
-  }
-  if (typeof newData.cpuCores === 'number' && Number.isFinite(newData.cpuCores)) {
-    cachedCpuCores.value = newData.cpuCores;
-  }
-  if (newData.osName) {
-    cachedOsName.value = newData.osName;
-  }
+  if (newData.cpuModel) cachedCpuModel.value = newData.cpuModel;
+  if (typeof newData.cpuCores === 'number' && Number.isFinite(newData.cpuCores)) cachedCpuCores.value = newData.cpuCores;
+  if (newData.osName) cachedOsName.value = newData.osName;
 }, { immediate: true });
 
-const displayCpuModel = computed(() => (currentServerStatus.value?.cpuModel ?? cachedCpuModel.value) || t('statusMonitor.notAvailable'));
-const displayCpuCores = computed(() => {
-  const cpuCores = currentServerStatus.value?.cpuCores ?? cachedCpuCores.value;
-  if (typeof cpuCores !== 'number' || !Number.isFinite(cpuCores)) {
-    return t('statusMonitor.notAvailable');
-  }
-
-  return t('statusMonitor.cpuCoresValue', { count: Math.round(cpuCores) });
-});
 const displayOsName = computed(() => (currentServerStatus.value?.osName ?? cachedOsName.value) || t('statusMonitor.notAvailable'));
-const networkInterfaceDisplay = computed(() => currentServerStatus.value?.netInterface || t('statusMonitor.notAvailable'));
 
 const formatBytesPerSecond = (bytes?: number): string => {
   if (bytes === undefined || bytes === null || isNaN(bytes)) return t('statusMonitor.notAvailable');
@@ -401,38 +349,37 @@ const formatStorageSizeFromKb = (kb?: number, compact = false): string => {
 
 const formatMemorySize = (mb?: number): string => {
   if (mb === undefined || mb === null || isNaN(mb)) return t('statusMonitor.notAvailable');
-  if (mb < 1024) {
-    return `${mb.toFixed(1)} ${t('statusMonitor.megaBytes')}`;
-  }
+  if (mb < 1024) return `${mb.toFixed(1)} ${t('statusMonitor.megaBytes')}`;
   return `${(mb / 1024).toFixed(1)} ${t('statusMonitor.gigaBytes')}`;
 };
 
 const formatUptime = (seconds?: number): string => {
-  if (seconds === undefined || seconds === null || !Number.isFinite(seconds) || seconds < 0) {
-    return t('statusMonitor.notAvailable');
-  }
-
+  if (seconds === undefined || seconds === null || !Number.isFinite(seconds) || seconds < 0) return t('statusMonitor.notAvailable');
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-
-  if (days > 0) {
-    return `${days}${t('statusMonitor.uptimeDaySuffix')} ${hours}${t('statusMonitor.uptimeHourSuffix')}`;
-  }
-  if (hours > 0) {
-    return `${hours}${t('statusMonitor.uptimeHourSuffix')} ${minutes}${t('statusMonitor.uptimeMinuteSuffix')}`;
-  }
+  if (days > 0) return `${days}${t('statusMonitor.uptimeDaySuffix')} ${hours}${t('statusMonitor.uptimeHourSuffix')}`;
+  if (hours > 0) return `${hours}${t('statusMonitor.uptimeHourSuffix')} ${minutes}${t('statusMonitor.uptimeMinuteSuffix')}`;
   return `${minutes}${t('statusMonitor.uptimeMinuteSuffix')}`;
 };
 
 const formatProcessMemory = (mb?: number): string => {
-  if (mb === undefined || mb === null || !Number.isFinite(mb)) {
-    return t('statusMonitor.notAvailable');
-  }
-  if (mb < 1024) {
-    return `${mb.toFixed(1)} M`;
-  }
+  if (mb === undefined || mb === null || !Number.isFinite(mb)) return t('statusMonitor.notAvailable');
+  if (mb < 1024) return `${mb.toFixed(1)} M`;
   return `${(mb / 1024).toFixed(1)} G`;
+};
+
+const truncateCommand = (cmd: string): string => {
+  if (!cmd) return '';
+  const parts = cmd.split('/');
+  const basename = parts[parts.length - 1] || cmd;
+  return basename.length > 24 ? basename.slice(0, 22) + '...' : basename;
+};
+
+const getCpuFillClass = (percent: number): string => {
+  if (percent >= 90) return 'sm-cpu-core__fill--critical';
+  if (percent >= 60) return 'sm-cpu-core__fill--warn';
+  return 'sm-cpu-core__fill--normal';
 };
 
 const memoryTotalValue = computed(() => currentServerStatus.value?.memTotal ?? 0);
@@ -440,12 +387,8 @@ const memoryUsedValue = computed(() => currentServerStatus.value?.memUsed ?? 0);
 const memoryCachedValue = computed(() => currentServerStatus.value?.memCached ?? 0);
 const memoryFreeValue = computed(() => {
   const data = currentServerStatus.value;
-  if (data?.memFree !== undefined) {
-    return data.memFree;
-  }
-  if (data?.memTotal !== undefined && data?.memUsed !== undefined) {
-    return Math.max(data.memTotal - data.memUsed - (data.memCached ?? 0), 0);
-  }
+  if (data?.memFree !== undefined) return data.memFree;
+  if (data?.memTotal !== undefined && data?.memUsed !== undefined) return Math.max(data.memTotal - data.memUsed - (data.memCached ?? 0), 0);
   return 0;
 });
 
@@ -454,18 +397,12 @@ const memoryPercentDisplay = computed(() => `${Math.round(displayMemoryPercent.v
 
 const memoryRingStyle = computed<CSSProperties>(() => {
   const total = memoryTotalValue.value;
-  if (total <= 0) {
-    return { background: 'conic-gradient(#334155 0% 100%)' };
-  }
-
+  if (total <= 0) return { background: 'conic-gradient(#334155 0% 100%)' };
   const usedPercent = Math.min(100, (memoryUsedValue.value / total) * 100);
   const cachedPercent = Math.min(100 - usedPercent, (memoryCachedValue.value / total) * 100);
   const usedEnd = usedPercent;
   const cacheEnd = usedPercent + cachedPercent;
-
-  return {
-    background: `conic-gradient(#ef5350 0 ${usedEnd}%, #8f96a3 ${usedEnd}% ${cacheEnd}%, #4ade80 ${cacheEnd}% 100%)`,
-  };
+  return { background: `conic-gradient(#ef5350 0 ${usedEnd}%, #8f96a3 ${usedEnd}% ${cacheEnd}%, #4ade80 ${cacheEnd}% 100%)` };
 });
 
 const memoryStatItems = computed(() => [
@@ -476,13 +413,10 @@ const memoryStatItems = computed(() => [
 
 const diskUsageDisplay = computed(() => {
   const data = currentServerStatus.value;
-  if (!data || data.diskUsed === undefined || data.diskTotal === undefined) {
-    return t('statusMonitor.notAvailable');
-  }
+  if (!data || data.diskUsed === undefined || data.diskTotal === undefined) return t('statusMonitor.notAvailable');
   return `${formatStorageSizeFromKb(data.diskUsed, true)} / ${formatStorageSizeFromKb(data.diskTotal, true)}`;
 });
 
-const diskDeviceDisplay = computed(() => currentServerStatus.value?.diskDevice || t('statusMonitor.notAvailable'));
 const diskFsTypeDisplay = computed(() => currentServerStatus.value?.diskFsType || t('statusMonitor.notAvailable'));
 const diskReadRateDisplay = computed(() => formatCompactBytes(currentServerStatus.value?.diskReadRate));
 const diskWriteRateDisplay = computed(() => formatCompactBytes(currentServerStatus.value?.diskWriteRate));
@@ -493,15 +427,9 @@ const diskPercentDisplay = computed(() => `${Math.round(displayDiskPercent.value
 
 const sessionIpAddress = computed(() => {
   const sessionState = currentSessionState.value;
-  if (!sessionState?.connectionId) {
-    return null;
-  }
-
+  if (!sessionState?.connectionId) return null;
   const connectionIdAsNumber = parseInt(sessionState.connectionId, 10);
-  if (isNaN(connectionIdAsNumber)) {
-    return null;
-  }
-
+  if (isNaN(connectionIdAsNumber)) return null;
   const connectionInfo = connectionsStore.connections.find(conn => conn.id === connectionIdAsNumber);
   return connectionInfo?.host || null;
 });
@@ -509,88 +437,30 @@ const sessionIpAddress = computed(() => {
 const uptimeDisplay = computed(() => formatUptime(currentServerStatus.value?.uptimeSeconds));
 const topProcessPreview = computed<readonly ProcessListItem[]>(() => currentServerStatus.value?.topProcesses ?? []);
 
-const systemCardMetaItems = computed<MonitorOverviewItem[]>(() => [
-  { key: 'timezone', label: t('statusMonitor.timezoneLabel'), value: timezoneDisplay.value },
-  { key: 'uptime', label: t('statusMonitor.uptimeLabel'), value: uptimeDisplay.value },
-]);
-
 const cpuCoreItems = computed(() => {
   const rawPercents = currentServerStatus.value?.cpuCorePercents;
   const fallbackCoreCount = (() => {
     const currentCores = currentServerStatus.value?.cpuCores;
-    if (typeof currentCores !== 'number' || !Number.isFinite(currentCores) || currentCores <= 0) {
-      return 0;
-    }
+    if (typeof currentCores !== 'number' || !Number.isFinite(currentCores) || currentCores <= 0) return 0;
     return Math.round(currentCores);
   })();
-
   const normalizedPercents = Array.isArray(rawPercents) && rawPercents.length > 0
     ? rawPercents
     : Array.from({ length: fallbackCoreCount }, () => 0);
 
-  return normalizedPercents.map((percent, index) => {
+  return normalizedPercents.map((percent, idx) => {
     const clampedPercent = clampPercent(percent);
     return {
-      key: `cpu-core-${index + 1}`,
-      label: t('statusMonitor.cpuCoreLabel', { index: index + 1 }),
+      key: `cpu-core-${idx}`,
+      index: idx,
+      label: t('statusMonitor.cpuCoreLabel', { index: idx + 1 }),
       value: `${Math.round(clampedPercent)}%`,
       percent: clampedPercent,
     };
   });
 });
 
-const cpuAveragePercent = computed(() => {
-  if (cpuCoreItems.value.length === 0) {
-    return displayCpuPercent.value;
-  }
-
-  const total = cpuCoreItems.value.reduce((sum, item) => sum + item.percent, 0);
-  return total / cpuCoreItems.value.length;
-});
-
-const cpuBusiestCore = computed(() => {
-  if (cpuCoreItems.value.length === 0) {
-    return null;
-  }
-
-  return cpuCoreItems.value.reduce((highest, item) => (item.percent > highest.percent ? item : highest));
-});
-
-const cpuSummaryItems = computed(() => {
-  const items = [
-    {
-      key: 'current',
-      label: t('statusMonitor.cpuCurrentStat'),
-      value: `${displayCpuPercent.value.toFixed(1)}%`,
-    },
-  ];
-
-  if (cpuBusiestCore.value) {
-    items.push({
-      key: 'busiest',
-      label: t('statusMonitor.cpuBusiestCoreStat'),
-      value: `${cpuBusiestCore.value.label} / ${cpuBusiestCore.value.value}`,
-    });
-  }
-
-  items.push({
-    key: 'average',
-    label: t('statusMonitor.cpuAverageStat'),
-    value: `${cpuAveragePercent.value.toFixed(1)}%`,
-  });
-
-  return items;
-});
-
 const networkFlowItems = computed(() => [
-  {
-    key: 'download',
-    label: t('statusMonitor.downloadLabel'),
-    value: formatBytesPerSecond(currentServerStatus.value?.netRxRate),
-    totalValue: formatBytes(currentServerStatus.value?.netRxTotalBytes),
-    tone: 'down',
-    icon: 'fa-arrow-down',
-  },
   {
     key: 'upload',
     label: t('statusMonitor.uploadLabel'),
@@ -599,29 +469,20 @@ const networkFlowItems = computed(() => [
     tone: 'up',
     icon: 'fa-arrow-up',
   },
+  {
+    key: 'download',
+    label: t('statusMonitor.downloadLabel'),
+    value: formatBytesPerSecond(currentServerStatus.value?.netRxRate),
+    totalValue: formatBytes(currentServerStatus.value?.netRxTotalBytes),
+    tone: 'down',
+    icon: 'fa-arrow-down',
+  },
 ]);
 
 const networkRateUnitLabel = computed(() => {
   const maxRate = Math.max(currentServerStatus.value?.netRxRate ?? 0, currentServerStatus.value?.netTxRate ?? 0);
   return maxRate >= 1024 * 1024 ? 'MB/s' : 'KB/s';
 });
-
-const diskDeviceAccent = computed(() => {
-  const raw = currentServerStatus.value?.diskDevice;
-
-  if (!raw) {
-    return 'N/A';
-  }
-
-  const normalized = raw.replace(/^\/dev\//, '').split('/').pop() || raw;
-  return normalized.toUpperCase();
-});
-
-const processSummaryItems = computed(() => [
-  { key: 'total', label: t('statusMonitor.processManager.total'), value: String(processTotalDisplay.value) },
-  { key: 'running', label: t('statusMonitor.processManager.running'), value: String(processRunningDisplay.value) },
-  { key: 'sleeping', label: t('statusMonitor.processManager.sleeping'), value: String(processSleepingDisplay.value) },
-]);
 
 const processPreviewItems = computed<readonly ProcessListItem[]>(() => topProcessPreview.value.slice(0, 4));
 
@@ -641,24 +502,20 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 .status-monitor {
   height: 100%;
   overflow-y: auto;
-  padding: 14px;
-  background:
-    radial-gradient(circle at top right, rgba(52, 211, 153, 0.08), transparent 28%),
-    radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.08), transparent 24%),
-    linear-gradient(180deg, rgba(16, 21, 27, 0.98), rgba(13, 17, 23, 0.98));
-  color: #ecf3f7;
+  padding: 10px;
+  background: linear-gradient(180deg, #0f1419 0%, #0b1015 100%);
+  color: #e2e8f0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
 }
 
 .status-monitor--inactive {
-  background:
-    radial-gradient(circle at top right, rgba(148, 163, 184, 0.08), transparent 28%),
-    linear-gradient(180deg, rgba(17, 24, 39, 0.96), rgba(15, 23, 42, 0.96));
+  background: linear-gradient(180deg, #111827, #0f172a);
 }
 
-.status-monitor-shell {
-  display: grid;
-  gap: 12px;
-  container-type: inline-size;
+.sm-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .status-state {
@@ -669,971 +526,522 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
   justify-content: center;
   gap: 10px;
   text-align: center;
-  color: var(--text-secondary-color, #9ca3af);
+  color: #9ca3af;
 }
 
-.status-state--error {
-  color: #f87171;
+.status-state--error { color: #f87171; }
+.status-state__icon { font-size: 28px; }
+.status-state__title { font-size: 14px; font-weight: 600; }
+
+/* ── Header ── */
+.sm-header {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
 }
 
-.status-state__icon {
-  font-size: 28px;
+.sm-header__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.status-state__title {
-  font-size: 14px;
+.sm-header__left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sm-header__icon {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.sm-header__label {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.sm-header__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sm-chip {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  border: none;
+}
+
+.sm-chip--interactive {
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.sm-chip--interactive:hover { color: #e2e8f0; }
+
+.sm-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.6);
+  flex-shrink: 0;
+}
+
+.sm-header__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.sm-tag {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(148, 163, 184, 0.06);
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.sm-header__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.sm-meta {
+  white-space: nowrap;
+}
+
+/* ── Section (shared) ── */
+.sm-section {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.sm-section:last-child { border-bottom: none; }
+
+.sm-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sm-section__title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.sm-section__icon {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.sm-section__title {
+  color: #e2e8f0;
+  font-size: 13px;
   font-weight: 600;
 }
 
-.monitor-header,
-.monitor-module,
-.status-monitor__charts {
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  background:
-    linear-gradient(180deg, rgba(19, 26, 33, 0.96), rgba(11, 16, 22, 0.96)),
-    linear-gradient(90deg, rgba(52, 211, 153, 0.04), transparent 35%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 16px 30px rgba(0, 0, 0, 0.24);
+.sm-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  white-space: nowrap;
 }
 
-.monitor-header {
-  display: grid;
-  gap: 12px;
-  border-radius: 20px;
-  padding: 14px;
-}
-
-.monitor-header__top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.monitor-header__identity {
+.sm-mini-chart {
+  flex: 1;
   min-width: 0;
+  max-width: 160px;
+  height: 28px;
+  overflow: hidden;
 }
 
-.monitor-header__eyebrow,
-.monitor-module__eyebrow {
-  display: inline-block;
-  color: #7dd3a5;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.monitor-header__title {
-  margin: 10px 0 0;
-  font-size: 18px;
-  font-weight: 800;
-  line-height: 1.15;
-}
-
-.monitor-header__chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.monitor-header__subtitle {
-  margin: 0;
-  color: #8fa0b3;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.monitor-header__badge,
-.monitor-module__pill,
-.monitor-chip {
+.sm-link-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 28px;
-  border-radius: 999px;
-  padding: 0 10px;
+  gap: 5px;
+  padding: 0;
+  margin-top: 6px;
+  border: none;
+  background: none;
+  color: #64748b;
   font-size: 11px;
-  font-weight: 700;
-  line-height: 1.1;
-}
-
-.monitor-header__badge,
-.monitor-module__pill {
-  border: 1px solid rgba(74, 222, 128, 0.18);
-  background: rgba(26, 92, 62, 0.34);
-  color: #d7ffe6;
-}
-
-.monitor-header__badge--subtle {
-  border-color: rgba(96, 165, 250, 0.16);
-  background: rgba(30, 64, 175, 0.14);
-  color: #dbeafe;
-}
-
-.monitor-chip {
-  border: 1px solid rgba(96, 165, 250, 0.18);
-  background: rgba(30, 64, 175, 0.2);
-  color: #dbeafe;
-}
-
-.monitor-chip--interactive,
-.monitor-action-button {
   cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+  transition: color 0.15s;
 }
 
-.monitor-chip--interactive:hover,
-.monitor-action-button:hover {
-  transform: translateY(-1px);
-}
+.sm-link-btn:hover { color: #94a3b8; }
 
-.monitor-chip--interactive:hover {
-  border-color: rgba(96, 165, 250, 0.38);
-  color: #ffffff;
-}
+.sm-link-btn--icon i { font-size: 10px; }
 
-.monitor-chip__label {
-  color: #bfdbfe;
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.monitor-chip__value {
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.monitor-header__status {
+/* ── CPU ── */
+.sm-cpu-cores {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
+  flex-direction: column;
+  gap: 3px;
 }
 
-.monitor-live-pill {
-  display: inline-flex;
+.sm-cpu-core {
+  display: flex;
   align-items: center;
   gap: 6px;
-  min-height: 28px;
-  border-radius: 999px;
-  border: 1px solid rgba(74, 222, 128, 0.18);
-  background: rgba(15, 118, 110, 0.16);
-  padding: 0 10px;
-  color: #dcfce7;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
 }
 
-.monitor-live-pill__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: #4ade80;
-  box-shadow: 0 0 10px rgba(74, 222, 128, 0.7);
+.sm-cpu-core__index {
+  width: 12px;
+  color: #64748b;
+  font-size: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  text-align: right;
+  flex-shrink: 0;
 }
 
-.monitor-header__meta-line {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(148, 163, 184, 0.1);
-}
-
-.monitor-header__meta-item {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-}
-
-.monitor-header__meta-label,
-.usage-lane__helper,
-.memory-stat__label,
-.network-table__header,
-.network-table__columns,
-.disk-io-card__label,
-.disk-summary-table__head,
-.process-summary-item__label {
-  color: #8ea0b1;
-  font-size: 11px;
-}
-
-.monitor-header__meta-label {
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.monitor-header__meta-value {
-  overflow: hidden;
-  color: #f7fbff;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-}
-
-.monitor-module-grid {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: 1fr;
-}
-
-.monitor-module {
-  display: grid;
-  gap: 10px;
-  min-width: 0;
-  border-radius: 18px;
-  padding: 12px;
-  container-type: inline-size;
-}
-
-.monitor-module--usage,
-.monitor-module--memory,
-.monitor-module--network,
-.monitor-module--disk {
-  min-height: clamp(188px, 62cqw, 220px);
-}
-
-.monitor-module--usage {
-  grid-template-rows: auto minmax(0, 1fr);
-  max-height: 320px;
-  gap: 8px;
+.sm-cpu-core__bar {
+  flex: 1;
+  height: 10px;
+  border-radius: 2px;
+  background: rgba(148, 163, 184, 0.08);
   overflow: hidden;
 }
 
-.monitor-module--process {
-  min-height: clamp(340px, 116cqw, 420px);
+.sm-cpu-core__fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+  min-width: 1px;
 }
 
-.monitor-module__heading {
+.sm-cpu-core__fill--normal { background: #22c55e; }
+.sm-cpu-core__fill--warn { background: #f59e0b; }
+.sm-cpu-core__fill--critical { background: #ef4444; }
+
+.sm-cpu-core__val {
+  width: 36px;
+  color: #cbd5e1;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Memory ── */
+.sm-memory-row {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
   gap: 12px;
 }
 
-.monitor-module__heading-actions {
-  display: inline-flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.process-summary-pills {
-  display: inline-flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.monitor-module__title {
-  margin: 6px 0 0;
-  color: #f8fbff;
-  font-size: 15px;
-  font-weight: 800;
-  line-height: 1.3;
-}
-
-.memory-stat-stack,
-.network-stat-stack,
-.disk-stat-stack,
-.process-preview-list {
-  display: grid;
-  gap: 8px;
-}
-
-.usage-lane {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 8px;
-  align-items: center;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-  padding: 10px 10px 8px;
-}
-
-.usage-lane__index,
-.usage-lane__value,
-.memory-stat__value,
-.process-summary-item__value {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-}
-
-.usage-lane__index {
-  color: rgba(226, 232, 240, 0.52);
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-}
-
-.usage-lane__content {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-}
-
-.usage-lane__meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-width: 0;
-}
-
-.usage-lane__label,
-.network-stat__label,
-.process-preview-item__rail {
-  color: #d9e5f1;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.usage-lane__helper {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.usage-lane__value-inline {
-  color: #f8fbff;
-  font-size: 17px;
-  font-weight: 800;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-}
-
-.usage-lane__track,
-.disk-device-card__icon {
+.sm-memory-ring {
   position: relative;
-  overflow: hidden;
-  border-radius: 12px;
-  background: rgba(51, 65, 85, 0.6);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-.usage-lane__track {
-  height: 8px;
-  border-radius: 999px;
-}
-
-.usage-lane__fill,
-.disk-device-card__icon-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: inherit;
-}
-
-.cpu-summary-panel {
-  display: grid;
-  gap: 10px;
-  min-height: 0;
-  border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.08);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02)),
-    radial-gradient(circle at top left, rgba(59, 130, 246, 0.04), transparent 60%);
-  padding: 10px;
-  overflow: hidden;
-}
-
-.cpu-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.cpu-summary-card:last-child:nth-child(odd) {
-  grid-column: 1 / -1;
-}
-
-.cpu-summary-card {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-  padding: 10px;
-}
-
-.cpu-summary-card__label {
-  color: #8ea0b1;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.cpu-summary-card__value {
-  color: #f8fbff;
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1.35;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-}
-
-.cpu-summary-action {
-  width: 100%;
-}
-
-.module-split {
-  display: grid;
-  gap: 12px;
-}
-
-.module-split--memory {
-  grid-template-columns: minmax(110px, 0.88fr) minmax(0, 1.12fr);
-  align-items: stretch;
-}
-
-.module-split--cpu {
-  grid-template-columns: 1fr;
-  grid-template-rows: minmax(0, 126px) auto;
-  min-height: 0;
-  align-content: start;
-  gap: 8px;
-  overflow: hidden;
-}
-
-.module-split--network {
-  grid-template-columns: 1fr;
-  grid-template-rows: auto minmax(0, 1fr);
-  min-height: 0;
-  align-content: start;
-  gap: 8px;
-  overflow: hidden;
-}
-
-.monitor-module--network {
-  grid-template-rows: auto minmax(0, 1fr);
-  height: 316px;
-  min-height: 316px;
-  max-height: 316px;
-  gap: 8px;
-  overflow: hidden;
-}
-
-.memory-ring-panel,
-.disk-device-card,
-.disk-io-card,
-.network-table {
-  border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.08);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02)),
-    radial-gradient(circle at top left, rgba(52, 211, 153, 0.04), transparent 58%);
-  padding: 12px;
-}
-
-.memory-ring-panel {
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 6px;
-  padding: 10px;
-}
-
-.memory-ring {
-  position: relative;
-  width: 76px;
-  height: 76px;
-  border-radius: 999px;
-  padding: 3px;
-}
-
-.memory-ring::after {
+.sm-memory-ring::after {
   content: '';
   position: absolute;
-  inset: 13px;
-  border-radius: 999px;
-  background: rgba(9, 14, 20, 0.96);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  inset: 9px;
+  border-radius: 50%;
+  background: #0f1419;
 }
 
-.memory-ring__center {
+.sm-memory-ring__center {
   position: absolute;
   inset: 0;
   z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #f8fbff;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.memory-ring-panel__caption {
-  color: #9cb0c2;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.memory-stat,
-.network-stat,
-.process-summary-item,
-.process-preview-item {
-  min-width: 0;
-  border-radius: 14px;
-  border: 1px solid rgba(148, 163, 184, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.memory-stat {
-  padding: 8px 9px;
-  border-radius: 10px;
-}
-
-.memory-stat-stack {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-content: center;
-  gap: 6px;
-}
-
-.memory-stat__label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 10px;
-}
-
-.memory-stat__dot {
-  width: 8px;
-  height: 8px;
-  flex: 0 0 auto;
-  border-radius: 999px;
-}
-
-.memory-stat__dot--used {
-  background: #ef5350;
-}
-
-.memory-stat__dot--cached {
-  background: #9ca3af;
-}
-
-.memory-stat__dot--free {
-  background: #4ade80;
-}
-
-.memory-stat__value,
-.disk-summary-table__row span,
-.disk-io-card__value {
-  display: block;
-  margin-top: 4px;
-  overflow-wrap: anywhere;
-  color: #f8fbff;
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1.15;
-}
-
-.network-table {
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 3px;
-  min-height: 0;
-  height: 100%;
-  padding: 7px 9px;
-  overflow: hidden;
-}
-
-.disk-summary-table__head,
-.disk-summary-table__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.network-table__header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  padding-bottom: 3px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  color: #f8fafc;
   font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-}
-
-.network-table__columns {
-  display: grid;
-  grid-template-columns: minmax(0, 0.78fr) repeat(2, minmax(0, 0.61fr));
-  align-items: center;
-  gap: 6px;
-  padding-top: 0;
-  color: #9cb0c2;
-  font-size: 9px;
   font-weight: 700;
 }
 
-.network-stat-stack {
-  min-height: 0;
-  align-content: start;
-  gap: 3px;
-  overflow-y: auto;
-  padding-right: 1px;
-}
-
-.network-table__columns span,
-.network-stat span,
-.disk-summary-table__head span,
-.disk-summary-table__row span {
+.sm-memory-stats {
+  display: flex;
+  gap: 12px;
+  flex: 1;
   min-width: 0;
 }
 
-.network-table__header span:first-child,
-.network-table__columns span:first-child,
-.network-stat__label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.network-table__header span:last-child,
-.network-table__columns span:not(:first-child),
-.network-stat__value,
-.network-stat__total {
-  justify-self: end;
-  text-align: right;
-}
-
-.network-stat {
-  display: grid;
-  grid-template-columns: minmax(0, 0.78fr) repeat(2, minmax(0, 0.61fr));
-  align-items: center;
-  gap: 6px;
-  border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.06);
-  background: rgba(255, 255, 255, 0.03);
-  padding: 5px 7px;
-}
-
-.network-stat__label {
-  display: inline-flex;
+.sm-memory-stat {
+  display: flex;
   align-items: center;
   gap: 5px;
-  color: #d9e5f1;
+  white-space: nowrap;
+}
+
+.sm-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sm-dot--used { background: #ef5350; }
+.sm-dot--cached { background: #9ca3af; }
+.sm-dot--free { background: #4ade80; }
+
+.sm-memory-stat__label {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.sm-memory-stat__value {
+  color: #e2e8f0;
   font-size: 11px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-.network-stat__label i {
-  width: 12px;
-  text-align: center;
-}
-
-.network-stat__value,
-.network-stat__total {
-  color: #f8fbff;
-  font-size: 12px;
-  font-weight: 800;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-}
-
-.network-stat--up .network-stat__label i {
-  color: #34d399;
-}
-
-.network-stat--down .network-stat__label i {
-  color: #3b82f6;
-}
-
-.disk-compact-top {
-  display: grid;
-  grid-template-columns: minmax(108px, 0.92fr) repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.disk-device-card {
-  display: grid;
-  gap: 10px;
-  padding: 10px;
-}
-
-.disk-device-card__head {
+/* ── Network ── */
+.sm-net-table {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.disk-device-card__mount {
-  color: #d9e5f1;
-  font-size: 14px;
-  font-weight: 800;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-}
-
-.disk-device-card__type {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 24px;
-  border-radius: 8px;
-  padding: 0 8px;
-  background: rgba(111, 76, 15, 0.32);
-  color: #facc15;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.disk-device-card__body {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-}
-
-.disk-device-card__icon {
-  flex: 0 0 24px;
-  width: 24px;
-  height: 54px;
-  border: 1px solid rgba(203, 213, 225, 0.22);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(226, 232, 240, 0.88));
-}
-
-.disk-device-card__icon-fill {
-  inset: auto 0 0;
-  background: linear-gradient(180deg, rgba(134, 239, 172, 0.95), rgba(34, 197, 94, 1));
-}
-
-.disk-device-card__device {
-  color: #9db0c1;
-  font-size: 12px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  overflow-wrap: anywhere;
-}
-
-.disk-io-card {
+.sm-net-table__head {
   display: grid;
-  align-content: center;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: 6px;
-  padding: 10px;
+  padding: 0 0 4px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.06);
+  color: #64748b;
+  font-size: 10px;
 }
 
-.disk-io-card__value {
-  margin-top: 0;
-  font-size: 15px;
-}
+.sm-net-table__head span:not(:first-child) { text-align: right; }
 
-.disk-summary-table {
+.sm-net-row {
   display: grid;
-  gap: 8px;
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.08);
-  background: rgba(255, 255, 255, 0.025);
-  padding: 10px;
-}
-
-.disk-summary-table__head {
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-  font-weight: 700;
-}
-
-.disk-summary-table__row {
-  color: #f8fbff;
-  font-size: 14px;
-  font-weight: 700;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-}
-
-.disk-summary-table__mount {
-  color: #86efac;
-}
-
-.disk-summary-table__used {
-  justify-self: start;
-  display: inline-flex;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 6px;
+  padding: 4px 0;
   align-items: center;
-  justify-content: center;
-  min-height: 24px;
-  padding: 0 8px;
-  border-radius: 8px;
-  border: 1px solid rgba(74, 222, 128, 0.2);
-  background: rgba(26, 92, 62, 0.34);
-  color: #d7ffe6;
 }
 
-.monitor-action-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 32px;
-  border-radius: 10px;
-  border: 1px solid rgba(96, 165, 250, 0.22);
-  background: rgba(37, 99, 235, 0.18);
-  padding: 0 12px;
-  color: #dbeafe;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.monitor-action-button:hover {
-  border-color: rgba(96, 165, 250, 0.42);
-  color: #ffffff;
-}
-
-.process-preview-item {
-  display: grid;
-  gap: 8px;
-  padding: 10px 12px;
-}
-
-.process-preview-item__rail {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  color: #9fb0bf;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-}
-
-.process-preview-item__main {
+.sm-net-row__label {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.sm-net-row__label i { width: 10px; text-align: center; font-size: 10px; }
+.sm-net-row__label--up i { color: #34d399; }
+.sm-net-row__label--down i { color: #60a5fa; }
+
+.sm-net-row__val,
+.sm-net-row__total {
+  text-align: right;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.sm-net-row__total { color: #94a3b8; font-weight: 400; }
+
+/* ── Process ── */
+.sm-proc-table { display: flex; flex-direction: column; gap: 0; }
+
+.sm-proc-head {
+  display: grid;
+  grid-template-columns: 60px 52px minmax(0, 1fr);
+  gap: 6px;
+  padding: 0 0 4px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.06);
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.sm-proc-row {
+  display: grid;
+  grid-template-columns: 60px 52px minmax(0, 1fr);
+  gap: 6px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.04);
+  align-items: center;
+  font-size: 11px;
+}
+
+.sm-proc-row:last-child { border-bottom: none; }
+
+.sm-proc-row__cpu {
+  color: #e2e8f0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 700;
+}
+
+.sm-proc-row__cpu--hot { color: #f87171; }
+
+.sm-proc-row__mem {
+  color: #94a3b8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.sm-proc-row__cmd {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
 }
 
-.process-preview-item__command {
-  min-width: 0;
+.sm-proc-row__cmd-text {
+  color: #cbd5e1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #f8fbff;
-  font-size: 13px;
+  font-size: 11px;
 }
 
-.process-preview-item__stats {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 10px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+.sm-proc-row__pid {
+  color: #475569;
+  font-size: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.sm-empty {
+  padding: 10px;
+  color: #64748b;
   font-size: 12px;
-  font-weight: 700;
-}
-
-.process-preview-item__cpu {
-  color: #bfdbfe;
-}
-
-.process-preview-item__mem {
-  color: #fde68a;
-}
-
-.process-preview-empty {
-  border-radius: 12px;
-  border: 1px dashed rgba(148, 163, 184, 0.16);
-  padding: 14px;
-  color: #8fa0b3;
-  font-size: 13px;
   text-align: center;
 }
 
-.status-monitor__charts {
-  overflow: hidden;
-  border-radius: 20px;
+/* ── Disk ── */
+.sm-disk-device {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
-@container (min-width: 520px) {
-  .monitor-header {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-  }
-
-  .monitor-header__status {
-    justify-content: flex-end;
-  }
-
-  .module-split--memory {
-    grid-template-columns: minmax(150px, 0.92fr) minmax(0, 1.08fr);
-    align-items: stretch;
-  }
-
-  .disk-summary-table__head span,
-  .disk-summary-table__row span {
-    text-align: left;
-  }
+.sm-disk-device__mount {
+  color: #e2e8f0;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-@container (max-width: 250px) {
-  .module-split--memory,
-  .module-split--cpu,
-  .module-split--network,
-  .disk-compact-top {
-    grid-template-columns: 1fr;
-  }
-
-  .memory-stat-stack {
-    grid-template-columns: 1fr;
-  }
-
-  .cpu-summary-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .network-table__header,
-  .network-table__columns,
-  .network-stat,
-  .disk-summary-table__head,
-  .disk-summary-table__row,
-  .process-preview-item__main {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .network-table__columns span,
-  .network-stat span,
-  .disk-summary-table__head span,
-  .disk-summary-table__row span {
-    width: 100%;
-    flex: none;
-  }
-
-  .monitor-module--network .network-table__header,
-  .monitor-module--network .network-table__columns,
-  .monitor-module--network .network-stat {
-    align-items: center;
-  }
-
-  .monitor-module--network .network-table__columns span,
-  .monitor-module--network .network-stat span {
-    width: auto;
-  }
+.sm-disk-device__type {
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 600;
 }
 
-@container (max-width: 440px) {
-  .monitor-chip {
-    max-width: 100%;
-  }
-
-  .monitor-chip__value,
-  .usage-lane__helper,
-  .disk-summary-table__row span {
-    white-space: normal;
-  }
-
+.sm-disk-io {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 10px;
 }
 
-@container (max-width: 360px) {
-  .process-summary-strip {
-    grid-template-columns: 1fr;
-  }
+.sm-disk-io__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sm-disk-io__icon {
+  width: 16px;
+  height: 24px;
+  border-radius: 2px;
+  background: rgba(148, 163, 184, 0.12);
+  flex-shrink: 0;
+}
+
+.sm-disk-io__col { display: flex; flex-direction: column; }
+
+.sm-disk-io__label {
+  color: #64748b;
+  font-size: 10px;
+}
+
+.sm-disk-io__val {
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.sm-disk-summary {
+  border-top: 1px solid rgba(148, 163, 184, 0.06);
+  padding-top: 8px;
+}
+
+.sm-disk-summary__head {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding-bottom: 4px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.sm-disk-summary__row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  color: #e2e8f0;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+}
+
+.sm-disk-summary__mount { color: #86efac; }
+
+.sm-disk-summary__pct {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(74, 222, 128, 0.12);
+  color: #86efac;
+  font-size: 10px;
+  width: fit-content;
+}
+
+/* ── Responsive ── */
+@container (max-width: 220px) {
+  .sm-memory-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .sm-memory-stats { flex-wrap: wrap; }
+  .sm-disk-io { flex-direction: column; gap: 8px; }
 }
 
 @media (max-width: 640px) {
-  .status-monitor {
-    padding: 12px;
-  }
+  .status-monitor { padding: 8px; }
 }
 </style>

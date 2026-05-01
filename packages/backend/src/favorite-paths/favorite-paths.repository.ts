@@ -3,11 +3,13 @@ import { getDbInstance, runDb, getDb as getDbRow, allDb } from '../database/conn
 // 定义收藏路径接口
 export interface FavoritePath {
     id: number;
-    name: string | null; // 名称可选
+    name: string | null;
     path: string;
-    last_used_at?: number | null; // 上次使用时间，允许为空
-    created_at: number; // Unix 时间戳 (秒)
-    updated_at: number; // Unix 时间戳 (秒)
+    scope: string;
+    connection_id: number | null;
+    last_used_at?: number | null;
+    created_at: number;
+    updated_at: number;
 }
 
 /**
@@ -16,11 +18,11 @@ export interface FavoritePath {
  * @param path - 路径内容
  * @returns 返回插入记录的 ID
  */
-export const addFavoritePath = async (name: string | null, path: string): Promise<number> => {
-    const sql = `INSERT INTO favorite_paths (name, path, created_at, updated_at) VALUES (?, ?, strftime('%s', 'now'), strftime('%s', 'now'))`;
+export const addFavoritePath = async (name: string | null, path: string, scope: string = 'global', connectionId: number | null = null): Promise<number> => {
+    const sql = `INSERT INTO favorite_paths (name, path, scope, connection_id, created_at, updated_at) VALUES (?, ?, ?, ?, strftime('%s', 'now'), strftime('%s', 'now'))`;
     try {
         const db = await getDbInstance();
-        const result = await runDb(db, sql, [name, path]);
+        const result = await runDb(db, sql, [name, path, scope, connectionId]);
         if (typeof result.lastID !== 'number' || result.lastID <= 0) {
              throw new Error('添加收藏路径后未能获取有效的 lastID');
         }
@@ -38,11 +40,22 @@ export const addFavoritePath = async (name: string | null, path: string): Promis
  * @param path - 新的路径内容
  * @returns 返回是否成功更新 (true/false)
  */
-export const updateFavoritePath = async (id: number, name: string | null, path: string): Promise<boolean> => {
-    const sql = `UPDATE favorite_paths SET name = ?, path = ?, updated_at = strftime('%s', 'now') WHERE id = ?`;
+export const updateFavoritePath = async (id: number, name: string | null, path: string, scope?: string, connectionId?: number | null): Promise<boolean> => {
+    const fields = ['name = ?', 'path = ?', "updated_at = strftime('%s', 'now')"];
+    const params: any[] = [name, path];
+    if (scope !== undefined) {
+        fields.push('scope = ?');
+        params.push(scope);
+    }
+    if (connectionId !== undefined) {
+        fields.push('connection_id = ?');
+        params.push(connectionId);
+    }
+    params.push(id);
+    const sql = `UPDATE favorite_paths SET ${fields.join(', ')} WHERE id = ?`;
     try {
         const db = await getDbInstance();
-        const result = await runDb(db, sql, [name, path, id]);
+        const result = await runDb(db, sql, params);
         return result.changes > 0;
     } catch (err: any) {
         console.error('更新收藏路径时出错:', err.message);
@@ -72,15 +85,26 @@ export const deleteFavoritePath = async (id: number): Promise<boolean> => {
  * @param sortBy - 排序字段 ('name' 或 'usage_count')
  * @returns 返回包含所有收藏路径条目的数组
  */
-export const getAllFavoritePaths = async (sortBy: 'name' | 'last_used_at' = 'name'): Promise<FavoritePath[]> => {
-    let orderByClause = 'ORDER BY name ASC'; // 默认按名称升序
+export const getAllFavoritePaths = async (sortBy: 'name' | 'last_used_at' = 'name', scope?: string, connectionId?: number): Promise<FavoritePath[]> => {
+    let orderByClause = 'ORDER BY name ASC';
     if (sortBy === 'last_used_at') {
-        orderByClause = 'ORDER BY last_used_at DESC, name ASC'; // 按上次使用时间降序，同时间的按名称升序
+        orderByClause = 'ORDER BY last_used_at DESC, name ASC';
     }
-    const sql = `SELECT id, name, path, last_used_at, created_at, updated_at FROM favorite_paths ${orderByClause}`;
+    const conditions: string[] = [];
+    const params: any[] = [];
+    if (scope) {
+        conditions.push('scope = ?');
+        params.push(scope);
+    }
+    if (connectionId !== undefined) {
+        conditions.push('connection_id = ?');
+        params.push(connectionId);
+    }
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const sql = `SELECT id, name, path, scope, connection_id, last_used_at, created_at, updated_at FROM favorite_paths ${whereClause} ${orderByClause}`;
     try {
         const db = await getDbInstance();
-        const rows = await allDb<FavoritePath>(db, sql);
+        const rows = await allDb<FavoritePath>(db, sql, params);
         return rows;
     } catch (err: any) {
         console.error('获取收藏路径时出错:', err.message);

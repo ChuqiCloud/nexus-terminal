@@ -1,6 +1,6 @@
 <template>
-  <div ref="chartHostRef" class="network-history-chart">
-    <div class="network-history-chart__header">
+  <div ref="chartHostRef" class="network-history-chart" :class="{ 'network-history-chart--compact': compact }">
+    <div v-if="!compact" class="network-history-chart__header">
       <div>
         <h6 class="network-history-chart__title">
           {{ t('statusMonitor.networkSpeedTitleUnit', { unit: networkRateUnitIsMB ? 'MB/s' : 'KB/s' }) }}
@@ -63,6 +63,10 @@ const props = defineProps({
   uploadHistory: {
     type: Array as PropType<readonly (number | null)[]>,
     required: true,
+  },
+  compact: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -167,7 +171,7 @@ const networkChartOptions = computed<ChartOptions<'line'>>(() => ({
       display: false,
     },
     tooltip: {
-      enabled: true,
+      enabled: !props.compact,
       mode: 'index',
       intersect: false,
       displayColors: true,
@@ -193,6 +197,7 @@ const networkChartOptions = computed<ChartOptions<'line'>>(() => ({
       },
     },
     y: {
+      display: !props.compact,
       beginAtZero: true,
       min: 0,
       max: suggestedYAxisMax.value,
@@ -347,5 +352,18 @@ onBeforeUnmount(() => {
   .network-history-chart__legend {
     justify-content: flex-start;
   }
+}
+
+.network-history-chart--compact {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  gap: 0;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.network-history-chart--compact .network-history-chart__canvas {
+  height: 100%;
 }
 </style>

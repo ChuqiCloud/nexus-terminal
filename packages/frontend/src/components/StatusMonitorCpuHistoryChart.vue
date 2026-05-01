@@ -1,6 +1,6 @@
 <template>
-  <div ref="chartHostRef" class="cpu-history-chart">
-    <div class="cpu-history-chart__header">
+  <div ref="chartHostRef" class="cpu-history-chart" :class="{ 'cpu-history-chart--compact': compact }">
+    <div v-if="!compact" class="cpu-history-chart__header">
       <div>
         <h6 class="cpu-history-chart__title">{{ t('statusMonitor.cpuUsageTitle') }}</h6>
       </div>
@@ -46,6 +46,10 @@ const props = defineProps({
   cpuHistory: {
     type: Array as PropType<readonly (number | null)[]>,
     required: true,
+  },
+  compact: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -98,7 +102,7 @@ const cpuChartOptions = computed<ChartOptions<'line'>>(() => ({
       display: false,
     },
     tooltip: {
-      enabled: true,
+      enabled: !props.compact,
       mode: 'index',
       intersect: false,
       callbacks: {
@@ -121,6 +125,7 @@ const cpuChartOptions = computed<ChartOptions<'line'>>(() => ({
       },
     },
     y: {
+      display: !props.compact,
       beginAtZero: true,
       min: 0,
       max: 100,
@@ -253,5 +258,18 @@ onBeforeUnmount(() => {
   .cpu-history-chart__header {
     flex-direction: column;
   }
+}
+
+.cpu-history-chart--compact {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  gap: 0;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.cpu-history-chart--compact .cpu-history-chart__canvas {
+  height: 100%;
 }
 </style>

@@ -6,7 +6,7 @@ import { FavoritePathSortBy } from '../favorite-paths/favorite-paths.service';
  * 处理添加新收藏路径的请求
  */
 export const createFavoritePath = async (req: Request, res: Response): Promise<void> => {
-    const { name, path } = req.body;
+    const { name, path, scope, connectionId } = req.body;
 
     if (!path || typeof path !== 'string' || path.trim().length === 0) {
         res.status(400).json({ message: '路径内容不能为空' });
@@ -18,7 +18,7 @@ export const createFavoritePath = async (req: Request, res: Response): Promise<v
     }
 
     try {
-        const newId = await FavoritePathsService.addFavoritePath(name, path);
+        const newId = await FavoritePathsService.addFavoritePath(name, path, scope || 'global', connectionId ?? null);
         const newFavoritePath = await FavoritePathsService.getFavoritePathById(newId);
         if (newFavoritePath) {
             res.status(201).json({ message: '收藏路径已添加', favoritePath: newFavoritePath });
@@ -37,11 +37,14 @@ export const createFavoritePath = async (req: Request, res: Response): Promise<v
  */
 export const getAllFavoritePaths = async (req: Request, res: Response): Promise<void> => {
     const sortBy = req.query.sortBy as FavoritePathSortBy | undefined;
+    const scope = req.query.scope as string | undefined;
+    const connectionIdStr = req.query.connectionId as string | undefined;
+    const connectionId = connectionIdStr ? parseInt(connectionIdStr, 10) : undefined;
     const validSortByOptions: FavoritePathSortBy[] = ['name', 'last_used_at'];
     const validSortBy: FavoritePathSortBy = sortBy && validSortByOptions.includes(sortBy) ? sortBy : 'name';
 
     try {
-        const favoritePaths = await FavoritePathsService.getAllFavoritePaths(validSortBy);
+        const favoritePaths = await FavoritePathsService.getAllFavoritePaths(validSortBy, scope, connectionId);
         res.status(200).json(favoritePaths);
     } catch (error: any) {
         console.error('获取收藏路径控制器出错:', error);
@@ -79,7 +82,7 @@ export const getFavoritePathById = async (req: Request, res: Response): Promise<
  */
 export const updateFavoritePath = async (req: Request, res: Response): Promise<void> => {
     const id = parseInt(req.params.id, 10);
-    const { name, path } = req.body;
+    const { name, path, scope, connectionId } = req.body;
 
     if (isNaN(id)) {
         res.status(400).json({ message: '无效的 ID' });
@@ -95,7 +98,7 @@ export const updateFavoritePath = async (req: Request, res: Response): Promise<v
     }
 
     try {
-        const success = await FavoritePathsService.updateFavoritePath(id, name, path);
+        const success = await FavoritePathsService.updateFavoritePath(id, name, path, scope, connectionId);
         if (success) {
             const updatedFavoritePath = await FavoritePathsService.getFavoritePathById(id);
             if (updatedFavoritePath) {

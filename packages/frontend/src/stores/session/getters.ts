@@ -1,6 +1,7 @@
 import { computed } from 'vue';
 import { sessions, activeSessionId } from './state';
 import type { SessionState, SessionTabInfoWithStatus } from './types';
+import { isSshCommandRuntimeActive } from './runtime';
 
 export const sessionTabs = computed(() => {
   return Array.from(sessions.value.values()).map((session) => ({
@@ -54,7 +55,8 @@ export const sessionTabsWithStatus = computed((): SessionTabInfoWithStatus[] => 
     terminalIndex: session.terminalIndex,
     status: session.wsManager.connectionStatus.value,
     isMarkedForSuspend: session.isMarkedForSuspend,
-    isCommandRunning: session.isCommandRunning.value,
+    commandRuntimePhase: session.commandRuntime.value.phase,
+    isCommandRunning: isSshCommandRuntimeActive(session.commandRuntime.value.phase),
   }));
 });
 

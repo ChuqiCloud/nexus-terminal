@@ -370,6 +370,18 @@ const definedMigrations: Migration[] = [
             ALTER TABLE quick_command_tag_associations ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0;
             UPDATE quick_command_tag_associations SET sort_order = rowid WHERE sort_order = 0;
         `
+    },
+    {
+        id: 15,
+        name: 'Add scope and connection_id columns to favorite_paths table',
+        check: async (db: Database): Promise<boolean> => {
+            const scopeExists = await columnExists(db, 'favorite_paths', 'scope');
+            return !scopeExists;
+        },
+        sql: `
+            ALTER TABLE favorite_paths ADD COLUMN scope TEXT NOT NULL DEFAULT 'global';
+            ALTER TABLE favorite_paths ADD COLUMN connection_id INTEGER NULL;
+        `
     }
 ];
 

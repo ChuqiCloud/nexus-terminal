@@ -1861,6 +1861,15 @@
     "unknownTargetPath": "[Unknown Target Path]",
     "taskIdFallback": "Task ID: {taskId}"
   },
+  "transferPanel": {
+    "title": "Transfer",
+    "tabs": {
+      "all": "All",
+      "upload": "Upload",
+      "download": "Download"
+    },
+    "empty": "No transfer tasks"
+  },
   "sendFilesModal": {
     "title": "Send Files",
     "searchConnectionsPlaceholder": "Search connections...",
@@ -1885,34 +1894,45 @@
     "transferFailedError": "Failed to initiate transfer. Please try again."
   },
 "favoritePaths": {
+    "title": "Bookmarks",
     "addEditForm": {
       "validation": {
         "pathRequired": "Path is required."
       },
-      "editTitle": "Edit Favorite Path",
-      "addTitle": "Add New Favorite Path",
+      "editTitle": "Edit Bookmark",
+      "addTitle": "Add Bookmark",
       "pathLabel": "Path",
       "pathPlaceholder": "/example/folder/path",
       "nameLabel": "Name (Optional)",
       "namePlaceholder": "My Documents",
+      "scopeLabel": "Scope",
       "errors": {
-        "genericSaveError": "Failed to save favorite path."
+        "genericSaveError": "Failed to save bookmark."
       }
     },
     "confirmDelete": "Are you sure you want to delete \"{name}\"?",
-    "searchPlaceholder": "Search by name or path...",
-    "addNew": "Add new favorite path",
-    "loading": "Loading favorites...",
-    "noResults": "No matching favorites found.",
-    "noFavorites": "No favorite paths yet. Add one!",
+    "searchPlaceholder": "Search bookmarks...",
+    "addNew": "Add Bookmark",
+    "loading": "Loading bookmarks...",
+    "noResults": "No matching bookmarks found.",
+    "noFavorites": "No bookmarks yet",
+    "sendToTerminal": "Send to Terminal",
+    "sortByName": "Sort by name",
+    "sortByUsage": "Sort by usage",
+    "scopeAll": "All",
+    "scopeLocal": "Local",
+    "scopeGlobal": "Cloud",
+    "scopeLocalLabel": "This server only",
+    "scopeGlobalLabel": "Global shared",
     "notifications": {
-      "fetchError": "Failed to load favorite paths.",
-      "addSuccess": "Favorite path added successfully.",
-      "addError": "Failed to add favorite path.",
-      "updateSuccess": "Favorite path updated successfully.",
-      "updateError": "Failed to update favorite path.",
-      "deleteSuccess": "Favorite path deleted successfully.",
-      "deleteError": "Failed to delete favorite path."
+      "fetchError": "Failed to load bookmarks.",
+      "addSuccess": "Bookmark added successfully.",
+      "addError": "Failed to add bookmark.",
+      "updateSuccess": "Bookmark updated successfully.",
+      "updateError": "Failed to update bookmark.",
+      "deleteSuccess": "Bookmark deleted successfully.",
+      "deleteError": "Failed to delete bookmark.",
+      "markAsUsedError": "Failed to update usage time."
     }
   },
   "pathHistory": {

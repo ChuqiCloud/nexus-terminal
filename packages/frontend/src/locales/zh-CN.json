@@ -1834,6 +1834,15 @@
     "unknownTargetPath": "[目标路径未知]",
     "taskIdFallback": "任务ID: {taskId}"
   },
+  "transferPanel": {
+    "title": "传输",
+    "tabs": {
+      "all": "全部",
+      "upload": "上传",
+      "download": "下载"
+    },
+    "empty": "暂无传输任务"
+  },
   "sendFilesModal": {
     "title": "发送文件",
     "searchConnectionsPlaceholder": "搜索连接...",
@@ -1890,34 +1899,45 @@
     }
   },
 "favoritePaths": {
+    "title": "书签列表",
     "addEditForm": {
       "validation": {
         "pathRequired": "路径不能为空。"
       },
-      "editTitle": "编辑收藏路径",
-      "addTitle": "添加新收藏路径",
+      "editTitle": "编辑书签",
+      "addTitle": "添加书签",
       "pathLabel": "路径",
       "pathPlaceholder": "/example/folder/path",
-      "nameLabel": "名称 (可选)",
+      "nameLabel": "名称（可选）",
       "namePlaceholder": "我的文档",
+      "scopeLabel": "记录位置",
       "errors": {
-        "genericSaveError": "保存收藏路径失败。"
+        "genericSaveError": "保存书签失败。"
       }
     },
     "confirmDelete": "您确定要删除 \"{name}\" 吗？",
-    "searchPlaceholder": "按名称或路径搜索...",
-    "addNew": "添加新收藏路径",
-    "loading": "正在加载收藏...",
-    "noResults": "未找到匹配的收藏。",
-    "noFavorites": "还没有收藏路径，快添加一个吧！",
+    "searchPlaceholder": "搜索书签...",
+    "addNew": "添加书签",
+    "loading": "正在加载书签...",
+    "noResults": "未找到匹配的书签。",
+    "noFavorites": "暂无书签",
+    "sendToTerminal": "发送到终端",
+    "sortByName": "按名称排序",
+    "sortByUsage": "按使用排序",
+    "scopeAll": "全部",
+    "scopeLocal": "本地",
+    "scopeGlobal": "云端",
+    "scopeLocalLabel": "仅当前服务器",
+    "scopeGlobalLabel": "全局共享",
     "notifications": {
-      "fetchError": "加载收藏路径失败。",
-      "addSuccess": "收藏路径添加成功。",
-      "addError": "添加收藏路径失败。",
-      "updateSuccess": "收藏路径更新成功。",
-      "updateError": "更新收藏路径失败。",
-      "deleteSuccess": "收藏路径删除成功。",
-      "deleteError": "删除收藏路径失败。"
+      "fetchError": "加载书签失败。",
+      "addSuccess": "书签添加成功。",
+      "addError": "添加书签失败。",
+      "updateSuccess": "书签更新成功。",
+      "updateError": "更新书签失败。",
+      "deleteSuccess": "书签删除成功。",
+      "deleteError": "删除书签失败。",
+      "markAsUsedError": "更新使用时间失败。"
     }
   },
   "pathHistory": {
