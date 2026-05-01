@@ -57,6 +57,8 @@
           <StatusMonitorCpuHistoryChart :cpu-history="currentCpuHistory" :compact="true" class="sm-mini-chart" />
         </div>
 
+        <div v-if="cpuModelLabel" class="sm-cpu-model">{{ cpuModelLabel }}</div>
+
         <div class="sm-cpu-cores">
           <div
             v-for="item in cpuCoreItems"
@@ -486,6 +488,8 @@ const networkRateUnitLabel = computed(() => {
 
 const processPreviewItems = computed<readonly ProcessListItem[]>(() => topProcessPreview.value.slice(0, 4));
 
+const cpuModelLabel = computed(() => cachedCpuModel.value || null);
+
 const copyIpToClipboard = async (ipAddress: string | null) => {
   if (!ipAddress) return;
   try {
@@ -699,6 +703,16 @@ const copyIpToClipboard = async (ipAddress: string | null) => {
 .sm-link-btn--icon i { font-size: 10px; }
 
 /* ── CPU ── */
+.sm-cpu-model {
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.3;
+  padding: 0 2px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .sm-cpu-cores {
   display: flex;
   flex-direction: column;

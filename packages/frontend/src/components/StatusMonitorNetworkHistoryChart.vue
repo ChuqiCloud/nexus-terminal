@@ -171,7 +171,7 @@ const networkChartOptions = computed<ChartOptions<'line'>>(() => ({
       display: false,
     },
     tooltip: {
-      enabled: !props.compact,
+      enabled: true,
       mode: 'index',
       intersect: false,
       displayColors: true,
