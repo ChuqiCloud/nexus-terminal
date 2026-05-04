@@ -1467,6 +1467,7 @@
       "noVariables": "No variables yet. Click the button below to add one.",
       "variableNamePlaceholder": "Variable Name",
       "variableValuePlaceholder": "Variable Value",
+      "insertVariable": "Insert",
       "addVariable": "+ Add Variable",
       "execute": "Execute",
       "warningUndefinedVariables": "Warning: Undefined variables in command template: {variables}",

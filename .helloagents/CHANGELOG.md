@@ -129,6 +129,9 @@
   - 方案: [202603250614_terminal-ansi-color-effects](archive/2026-03/202603250614_terminal-ansi-color-effects/)
 
 ### 快速修改
+- **[frontend]**: 为快捷指令自定义变量卡片补充“添加到指令”按钮，支持把 `${变量名}` 插入右侧指令输入框当前光标位置，并补齐中英日三套界面文案 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/AddEditQuickCommandForm.vue:37-58,430-458,526-566; packages/frontend/src/locales/zh-CN.json:1472-1475; packages/frontend/src/locales/en-US.json:1468-1471; packages/frontend/src/locales/ja-JP.json:840-843
 - **[frontend]**: 修正快捷指令编辑弹窗变量管理布局，将自定义变量和动态变量拆成独立滚动区，并统一保存/执行时的变量归集逻辑，避免自定义变量卡片被挤压导致无法填写和保存 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/AddEditQuickCommandForm.vue:14-81,200-209,324-331,373-386,460-546

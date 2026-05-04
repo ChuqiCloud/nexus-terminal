@@ -34,13 +34,24 @@
                   rows="2"
                   class="qc-variable-value-input w-full px-3 py-1.5 border border-border/50 rounded-md bg-input text-foreground text-xs resize-y shadow-sm focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary"
                 ></textarea>
-                <button
-                  type="button"
-                  @click="deleteVariable(variable.id)"
-                  class="w-full py-1 px-3 text-xs text-error hover:bg-error/10 border border-error/50 rounded-md transition-colors duration-150"
-                >
-                  {{ t('common.delete', '删除') }}
-                </button>
+                <div class="qc-variable-actions">
+                  <button
+                    type="button"
+                    @click="insertCustomVariable(variable)"
+                    :disabled="!variable.name.trim()"
+                    class="qc-variable-action qc-variable-action--insert"
+                  >
+                    <i class="fas fa-plus"></i>
+                    <span>{{ t('quickCommands.form.insertVariable', '添加到指令') }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    @click="deleteVariable(variable.id)"
+                    class="qc-variable-action qc-variable-action--delete"
+                  >
+                    {{ t('common.delete', '删除') }}
+                  </button>
+                </div>
               </div>
             </div>
             <button type="button" @click="addVariable" class="qc-add-variable-button mt-3 w-full py-2 px-4 border border-primary/50 text-primary text-sm rounded-md hover:bg-primary/10 transition-colors duration-150">
@@ -374,12 +385,14 @@ const deleteVariable = (variableId: string) => {
 };
 
 const buildVariablesToSave = (): Record<string, string> | undefined => {
-  return localVariables.value.reduce((acc, curr) => {
+  const variables = localVariables.value.reduce((acc, curr) => {
     if (curr.name.trim()) {
       acc[curr.name.trim()] = curr.value;
     }
     return acc;
   }, {} as Record<string, string>);
+
+  return Object.keys(variables).length > 0 ? variables : undefined;
 };
 
 const collectCurrentVariables = () => {
@@ -414,21 +427,34 @@ const getActiveSessionIdOrNotify = () => {
   return activeSessionId;
 };
 
-const insertDynamicVariable = async (placeholderValue: string) => {
+const insertCommandText = async (text: string) => {
   const textarea = commandTextareaRef.value;
   if (!textarea) {
-    formData.command += placeholderValue;
+    formData.command += text;
     return;
   }
 
   const selectionStart = textarea.selectionStart ?? formData.command.length;
   const selectionEnd = textarea.selectionEnd ?? formData.command.length;
-  formData.command = `${formData.command.slice(0, selectionStart)}${placeholderValue}${formData.command.slice(selectionEnd)}`;
+  formData.command = `${formData.command.slice(0, selectionStart)}${text}${formData.command.slice(selectionEnd)}`;
 
   await nextTick();
   textarea.focus();
-  const nextCursorPosition = selectionStart + placeholderValue.length;
+  const nextCursorPosition = selectionStart + text.length;
   textarea.setSelectionRange(nextCursorPosition, nextCursorPosition);
+};
+
+const insertCustomVariable = async (variable: LocalVariable) => {
+  const variableName = variable.name.trim();
+  if (!variableName) {
+    return;
+  }
+
+  await insertCommandText(`\${${variableName}}`);
+};
+
+const insertDynamicVariable = async (placeholderValue: string) => {
+  await insertCommandText(placeholderValue);
 };
 
 // 使用当前变量执行命令
@@ -495,6 +521,48 @@ const handleExecute = async () => {
 
 .qc-variable-value-input {
   min-height: 54px;
+}
+
+.qc-variable-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+}
+
+.qc-variable-action {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.qc-variable-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.qc-variable-action--insert {
+  border: 1px solid color-mix(in srgb, var(--color-primary, #76b900) 55%, transparent);
+  color: var(--color-primary, #76b900);
+}
+
+.qc-variable-action--insert:not(:disabled):hover {
+  background: color-mix(in srgb, var(--color-primary, #76b900) 12%, transparent);
+}
+
+.qc-variable-action--delete {
+  border: 1px solid color-mix(in srgb, var(--color-error, #e52020) 55%, transparent);
+  color: var(--color-error, #e52020);
+}
+
+.qc-variable-action--delete:hover {
+  background: color-mix(in srgb, var(--color-error, #e52020) 12%, transparent);
 }
 
 .qc-add-variable-button {
