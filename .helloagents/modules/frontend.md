@@ -86,3 +86,8 @@
 **行为**: `QuickCommandsView.vue` 现已支持拖动已标记分组、标签组内命令，以及关闭标签展示后的扁平命令列表；拖拽完成后会通过 `quickCommands.store.ts` 与 `quickCommandTags.store.ts` 分别调用 `/api/v1/quick-command-tags/reorder`、`/api/v1/quick-commands/reorder` 和 `/api/v1/quick-commands/reorder-by-tag` 回写顺序。当前在开启标签分组且未搜索时，还允许把命令从一个已标记分组拖到另一个已标记分组内，或把“未标记”命令直接拖入目标标签组；前端会先静默调用 `updateQuickCommand(...)` 调整 `tagIds`，再调用 `/api/v1/quick-commands/reorder-by-tag` 固定目标组落点顺序。列表排序模式同步扩展为 `manual / name / last_used`，其中拖拽结果会自动落回 `manual` 视图承接；当前仍禁止把已标记命令拖入“未标记”分组，避免把“移动分组”误解释为隐式清空标签。  
 **结果**: 快捷指令分组顺序、组内顺序、跨组归类结果和扁平列表顺序在刷新后保持一致，而搜索过滤态继续保持只读展示，避免局部结果重排污染全量顺序。  
 
+### 快捷指令视觉体系
+**条件**: 用户在 Workbench 或快捷指令弹窗中浏览、搜索和操作快捷指令。  
+**行为**: `QuickCommandsView.vue` 当前使用 scoped `qc-*` 样式层呈现快捷指令控制栏、标签组、命令行、操作按钮、空状态和右键菜单，布局密度对齐 `StatusMonitor.vue` 的 `sm-shell` / `sm-section` 监控面板风格；深色主题采用 NVIDIA 黑底、灰阶文本和 `#76b900` 交互强调，浅色主题采用 Apple 浅灰背景、近黑文本和 `#0071e3` 交互强调。`QuickCommandsModal.vue` 也同步改为薄边界、压缩标题和同色内容区域，避免在工作区内形成孤立卡片感。  
+**结果**: 快捷指令面板与右侧服务器状态监控形成统一的紧凑工具面板视觉，同时保留搜索、排序、紧凑模式、标签编辑、展开、拖拽、复制、编辑、删除、双击执行和右键菜单等既有交互。
+

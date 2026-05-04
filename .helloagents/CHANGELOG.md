@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- **[frontend]**: 将快捷指令列表和弹窗改为与服务器状态监控一致的紧凑面板布局，并按深色 NVIDIA / 浅色 Apple 设计文档区分主题配色 — by yinjianm
+  - 方案: [202605041950_quick-commands-panel-status-monitor-theme](archive/2026-05/202605041950_quick-commands-panel-status-monitor-theme/)
+
 - **[frontend]**: 将 SSH 终端 `%` 运行中提示从单布尔派生升级为显式 `commandRuntimePhase` 状态机，并为极短命令补上最短可见窗口，避免标签提示一闪而过几乎不可感知 — by yinjianm
   - 方案: [202604210531_ssh-terminal-runtime-state-machine](archive/2026-04/202604210531_ssh-terminal-runtime-state-machine/)
 
@@ -122,6 +125,9 @@
   - 方案: [202603250614_terminal-ansi-color-effects](archive/2026-03/202603250614_terminal-ansi-color-effects/)
 
 ### 快速修改
+- **[frontend]**: 为命令输入框补充上下方向键历史命令导航，支持按 ↑ 回填更早命令、按 ↓ 返回更新命令并恢复未发送草稿 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/CommandInputBar.vue
 - **[frontend]**: 修正状态监控网络模块的上下布局分配，让历史图区按内容自适应、统计表区拿剩余空间并在极限高度下内部滚动，避免下半部分被直接裁切 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/StatusMonitor.vue, packages/frontend/src/components/StatusMonitorNetworkHistoryChart.vue

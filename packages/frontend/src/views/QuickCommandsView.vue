@@ -1,9 +1,7 @@
  <template>
-  <div class="flex flex-col h-full overflow-hidden bg-background">
-    <!-- Container for controls and list -->
-    <div class="flex flex-col flex-grow overflow-hidden bg-background">
-      <!-- Controls Area -->
-      <div class="flex items-center p-2  flex-shrink-0 gap-2 bg-background"> <!-- Reduced padding p-3 to p-2 -->
+  <div class="qc-view">
+    <div class="qc-shell">
+      <div class="qc-toolbar">
         <input
           type="text"
           :placeholder="$t('quickCommands.searchPlaceholder', '搜索名称或指令...')"
@@ -13,60 +11,56 @@
           @keydown="handleSearchInputKeydown"
           @blur="handleSearchInputBlur"
           ref="searchInputRef"
-          class="flex-grow min-w-0 px-4 py-1.5 border border-border/50 rounded-lg bg-input text-foreground text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition duration-150 ease-in-out"
+          class="qc-search-input"
         />
-        <!-- Sort Button -->
-        <button @click="toggleSortBy" class="w-8 h-8 border border-border/50 rounded-lg text-text-secondary hover:bg-border hover:text-foreground transition-colors duration-150 flex-shrink-0 flex items-center justify-center" :title="sortButtonTitle">
-          <i :class="[sortButtonIcon, 'text-base']"></i>
+
+        <button @click="toggleSortBy" class="qc-icon-btn" :title="sortButtonTitle">
+          <i :class="sortButtonIcon"></i>
         </button>
-        <!-- Compact Mode Toggle Button -->
+
         <button @click="toggleCompactMode"
-                class="w-8 h-8 border border-border/50 rounded-lg text-text-secondary hover:bg-border hover:text-foreground transition-colors duration-150 flex-shrink-0 flex items-center justify-center"
-                :class="{ 'bg-primary/20 text-primary': isCompactMode }">
-          <i :class="['fas', isCompactMode ? 'fa-compress-alt' : 'fa-expand-alt', 'text-base']"></i>
+                class="qc-icon-btn"
+                :class="{ 'qc-icon-btn--active': isCompactMode }">
+          <i :class="['fas', isCompactMode ? 'fa-compress-alt' : 'fa-expand-alt']"></i>
         </button>
-        <!-- Add Button -->
-        <button @click="openAddForm" class="w-8 h-8 bg-button text-button-text border-none rounded-lg text-sm font-semibold cursor-pointer shadow-md transition-colors duration-200 ease-in-out hover:bg-button-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary flex-shrink-0 flex items-center justify-center" :title="$t('quickCommands.add', '添加快捷指令')">
-          <i class="fas fa-plus text-base"></i>
+
+        <button @click="openAddForm" class="qc-icon-btn qc-icon-btn--primary" :title="$t('quickCommands.add', '添加快捷指令')">
+          <i class="fas fa-plus"></i>
         </button>
       </div>
-      <!-- List Area -->
-      <div class="flex-grow overflow-y-auto p-2">
-        <!-- Loading State -->
-        <div v-if="isLoading && quickCommandsStore.quickCommandsList.length === 0" class="p-6 text-center text-text-secondary text-sm flex flex-col items-center justify-center h-full">
-            <i class="fas fa-spinner fa-spin text-xl mb-2"></i>
-            <p>{{ t('common.loading', '加载中...') }}</p>
+
+      <div class="qc-list-area">
+        <div v-if="isLoading && quickCommandsStore.quickCommandsList.length === 0" class="qc-state">
+            <i class="fas fa-spinner fa-spin qc-state__icon"></i>
+            <p class="qc-state__text">{{ t('common.loading', '加载中...') }}</p>
         </div>
-        <!-- Empty State (No commands at all) -->
-        <div v-else-if="!isLoading && quickCommandsStore.quickCommandsList.length === 0" class="p-6 text-center text-text-secondary text-sm flex flex-col items-center justify-center h-full">
-            <i class="fas fa-bolt text-xl mb-2"></i>
-            <p class="mb-3">{{ $t('quickCommands.empty', '没有快捷指令。') }}</p>
-            <button @click="openAddForm" class="px-4 py-2 bg-button text-button-text border-none rounded-lg text-sm font-semibold cursor-pointer shadow-md transition-colors duration-200 ease-in-out hover:bg-button-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+
+        <div v-else-if="!isLoading && quickCommandsStore.quickCommandsList.length === 0" class="qc-state">
+            <i class="fas fa-bolt qc-state__icon"></i>
+            <p class="qc-state__text">{{ $t('quickCommands.empty', '没有快捷指令。') }}</p>
+            <button @click="openAddForm" class="qc-state__action">
              {{ $t('quickCommands.addFirst', '创建第一个快捷指令') }}
            </button>
        </div>
-        <!-- No Results State (Commands exist, but filter yields no results) -->
-        <div v-else-if="!isLoading && ((showQuickCommandTagsBoolean && filteredAndGroupedCommands.length === 0) || (!showQuickCommandTagsBoolean && flatFilteredCommands.length === 0)) && searchTerm" class="p-6 text-center text-text-secondary text-sm flex flex-col items-center justify-center h-full">
-            <i class="fas fa-search text-xl mb-2"></i>
-            <p>{{ t('quickCommands.noResults', '没有找到匹配的指令') }} "{{ searchTerm }}"</p>
+
+        <div v-else-if="!isLoading && ((showQuickCommandTagsBoolean && filteredAndGroupedCommands.length === 0) || (!showQuickCommandTagsBoolean && flatFilteredCommands.length === 0)) && searchTerm" class="qc-state">
+            <i class="fas fa-search qc-state__icon"></i>
+            <p class="qc-state__text">{{ t('quickCommands.noResults', '没有找到匹配的指令') }} "{{ searchTerm }}"</p>
         </div>
 
-       <!-- Command List (Grouped or Flat) -->
        <div
         v-else
-        class="list-none p-0 m-0 outline-none"
+        class="qc-command-list"
         ref="commandListContainerRef"
         tabindex="0"
         @wheel.ctrl.prevent="handleWheel"
         :style="{ '--qc-row-size-multiplier': quickCommandRowSizeMultiplier }"
         @keydown="handleSearchInputKeydown"
        >
-            <!-- Grouped View -->
             <div v-if="showQuickCommandTagsBoolean">
-                <div v-for="groupData in filteredAndGroupedCommands" :key="groupData.groupName" class="mb-1 last:mb-0">
-                    <!-- Group Header - Modified for inline editing -->
+                <div v-for="groupData in filteredAndGroupedCommands" :key="groupData.groupName" class="qc-group">
                     <div
-                        class="group font-semibold flex items-center text-foreground rounded-md hover:bg-header/80 transition-colors duration-150"
+                        class="qc-group__header"
                         :style="{ padding: isCompactMode ? `calc(0.25rem * var(--qc-row-size-multiplier)) calc(0.75rem * var(--qc-row-size-multiplier))` : `calc(0.5rem * var(--qc-row-size-multiplier)) calc(0.75rem * var(--qc-row-size-multiplier))` }"
                         :draggable="groupData.tagId !== null && !dragDisabledBySearch"
                         :class="{
@@ -81,54 +75,50 @@
                         @dragend="resetDragState"
                     >
                         <i
-                            :class="['fas', expandedGroups[groupData.groupName] ? 'fa-chevron-down' : 'fa-chevron-right', 'mr-2 w-4 text-center text-text-secondary group-hover:text-foreground transition-transform duration-200 ease-in-out', {'transform rotate-0': !expandedGroups[groupData.groupName]}]"
+                            :class="['fas', expandedGroups[groupData.groupName] ? 'fa-chevron-down' : 'fa-chevron-right', 'qc-group__chevron', {'transform rotate-0': !expandedGroups[groupData.groupName]}]"
                             :style="{ fontSize: `calc(0.875em * max(0.85, var(--qc-row-size-multiplier) * 0.6 + 0.4))` }"
                             @click.stop="toggleGroup(groupData.groupName)"
-                            class="cursor-pointer flex-shrink-0"
                         ></i>
-                        <!-- Editing State -->
+
                         <input
                             v-if="editingTagId === (groupData.tagId === null ? 'untagged' : groupData.tagId)"
                             :key="groupData.tagId === null ? 'untagged-input' : `tag-input-${groupData.tagId}`"
                             :ref="(el) => setTagInputRef(el, groupData.tagId === null ? 'untagged' : groupData.tagId)"
                             type="text"
                             v-model="editedTagName"
-                            class="bg-input border border-primary rounded px-1 py-0 w-full"
+                            class="qc-tag-input"
                             :style="{ fontSize: `calc(0.875em * max(0.85, var(--qc-row-size-multiplier) * 0.6 + 0.4))` }"
                             @blur="finishEditingTag"
                             @keydown.enter.prevent="finishEditingTag"
                             @keydown.esc.prevent="cancelEditingTag"
                             @click.stop
                         />
-                        <!-- Display State -->
+
                         <span
                             v-else
-                            class="inline-block overflow-hidden text-ellipsis whitespace-nowrap"
+                            class="qc-group__name"
                             :style="{ fontSize: `calc(0.875em * max(0.85, var(--qc-row-size-multiplier) * 0.6 + 0.4))` }"
-                            :class="{ 'cursor-pointer hover:underline': true }"
                             :title="t('quickCommands.tags.clickToEditTag', '点击编辑标签')"
                             @click.stop="startEditingTag(groupData.tagId, groupData.groupName)"
                         >
                             {{ groupData.groupName }}
                         </span>
-                        <!-- Optional: Add count? -->
-                        <!-- <span v-if="editingTagId !== (groupData.tagId === null ? 'untagged' : groupData.tagId)" class="ml-auto text-xs text-text-secondary pl-2">({{ groupData.commands.length }})</span> -->
                     </div>
-                    <!-- Command Items List (only show if expanded) -->
-                    <ul v-show="quickCommandsStore.expandedGroups[groupData.groupName]" class="list-none p-0 m-0 pl-3">
+
+                    <ul v-show="quickCommandsStore.expandedGroups[groupData.groupName]" class="qc-group__list">
                         <li
                             v-for="(cmd) in groupData.commands"
                             :key="cmd.id"
                             :data-command-id="cmd.id"
                             :title="cmd.command"
-                            class="group flex justify-between items-center mb-1 cursor-pointer rounded-md hover:bg-primary/10 transition-colors duration-150"
+                            class="qc-command-row group"
                             :style="{ padding: isCompactMode ? `calc(0.1rem * var(--qc-row-size-multiplier)) calc(0.75rem * var(--qc-row-size-multiplier))` : `calc(0.625rem * var(--qc-row-size-multiplier)) calc(0.75rem * var(--qc-row-size-multiplier))` }"
                             :draggable="!dragDisabledBySearch"
                             :class="{
-                                'bg-primary/20 font-medium': isCommandSelected(cmd.id),
+                                'qc-command-row--selected': isCommandSelected(cmd.id),
                                 'cursor-grab': !dragDisabledBySearch,
                                 'qc-drop-target': isCommandDropTarget(cmd.id, groupData.tagId),
-                                'opacity-70': isDraggingCommand(cmd.id, groupData.tagId),
+                                'qc-command-row--dragging': isDraggingCommand(cmd.id, groupData.tagId),
                             }"
                             @click="selectCommand(cmd.id)"
                             @dblclick="executeCommand(cmd)"
@@ -138,33 +128,32 @@
                             @drop.prevent="handleCommandDrop(cmd.id, groupData.tagId)"
                             @dragend="resetDragState"
                         >
-                            <!-- Command Info -->
-                            <div class="flex flex-col overflow-hidden mr-2 flex-grow">
+                            <div class="qc-command__content">
                                 <span v-if="cmd.name"
-                                      class="font-medium truncate text-foreground"
+                                      class="qc-command__name"
                                       :class="{'mb-0.5': !isCompactMode, 'leading-tight': isCompactMode}"
                                       :style="{ fontSize: isCompactMode ? `calc(0.8em * max(0.8, var(--qc-row-size-multiplier) * 0.5 + 0.5))` : `calc(0.875em * max(0.85, var(--qc-row-size-multiplier) * 0.6 + 0.4))` }">{{ cmd.name }}</span>
                                 <span v-if="!isCompactMode && cmd.command"
-                                      class="truncate font-mono"
-                                      :class="{ 'text-sm': !cmd.name, 'text-text-secondary': true }"
+                                      class="qc-command__text"
+                                      :class="{ 'qc-command__text--solo': !cmd.name }"
                                       :style="{ fontSize: `calc(0.75em * max(0.85, var(--qc-row-size-multiplier) * 0.6 + 0.4))` }">{{ cmd.command }}</span>
                                 <span v-else-if="isCompactMode && !cmd.name && cmd.command"
-                                      class="truncate font-mono text-xs text-text-secondary/70 leading-tight"
+                                      class="qc-command__text qc-command__text--compact"
                                       :style="{ fontSize: `calc(0.65em * max(0.8, var(--qc-row-size-multiplier) * 0.5 + 0.5))` }">{{ cmd.command }}</span>
                             </div>
-                            <!-- Actions -->
-                            <div class="flex items-center flex-shrink-0 transition-opacity duration-150"
+
+                            <div class="qc-command__actions"
                                  :class="{
-                                    'opacity-0 group-hover:opacity-100 focus-within:opacity-100': isCompactMode,
-                                    'opacity-100': !isCompactMode
+                                    'qc-command__actions--compact': isCompactMode,
+                                    'qc-command__actions--visible': !isCompactMode
                                  }">
-                                <button @click.stop="copyCommand(cmd.command)" :class="isCompactMode ? 'p-1' : 'p-1.5'" class="rounded hover:bg-border transition-colors duration-150 text-text-secondary hover:text-primary" :title="$t('commandHistory.copy', '复制')">
+                                <button @click.stop="copyCommand(cmd.command)" class="qc-action-btn" :title="$t('commandHistory.copy', '复制')">
                                     <i class="fas fa-copy" :style="{ fontSize: isCompactMode ? `calc(0.8em * max(0.8, var(--qc-row-size-multiplier) * 0.5 + 0.5))` : `calc(0.875em * max(0.85, var(--qc-row-size-multiplier) * 0.6 + 0.4))` }"></i>
                                 </button>
-                                <button @click.stop="openEditForm(cmd)" :class="isCompactMode ? 'p-1' : 'p-1.5'" class="rounded hover:bg-border transition-colors duration-150 text-text-secondary hover:text-primary" :title="$t('common.edit', '编辑')">
+                                <button @click.stop="openEditForm(cmd)" class="qc-action-btn" :title="$t('common.edit', '编辑')">
                                     <i class="fas fa-edit" :style="{ fontSize: isCompactMode ? `calc(0.8em * max(0.8, var(--qc-row-size-multiplier) * 0.5 + 0.5))` : `calc(0.875em * max(0.85, var(--qc-row-size-multiplier) * 0.6 + 0.4))` }"></i>
                                 </button>
-                                <button @click.stop="confirmDelete(cmd)" :class="isCompactMode ? 'p-1' : 'p-1.5'" class="rounded hover:bg-border transition-colors duration-150 text-text-secondary hover:text-error" :title="$t('common.delete', '删除')">
+                                <button @click.stop="confirmDelete(cmd)" class="qc-action-btn qc-action-btn--danger" :title="$t('common.delete', '删除')">
                                     <i class="fas fa-times" :style="{ fontSize: isCompactMode ? `calc(0.8em * max(0.8, var(--qc-row-size-multiplier) * 0.5 + 0.5))` : `calc(0.875em * max(0.85, var(--qc-row-size-multiplier) * 0.6 + 0.4))` }"></i>
                                 </button>
                             </div>
@@ -172,21 +161,21 @@
                     </ul>
                 </div>
             </div>
-            <!-- Flat View -->
-            <ul v-else class="list-none p-0 m-0">
+
+            <ul v-else class="qc-flat-list">
                 <li
                     v-for="(cmd) in flatFilteredCommands"
                     :key="cmd.id"
                     :data-command-id="cmd.id"
                     :title="cmd.command"
-                    class="group flex justify-between items-center mb-1 cursor-pointer rounded-md hover:bg-primary/10 transition-colors duration-150"
+                    class="qc-command-row group"
                     :style="{ padding: isCompactMode ? `calc(0.1rem * var(--qc-row-size-multiplier)) calc(0.75rem * var(--qc-row-size-multiplier))` : `calc(0.625rem * var(--qc-row-size-multiplier)) calc(0.75rem * var(--qc-row-size-multiplier))` }"
                     :draggable="!dragDisabledBySearch"
                     :class="{
-                        'bg-primary/20 font-medium': isCommandSelected(cmd.id),
+                        'qc-command-row--selected': isCommandSelected(cmd.id),
                         'cursor-grab': !dragDisabledBySearch,
                         'qc-drop-target': isCommandDropTarget(cmd.id, null),
-                        'opacity-70': isDraggingCommand(cmd.id, null),
+                        'qc-command-row--dragging': isDraggingCommand(cmd.id, null),
                     }"
                     @click="selectCommand(cmd.id)"
                     @dblclick="executeCommand(cmd)"
@@ -196,33 +185,32 @@
                     @drop.prevent="handleCommandDrop(cmd.id, null)"
                     @dragend="resetDragState"
                 >
-                    <!-- Command Info -->
-                    <div class="flex flex-col overflow-hidden mr-2 flex-grow">
+                    <div class="qc-command__content">
                         <span v-if="cmd.name"
-                              class="font-medium truncate text-foreground"
+                              class="qc-command__name"
                               :class="{'mb-0.5': !isCompactMode, 'leading-tight': isCompactMode}"
                               :style="{ fontSize: isCompactMode ? `calc(0.8em * max(0.8, var(--qc-row-size-multiplier) * 0.5 + 0.5))` : `calc(0.875em * max(0.85, var(--qc-row-size-multiplier) * 0.6 + 0.4))` }">{{ cmd.name }}</span>
                         <span v-if="!isCompactMode && cmd.command"
-                              class="truncate font-mono"
-                              :class="{ 'text-sm': !cmd.name, 'text-text-secondary': true }"
+                              class="qc-command__text"
+                              :class="{ 'qc-command__text--solo': !cmd.name }"
                               :style="{ fontSize: `calc(0.75em * max(0.85, var(--qc-row-size-multiplier) * 0.6 + 0.4))` }">{{ cmd.command }}</span>
                         <span v-else-if="isCompactMode && !cmd.name && cmd.command"
-                              class="truncate font-mono text-xs text-text-secondary/70 leading-tight"
+                              class="qc-command__text qc-command__text--compact"
                               :style="{ fontSize: `calc(0.65em * max(0.8, var(--qc-row-size-multiplier) * 0.5 + 0.5))` }">{{ cmd.command }}</span>
                     </div>
-                    <!-- Actions -->
-                    <div class="flex items-center flex-shrink-0 transition-opacity duration-150"
+
+                    <div class="qc-command__actions"
                          :class="{
-                            'opacity-0 group-hover:opacity-100 focus-within:opacity-100': isCompactMode,
-                            'opacity-100': !isCompactMode
+                            'qc-command__actions--compact': isCompactMode,
+                            'qc-command__actions--visible': !isCompactMode
                          }">
-                        <button @click.stop="copyCommand(cmd.command)" :class="isCompactMode ? 'p-1' : 'p-1.5'" class="rounded hover:bg-border transition-colors duration-150 text-text-secondary hover:text-primary" :title="$t('commandHistory.copy', '复制')">
+                        <button @click.stop="copyCommand(cmd.command)" class="qc-action-btn" :title="$t('commandHistory.copy', '复制')">
                             <i class="fas fa-copy" :style="{ fontSize: isCompactMode ? `calc(0.8em * max(0.8, var(--qc-row-size-multiplier) * 0.5 + 0.5))` : `calc(0.875em * max(0.85, var(--qc-row-size-multiplier) * 0.6 + 0.4))` }"></i>
                         </button>
-                        <button @click.stop="openEditForm(cmd)" :class="isCompactMode ? 'p-1' : 'p-1.5'" class="rounded hover:bg-border transition-colors duration-150 text-text-secondary hover:text-primary" :title="$t('common.edit', '编辑')">
+                        <button @click.stop="openEditForm(cmd)" class="qc-action-btn" :title="$t('common.edit', '编辑')">
                             <i class="fas fa-edit" :style="{ fontSize: isCompactMode ? `calc(0.8em * max(0.8, var(--qc-row-size-multiplier) * 0.5 + 0.5))` : `calc(0.875em * max(0.85, var(--qc-row-size-multiplier) * 0.6 + 0.4))` }"></i>
                         </button>
-                        <button @click.stop="confirmDelete(cmd)" :class="isCompactMode ? 'p-1' : 'p-1.5'" class="rounded hover:bg-border transition-colors duration-150 text-text-secondary hover:text-error" :title="$t('common.delete', '删除')">
+                        <button @click.stop="confirmDelete(cmd)" class="qc-action-btn qc-action-btn--danger" :title="$t('common.delete', '删除')">
                             <i class="fas fa-times" :style="{ fontSize: isCompactMode ? `calc(0.8em * max(0.8, var(--qc-row-size-multiplier) * 0.5 + 0.5))` : `calc(0.875em * max(0.85, var(--qc-row-size-multiplier) * 0.6 + 0.4))` }"></i>
                         </button>
                     </div>
@@ -232,67 +220,65 @@
       </div>
     </div>
 
-    <!-- 添加/编辑表单模态框 -->
     <AddEditQuickCommandForm
       v-if="isFormVisible"
       :command-to-edit="commandToEdit"
       @close="closeForm"
     />
 
-    <!-- Context Menu for Quick Commands -->
     <div
       v-if="quickCommandContextMenuVisible"
-      class="fixed bg-card text-card-foreground border border-border shadow-xl rounded-lg py-1.5 z-50 min-w-[220px] quick-command-context-menu"
+      class="qc-context-menu quick-command-context-menu"
       :style="{ top: `${quickCommandContextMenuPosition.y}px`, left: `${quickCommandContextMenuPosition.x}px` }"
       @click.stop
     >
-      <ul class="list-none p-0 m-0">
+      <ul class="qc-context-menu__list">
         <li
           v-if="quickCommandContextTargetCommand"
-          class="group px-4 py-1.5 cursor-pointer flex items-center gap-3 text-foreground hover:bg-primary/10 hover:text-primary text-sm transition-colors duration-150 rounded-md mx-1"
+          class="qc-context-menu__item"
           @click="handleQuickCommandMenuAction('runNow', quickCommandContextTargetCommand!)"
         >
-          <i class="fas fa-play-circle w-4 text-center text-text-secondary group-hover:text-primary"></i>
+          <i class="fas fa-play-circle qc-context-menu__icon"></i>
           <span>{{ t('quickCommands.actions.runNow', '立即执行') }}</span>
         </li>
         <li
           v-if="quickCommandContextTargetCommand"
-          class="group px-4 py-1.5 cursor-pointer flex items-center gap-3 text-foreground hover:bg-primary/10 hover:text-primary text-sm transition-colors duration-150 rounded-md mx-1"
+          class="qc-context-menu__item"
           @click="handleQuickCommandMenuAction('pasteToCommandInput', quickCommandContextTargetCommand!)"
         >
-          <i class="fas fa-terminal w-4 text-center text-text-secondary group-hover:text-primary"></i>
+          <i class="fas fa-terminal qc-context-menu__icon"></i>
           <span>{{ t('quickCommands.actions.pasteToCommandInput', '粘贴到命令输入框') }}</span>
         </li>
         <li
           v-if="quickCommandContextTargetCommand"
-          class="group px-4 py-1.5 cursor-pointer flex items-center gap-3 text-foreground hover:bg-primary/10 hover:text-primary text-sm transition-colors duration-150 rounded-md mx-1"
+          class="qc-context-menu__item"
           @click="handleQuickCommandMenuAction('copyCommand', quickCommandContextTargetCommand!)"
         >
-          <i class="fas fa-copy w-4 text-center text-text-secondary group-hover:text-primary"></i>
+          <i class="fas fa-copy qc-context-menu__icon"></i>
           <span>{{ t('quickCommands.actions.copyCommand', '复制命令') }}</span>
         </li>
         <li
           v-if="quickCommandContextTargetCommand"
-          class="group px-4 py-1.5 cursor-pointer flex items-center gap-3 text-foreground hover:bg-primary/10 hover:text-primary text-sm transition-colors duration-150 rounded-md mx-1"
+          class="qc-context-menu__item"
           @click="handleQuickCommandMenuAction('sendToAllSessions', quickCommandContextTargetCommand!)"
         >
-          <i class="fas fa-server w-4 text-center text-text-secondary group-hover:text-primary"></i>
+          <i class="fas fa-server qc-context-menu__icon"></i>
           <span>{{ t('quickCommands.actions.sendToAllSessions', '发送到全部服务器') }}</span>
         </li>
         <li
           v-if="quickCommandContextTargetCommand"
-          class="group px-4 py-1.5 cursor-pointer flex items-center gap-3 text-foreground hover:bg-primary/10 hover:text-primary text-sm transition-colors duration-150 rounded-md mx-1 mt-1 border-t border-border/50 pt-2"
+          class="qc-context-menu__item qc-context-menu__item--separated"
           @click="handleQuickCommandMenuAction('edit', quickCommandContextTargetCommand!)"
         >
-          <i class="fas fa-pen w-4 text-center text-text-secondary group-hover:text-primary"></i>
+          <i class="fas fa-pen qc-context-menu__icon"></i>
           <span>{{ t('quickCommands.actions.edit', '编辑') }}</span>
         </li>
         <li
           v-if="quickCommandContextTargetCommand"
-          class="group px-4 py-1.5 cursor-pointer flex items-center gap-3 text-error hover:bg-error/10 hover:text-error text-sm transition-colors duration-150 rounded-md mx-1"
+          class="qc-context-menu__item qc-context-menu__item--danger"
           @click="handleQuickCommandMenuAction('delete', quickCommandContextTargetCommand!)"
         >
-          <i class="fas fa-trash-alt w-4 text-center text-error"></i>
+          <i class="fas fa-trash-alt qc-context-menu__icon"></i>
           <span>{{ t('quickCommands.actions.delete', '删除') }}</span>
         </li>
       </ul>
@@ -1200,8 +1186,454 @@ const handleQuickCommandMenuAction = async (action: QuickCommandContextAction, c
 </script>
 
 <style scoped>
+.qc-view {
+  --qc-bg: #000000;
+  --qc-surface: #0b0b0b;
+  --qc-surface-muted: #1a1a1a;
+  --qc-border: rgba(94, 94, 94, 0.5);
+  --qc-border-soft: rgba(167, 167, 167, 0.1);
+  --qc-text: #ffffff;
+  --qc-text-muted: #a7a7a7;
+  --qc-text-dim: #757575;
+  --qc-accent: #76b900;
+  --qc-accent-soft: rgba(118, 185, 0, 0.12);
+  --qc-danger: #e52020;
+  --qc-danger-soft: rgba(229, 32, 32, 0.12);
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--qc-bg);
+  color: var(--qc-text);
+  font-family: var(--font-family-sans-serif, Arial, Helvetica, sans-serif);
+}
+
+.qc-shell {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--qc-bg);
+}
+
+.qc-toolbar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--qc-border-soft);
+  background: var(--qc-bg);
+}
+
+.qc-search-input {
+  min-width: 0;
+  height: 32px;
+  flex: 1;
+  border: 1px solid var(--qc-border);
+  border-radius: 2px;
+  background: var(--qc-surface-muted);
+  color: var(--qc-text);
+  padding: 0 11px;
+  font-size: 13px;
+  line-height: 1.4;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.qc-search-input::placeholder {
+  color: var(--qc-text-dim);
+}
+
+.qc-search-input:focus {
+  border-color: var(--qc-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--qc-accent) 24%, transparent);
+  outline: none;
+}
+
+.qc-icon-btn {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--qc-border);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--qc-text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.qc-icon-btn i,
+.qc-icon-btn .fas {
+  color: currentColor;
+  font-size: 13px;
+}
+
+.qc-icon-btn:hover,
+.qc-icon-btn--active {
+  border-color: var(--qc-accent);
+  background: var(--qc-accent-soft);
+  color: var(--qc-accent);
+}
+
+.qc-icon-btn--primary {
+  border-color: var(--qc-accent);
+  background: var(--qc-accent);
+  color: #000000;
+}
+
+.qc-icon-btn--primary:hover {
+  border-color: #1eaedb;
+  background: #1eaedb;
+  color: #ffffff;
+}
+
+.qc-list-area {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  background: var(--qc-bg);
+}
+
+.qc-state {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  color: var(--qc-text-muted);
+}
+
+.qc-state__icon {
+  color: var(--qc-text-dim);
+  font-size: 24px;
+}
+
+.qc-state__text {
+  margin: 0;
+  color: var(--qc-text-muted);
+  font-size: 13px;
+}
+
+.qc-state__action {
+  border: 2px solid var(--qc-accent);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--qc-text);
+  padding: 8px 13px;
+  font-size: 14px;
+  font-weight: 700;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.qc-state__action:hover {
+  border-color: #1eaedb;
+  background: #1eaedb;
+  color: #ffffff;
+}
+
+.qc-command-list {
+  margin: 0;
+  padding: 0;
+  outline: none;
+}
+
+.qc-group {
+  border-bottom: 1px solid var(--qc-border-soft);
+}
+
+.qc-group:last-child {
+  border-bottom: none;
+}
+
+.qc-group__header {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  color: var(--qc-text);
+  font-weight: 700;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.qc-group__header:hover {
+  background: var(--qc-surface-muted);
+}
+
+.qc-group__chevron {
+  width: 16px;
+  flex-shrink: 0;
+  margin-right: 8px;
+  cursor: pointer;
+  color: var(--qc-text-dim);
+  text-align: center;
+  transition: color 0.15s ease, transform 0.2s ease;
+}
+
+.qc-group__header:hover .qc-group__chevron {
+  color: var(--qc-accent);
+}
+
+.qc-group__name {
+  display: inline-block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--qc-text);
+  cursor: pointer;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qc-group__name:hover {
+  color: var(--qc-accent);
+}
+
+.qc-tag-input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--qc-accent);
+  border-radius: 2px;
+  background: var(--qc-surface-muted);
+  color: var(--qc-text);
+  padding: 1px 6px;
+}
+
+.qc-group__list,
+.qc-flat-list,
+.qc-context-menu__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.qc-group__list {
+  padding-left: 12px;
+}
+
+.qc-command-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 32px;
+  border-radius: 2px;
+  cursor: pointer;
+  color: var(--qc-text);
+  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.qc-command-row:hover {
+  background: var(--qc-surface-muted);
+}
+
+.qc-command-row--selected {
+  background: var(--qc-accent-soft);
+  color: var(--qc-text);
+  font-weight: 700;
+  box-shadow: inset 2px 0 0 var(--qc-accent);
+}
+
+.qc-command-row--dragging {
+  opacity: 0.7;
+}
+
+.qc-command__content {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  margin-right: 8px;
+}
+
+.qc-command__name,
+.qc-command__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qc-command__name {
+  color: var(--qc-text);
+  font-weight: 700;
+}
+
+.qc-command__text {
+  color: var(--qc-text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  line-height: 1.25;
+}
+
+.qc-command__text--solo {
+  color: var(--qc-text-muted);
+}
+
+.qc-command__text--compact {
+  color: var(--qc-text-dim);
+}
+
+.qc-command__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  transition: opacity 0.15s ease;
+}
+
+.qc-command__actions--compact {
+  opacity: 0;
+}
+
+.qc-command-row:hover .qc-command__actions--compact,
+.qc-command__actions--compact:focus-within {
+  opacity: 1;
+}
+
+.qc-command__actions--visible {
+  opacity: 1;
+}
+
+.qc-action-btn {
+  display: inline-flex;
+  min-width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--qc-text-muted);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.qc-action-btn i,
+.qc-action-btn .fas {
+  color: currentColor;
+}
+
+.qc-action-btn:hover {
+  background: var(--qc-accent-soft);
+  color: var(--qc-accent);
+}
+
+.qc-action-btn--danger:hover {
+  background: var(--qc-danger-soft);
+  color: var(--qc-danger);
+}
+
 .qc-drop-target {
-  outline: 1px dashed color-mix(in srgb, var(--color-primary, #3b82f6) 72%, transparent);
+  outline: 1px dashed color-mix(in srgb, var(--qc-accent) 72%, transparent);
   outline-offset: -2px;
+}
+
+.qc-context-menu {
+  position: fixed;
+  z-index: 50;
+  min-width: 220px;
+  border: 1px solid var(--qc-border);
+  border-radius: 2px;
+  background: var(--qc-surface-muted);
+  box-shadow: rgba(0, 0, 0, 0.3) 0 0 5px 0;
+  color: var(--qc-text);
+  padding: 6px;
+}
+
+.qc-context-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 2px;
+  color: var(--qc-text);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 10px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.qc-context-menu__item:hover {
+  background: var(--qc-accent-soft);
+  color: var(--qc-accent);
+}
+
+.qc-context-menu__item--separated {
+  margin-top: 6px;
+  border-top: 1px solid var(--qc-border-soft);
+  padding-top: 9px;
+}
+
+.qc-context-menu__item--danger {
+  color: var(--qc-danger);
+}
+
+.qc-context-menu__item--danger:hover {
+  background: var(--qc-danger-soft);
+  color: var(--qc-danger);
+}
+
+.qc-context-menu__icon {
+  width: 16px;
+  color: currentColor;
+  text-align: center;
+}
+
+@media (max-width: 420px) {
+  .qc-toolbar {
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .qc-icon-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .qc-group__list {
+    padding-left: 8px;
+  }
+}
+
+:global(html.light) .qc-view,
+:global(body.light) .qc-view,
+:global([data-theme="light"]) .qc-view {
+  --qc-bg: #f5f5f7;
+  --qc-surface: #ffffff;
+  --qc-surface-muted: #ffffff;
+  --qc-border: rgba(0, 0, 0, 0.12);
+  --qc-border-soft: rgba(0, 0, 0, 0.08);
+  --qc-text: #1d1d1f;
+  --qc-text-muted: rgba(0, 0, 0, 0.58);
+  --qc-text-dim: rgba(0, 0, 0, 0.42);
+  --qc-accent: #0071e3;
+  --qc-accent-soft: rgba(0, 113, 227, 0.1);
+  --qc-danger: #e52020;
+  --qc-danger-soft: rgba(229, 32, 32, 0.1);
+}
+
+:global(html.light) .qc-icon-btn--primary,
+:global(body.light) .qc-icon-btn--primary,
+:global([data-theme="light"]) .qc-icon-btn--primary {
+  color: #ffffff;
+}
+
+:global(html.light) .qc-icon-btn--primary:hover,
+:global(body.light) .qc-icon-btn--primary:hover,
+:global([data-theme="light"]) .qc-icon-btn--primary:hover {
+  border-color: #0066cc;
+  background: #0066cc;
+  color: #ffffff;
+}
+
+:global(html.light) .qc-context-menu,
+:global(body.light) .qc-context-menu,
+:global([data-theme="light"]) .qc-context-menu {
+  background: #ffffff;
+  box-shadow: rgba(0, 0, 0, 0.22) 3px 5px 30px 0;
 }
 </style>

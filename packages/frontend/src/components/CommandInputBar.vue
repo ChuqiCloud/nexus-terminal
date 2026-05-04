@@ -32,7 +32,7 @@ const { commandInputSyncTarget, showPopupFileManagerBoolean, showPopupFileEditor
 const { selectedIndex: quickCommandsSelectedIndex, flatVisibleCommands: quickCommandsFiltered } = storeToRefs(quickCommandsStore);
 const { resetSelection: resetQuickCommandsSelection } = quickCommandsStore;
 // Get reactive state and actions from command history store
-const { selectedIndex: historySelectedIndex, filteredHistory: historyFiltered } = storeToRefs(commandHistoryStore);
+const { selectedIndex: historySelectedIndex, filteredHistory: historyFiltered, historyList } = storeToRefs(commandHistoryStore);
 const { resetSelection: resetHistorySelection } = commandHistoryStore;
 // +++ Get active session ID from session store +++
 const { activeSessionId } = storeToRefs(sessionStore);
@@ -50,6 +50,9 @@ const isSearching = ref(false);
 const searchTerm = ref('');
 const showQuickCommands = ref(false); // +++ Add state for modal visibility +++
 const showSuspendedSshSessionsModal = ref(false); // +++ Add state for suspended SSH sessions modal +++
+const commandHistoryNavigationIndex = ref(-1);
+const commandHistoryDraft = ref('');
+const isApplyingCommandHistoryNavigation = ref(false);
 // *** 移除本地的搜索结果 ref ***
 // const searchResultCount = ref(0);
 // const currentSearchResultIndex = ref(0);
@@ -110,6 +113,7 @@ const sendCommand = () => {
   if (activeSessionId.value) {
     updateSessionCommandInput(activeSessionId.value, '');
   }
+  resetCommandHistoryNavigation();
 };
 
 const toggleSearch = () => {
@@ -145,6 +149,11 @@ watch(searchTerm, (newValue) => {
 
 //  Watch currentSessionCommandInput and sync searchTerm based on settings
 watch(currentSessionCommandInput, (newValue) => { // 监听计算属性
+  if (isApplyingCommandHistoryNavigation.value) {
+    scheduleCommandInputHeightSync();
+    return;
+  }
+
   const target = commandInputSyncTarget.value;
   if (target === 'quickCommands') {
     quickCommandsStore.setSearchTerm(newValue);
@@ -160,10 +169,65 @@ const searchInputRef = ref<HTMLInputElement | null>(null);
 const commandInputRef = ref<HTMLTextAreaElement | null>(null); // Ref for command input
 
 watch(activeSessionId, () => {
+  resetCommandHistoryNavigation();
   scheduleCommandInputHeightSync();
 });
 
 // Removed debug computed property
+
+const resetCommandHistoryNavigation = () => {
+  commandHistoryNavigationIndex.value = -1;
+  commandHistoryDraft.value = '';
+};
+
+const applyCommandHistoryNavigationValue = (command: string) => {
+  isApplyingCommandHistoryNavigation.value = true;
+  currentSessionCommandInput.value = command;
+
+  void nextTick(() => {
+    const textarea = commandInputRef.value;
+    if (textarea) {
+      textarea.focus();
+      textarea.setSelectionRange(command.length, command.length);
+    }
+    isApplyingCommandHistoryNavigation.value = false;
+  });
+};
+
+const navigateCommandHistory = async (direction: 'previous' | 'next') => {
+  if (historyList.value.length === 0 && !commandHistoryStore.isLoading) {
+    await commandHistoryStore.fetchHistory();
+  }
+
+  const history = historyList.value;
+  if (history.length === 0) {
+    resetCommandHistoryNavigation();
+    return;
+  }
+
+  if (commandHistoryNavigationIndex.value === -1) {
+    commandHistoryDraft.value = currentSessionCommandInput.value;
+    if (direction === 'next') {
+      return;
+    }
+    commandHistoryNavigationIndex.value = 0;
+  } else if (direction === 'previous') {
+    commandHistoryNavigationIndex.value = Math.min(commandHistoryNavigationIndex.value + 1, history.length - 1);
+  } else {
+    commandHistoryNavigationIndex.value -= 1;
+    if (commandHistoryNavigationIndex.value < 0) {
+      const draft = commandHistoryDraft.value;
+      resetCommandHistoryNavigation();
+      applyCommandHistoryNavigationValue(draft);
+      return;
+    }
+  }
+
+  const selectedHistory = history[commandHistoryNavigationIndex.value];
+  if (selectedHistory) {
+    applyCommandHistoryNavigationValue(selectedHistory.command);
+  }
+};
 
 const handleCommandInputKeydown = (event: KeyboardEvent) => {
   const isSendShortcut = event.key === 'Enter' && event.ctrlKey && event.shiftKey && !event.altKey && !event.metaKey;
@@ -209,23 +273,11 @@ const handleCommandInputKeydown = (event: KeyboardEvent) => {
       searchInputRef.value?.focus();
     });
   } else if (event.key === 'ArrowUp') {
-    const target = commandInputSyncTarget.value;
-    if (target === 'quickCommands') {
-      event.preventDefault();
-      quickCommandsStore.selectPreviousCommand();
-    } else if (target === 'commandHistory') {
-      event.preventDefault();
-      commandHistoryStore.selectPreviousCommand();
-    }
+    event.preventDefault();
+    void navigateCommandHistory('previous');
   } else if (event.key === 'ArrowDown') {
-    const target = commandInputSyncTarget.value;
-    if (target === 'quickCommands') {
-      event.preventDefault();
-      quickCommandsStore.selectNextCommand();
-    } else if (target === 'commandHistory') {
-      event.preventDefault();
-      commandHistoryStore.selectNextCommand();
-    }
+    event.preventDefault();
+    void navigateCommandHistory('next');
   } else if (event.ctrlKey && event.key === 'c' && currentSessionCommandInput.value === '') { // 检查计算属性的值
     // Handle Ctrl+C when input is empty
     event.preventDefault();
@@ -239,6 +291,7 @@ const handleCommandInputKeydown = (event: KeyboardEvent) => {
    // --- 处理其他按键，取消列表选中状态 ---
    // 检查按下的键是否是普通输入键或删除键等，而不是导航键或修饰键
    if (!['ArrowUp', 'ArrowDown', 'Enter', 'Shift', 'Control', 'Alt', 'Meta', 'Tab', 'Escape'].includes(event.key)) {
+       resetCommandHistoryNavigation();
        const target = commandInputSyncTarget.value;
        if (target === 'quickCommands' && quickCommandsSelectedIndex.value >= 0) {
            resetQuickCommandsSelection();
@@ -247,6 +300,12 @@ const handleCommandInputKeydown = (event: KeyboardEvent) => {
        }
    }
  }
+};
+
+const handleCommandInputInput = () => {
+  if (!isApplyingCommandHistoryNavigation.value) {
+    resetCommandHistoryNavigation();
+  }
 };
 
 //  Handle blur event on command input
@@ -306,6 +365,7 @@ onMounted(() => {
   unregisterCommandInputFocus = focusSwitcherStore.registerFocusAction('commandInput', focusCommandInput);
   unregisterTerminalSearchFocus = focusSwitcherStore.registerFocusAction('terminalSearch', focusSearchInput);
   scheduleCommandInputHeightSync();
+  void commandHistoryStore.fetchHistory();
 });
 
 onBeforeUnmount(() => {
@@ -410,6 +470,7 @@ const handleQuickCommandExecute = (command: string) => {
         ref="commandInputRef"
         data-focus-id="commandInput"
         @keydown="handleCommandInputKeydown"
+        @input="handleCommandInputInput"
         @blur="handleCommandInputBlur"
       />
 

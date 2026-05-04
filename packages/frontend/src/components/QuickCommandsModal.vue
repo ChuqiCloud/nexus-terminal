@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { defineProps, defineEmits, watch, onMounted, onBeforeUnmount } from 'vue';
-import QuickCommandsView from '../views/QuickCommandsView.vue'; // 导入视图
-import { useWorkspaceEventSubscriber } from '../composables/workspaceEvents'; // 导入事件订阅器
+import { defineProps, defineEmits, watch, onMounted, onUnmounted } from 'vue';
+import QuickCommandsView from '../views/QuickCommandsView.vue';
+import { useWorkspaceEventSubscriber } from '../composables/workspaceEvents';
 
 const props = defineProps<{
   isVisible: boolean;
@@ -16,13 +16,11 @@ const closeModal = () => {
   emit('close');
 };
 
-// 处理从 QuickCommandsView 传来的事件
 const handleCommandExecute = (command: string) => {
   emit('execute-command', command);
-  closeModal(); // 选择指令后自动关闭
+  closeModal();
 };
 
-// Optional: Add keyboard listener to close on Esc key
 const handleKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Escape') {
     closeModal();
@@ -37,37 +35,34 @@ watch(() => props.isVisible, (newValue) => {
   }
 });
 
-const onWorkspaceEvent = useWorkspaceEventSubscriber(); // 获取事件订阅器
+const onWorkspaceEvent = useWorkspaceEventSubscriber();
 
-// Clean up listener on unmount (though v-if usually handles this)
-import { onUnmounted } from 'vue';
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown);
 });
 
 onMounted(() => {
-  // 监听 terminal:sendCommand 事件以关闭模态框
   onWorkspaceEvent('terminal:sendCommand', () => {
     console.log('[QuickCommandsModal] Received terminal:sendCommand event, closing modal.');
     closeModal();
   });
 });
-
 </script>
 
 <template>
-  <div v-if="isVisible" class="fixed inset-0 bg-overlay flex justify-center items-center z-50 p-4" @click.self="closeModal">
-    <div class="bg-background text-foreground p-4 rounded-lg shadow-xl border border-border w-full max-w-lg max-h-[85vh] flex flex-col relative">
-      <!-- Close Button -->
-      <button class="absolute top-2 right-2 p-1 text-text-secondary hover:text-foreground z-10" @click="closeModal" title="关闭">
-         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-         </svg>
-      </button>
-      <!-- Title -->
-      <h3 class="text-lg font-semibold text-center mb-3 flex-shrink-0">快捷指令</h3>
-      <!-- Quick Commands View Embedded -->
-      <div class="flex-grow overflow-y-auto border border-border rounded">
+  <div v-if="isVisible" class="qcm-overlay" @click.self="closeModal">
+    <div class="qcm-panel" role="dialog" aria-modal="true" aria-labelledby="quick-commands-title">
+      <header class="qcm-header">
+        <div class="qcm-header__left">
+          <i class="fas fa-bolt qcm-header__icon"></i>
+          <h3 id="quick-commands-title" class="qcm-title">快捷指令</h3>
+        </div>
+        <button class="qcm-close" @click="closeModal" title="关闭" type="button">
+          <i class="fas fa-times"></i>
+        </button>
+      </header>
+
+      <div class="qcm-body">
         <QuickCommandsView @execute-command="handleCommandExecute" />
       </div>
     </div>
@@ -75,8 +70,134 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* Add any specific modal styles if needed */
-.bg-overlay {
-  background-color: rgba(0, 0, 0, 0.6);
+.qcm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.78);
+}
+
+.qcm-panel {
+  --qcm-bg: #000000;
+  --qcm-border: rgba(94, 94, 94, 0.55);
+  --qcm-border-soft: rgba(167, 167, 167, 0.1);
+  --qcm-text: #ffffff;
+  --qcm-muted: #a7a7a7;
+  --qcm-dim: #757575;
+  --qcm-accent: #76b900;
+  --qcm-accent-soft: rgba(118, 185, 0, 0.12);
+  display: flex;
+  width: min(100%, 560px);
+  max-height: 85vh;
+  min-height: min(640px, 85vh);
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--qcm-border);
+  border-radius: 2px;
+  background: var(--qcm-bg);
+  box-shadow: rgba(0, 0, 0, 0.3) 0 0 5px 0;
+  color: var(--qcm-text);
+}
+
+.qcm-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--qcm-border-soft);
+  background: var(--qcm-bg);
+}
+
+.qcm-header__left {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.qcm-header__icon {
+  color: var(--qcm-accent);
+  font-size: 12px;
+}
+
+.qcm-title {
+  margin: 0;
+  overflow: hidden;
+  color: var(--qcm-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qcm-close {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--qcm-dim);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.qcm-close:hover {
+  border-color: var(--qcm-accent);
+  background: var(--qcm-accent-soft);
+  color: var(--qcm-accent);
+}
+
+.qcm-close i,
+.qcm-close .fas {
+  color: currentColor;
+  font-size: 12px;
+}
+
+.qcm-body {
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+:global(html.light) .qcm-overlay,
+:global(body.light) .qcm-overlay,
+:global([data-theme="light"]) .qcm-overlay {
+  background: rgba(0, 0, 0, 0.48);
+}
+
+:global(html.light) .qcm-panel,
+:global(body.light) .qcm-panel,
+:global([data-theme="light"]) .qcm-panel {
+  --qcm-bg: #f5f5f7;
+  --qcm-border: rgba(0, 0, 0, 0.12);
+  --qcm-border-soft: rgba(0, 0, 0, 0.08);
+  --qcm-text: #1d1d1f;
+  --qcm-muted: rgba(0, 0, 0, 0.8);
+  --qcm-dim: rgba(0, 0, 0, 0.48);
+  --qcm-accent: #0071e3;
+  --qcm-accent-soft: rgba(0, 113, 227, 0.1);
+  box-shadow: rgba(0, 0, 0, 0.22) 3px 5px 30px 0;
+}
+
+@media (max-width: 640px) {
+  .qcm-overlay {
+    padding: 8px;
+  }
+
+  .qcm-panel {
+    min-height: 70vh;
+    max-height: calc(100vh - 16px);
+  }
 }
 </style>
