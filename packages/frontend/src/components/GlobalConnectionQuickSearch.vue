@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import type { ConnectionInfo } from '../stores/connections.store';
 import { useTagsStore } from '../stores/tags.store';
+import type { ConnectionSearchSortBy } from '../utils/connectionSearch';
 import { searchConnections } from '../utils/connectionSearch';
 
 const props = defineProps<{
@@ -22,6 +23,12 @@ const { tags } = storeToRefs(tagsStore);
 const inputRef = ref<HTMLInputElement | null>(null);
 const query = ref('');
 const selectedIndex = ref(0);
+const sortBy = ref<ConnectionSearchSortBy>('recent');
+
+const sortOptions: Array<{ value: ConnectionSearchSortBy; labelKey: string }> = [
+  { value: 'recent', labelKey: 'globalConnectionSearch.sortRecent' },
+  { value: 'name', labelKey: 'globalConnectionSearch.sortName' },
+];
 
 const tagLookup = computed(() => {
   const map = new Map<number, string>();
@@ -43,6 +50,7 @@ const getConnectionTagNames = (connection: ConnectionInfo): string[] => {
 
 const results = computed(() => searchConnections(props.connections, query.value, 8, {
   getAdditionalFields: getConnectionTagNames,
+  sortBy: sortBy.value,
 }));
 
 watch(results, async (nextResults) => {
@@ -89,6 +97,11 @@ const moveSelection = (direction: 1 | -1) => {
   selectedIndex.value = (selectedIndex.value + direction + results.value.length) % results.value.length;
 };
 
+const setSortBy = (nextSortBy: ConnectionSearchSortBy) => {
+  sortBy.value = nextSortBy;
+  selectedIndex.value = results.value.length > 0 ? 0 : -1;
+};
+
 const handleKeyDown = (event: KeyboardEvent) => {
   switch (event.key) {
     case 'ArrowDown':
@@ -125,7 +138,7 @@ const getConnectionLabel = (connection: ConnectionInfo): string => connection.na
   >
     <div class="w-full max-w-2xl overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
       <div class="border-b border-border/70 px-5 py-4">
-        <div class="flex items-start justify-between gap-4">
+        <div class="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p class="text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary">
               {{ t('globalConnectionSearch.shortcut') }}
@@ -134,13 +147,34 @@ const getConnectionLabel = (connection: ConnectionInfo): string => connection.na
               {{ t('globalConnectionSearch.title') }}
             </h2>
           </div>
-          <button
-            type="button"
-            class="rounded-md px-2 py-1 text-sm text-text-secondary transition-colors duration-150 hover:bg-border hover:text-foreground"
-            @click="close"
-          >
-            Esc
-          </button>
+          <div class="flex items-center gap-2">
+            <div
+              class="inline-flex rounded-lg border border-border/70 bg-header/70 p-0.5"
+              role="group"
+              :aria-label="t('globalConnectionSearch.sortLabel')"
+            >
+              <button
+                v-for="option in sortOptions"
+                :key="option.value"
+                type="button"
+                class="rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150"
+                :class="sortBy === option.value
+                  ? 'bg-primary text-button-text shadow-sm'
+                  : 'text-text-secondary hover:bg-border/70 hover:text-foreground'"
+                :aria-pressed="sortBy === option.value"
+                @click="setSortBy(option.value)"
+              >
+                {{ t(option.labelKey) }}
+              </button>
+            </div>
+            <button
+              type="button"
+              class="rounded-md px-2 py-1 text-sm text-text-secondary transition-colors duration-150 hover:bg-border hover:text-foreground"
+              @click="close"
+            >
+              Esc
+            </button>
+          </div>
         </div>
         <input
           ref="inputRef"

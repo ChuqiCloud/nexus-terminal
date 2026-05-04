@@ -7,6 +7,7 @@
 
 | 时间戳 | 名称 | 类型 | 涉及模块 | 决策 | 结果 |
 |--------|------|------|---------|------|------|
+| 202605042126 | global-connection-search-sort-pinyin | implementation | frontend | global-connection-search-sort-pinyin#D001 | ✅完成 |
 | 202605041950 | quick-commands-panel-status-monitor-theme | - | - | - | ✅完成 |
 | 202604210531 | ssh-terminal-runtime-state-machine | - | - | - | ✅完成 |
 | 202604210440 | frontend-dev-api-theme-verification | - | - | - | ✅完成 |
@@ -68,6 +69,10 @@
 | 202603251200 | workspace-workbench-monitor | implementation | frontend, backend | workspace-workbench-monitor#D001 | ✅完成 |
 
 ## 按月归档
+
+### 2026-05
+- [202605042126_global-connection-search-sort-pinyin](./2026-05/202605042126_global-connection-search-sort-pinyin/) - 为全局服务器检索补充“最近连接 / 名称”排序切换，并新增中文拼音全拼与首字母模糊搜索索引
+- [202605041950_quick-commands-panel-status-monitor-theme](./2026-05/202605041950_quick-commands-panel-status-monitor-theme/) - 将快捷指令列表和弹窗改为与服务器状态监控一致的紧凑面板布局，并区分深色 NVIDIA / 浅色 Apple 主题配色
 
 ### 2026-04
 - [202604190351_status-monitor-cpu-total-and-per-core](./2026-04/202604190351_status-monitor-cpu-total-and-per-core/) - 将状态监控 CPU 卡片升级为总 CPU canvas 历史图，并新增每核心实时条卡与后端 `cpuCorePercents` 采样链路

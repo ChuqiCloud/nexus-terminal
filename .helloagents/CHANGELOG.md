@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+- **[frontend]**: 为全局服务器检索补充“最近连接 / 名称”排序切换，默认最近连接，并新增中文拼音全拼与首字母模糊搜索索引 — by yinjianm
+  - 方案: [202605042126_global-connection-search-sort-pinyin](archive/2026-05/202605042126_global-connection-search-sort-pinyin/)
+  - 决策: global-connection-search-sort-pinyin#D001(使用本地轻量拼音索引扩展现有搜索)
+
 - **[frontend]**: 将快捷指令列表和弹窗改为与服务器状态监控一致的紧凑面板布局，并按深色 NVIDIA / 浅色 Apple 设计文档区分主题配色 — by yinjianm
   - 方案: [202605041950_quick-commands-panel-status-monitor-theme](archive/2026-05/202605041950_quick-commands-panel-status-monitor-theme/)
 
@@ -125,6 +129,9 @@
   - 方案: [202603250614_terminal-ansi-color-effects](archive/2026-03/202603250614_terminal-ansi-color-effects/)
 
 ### 快速修改
+- **[frontend]**: 修复快捷指令右键菜单背景透明导致日夜主题下文字不清的问题，按 NVIDIA 设计规范补充菜单专用实体背景、绿色 hover 强调和危险项高对比样式 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/views/QuickCommandsView.vue:1535-1666
 - **[frontend]**: 为命令输入框补充上下方向键历史命令导航，支持按 ↑ 回填更早命令、按 ↓ 返回更新命令并恢复未发送草稿 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/CommandInputBar.vue

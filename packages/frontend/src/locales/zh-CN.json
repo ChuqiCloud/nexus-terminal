@@ -1711,11 +1711,14 @@
   "globalConnectionSearch": {
     "shortcut": "Ctrl+Shift+F",
     "title": "全局服务器检索",
-    "placeholder": "输入名称、主机、用户名或类型...",
+    "sortLabel": "排序方式",
+    "sortRecent": "最近连接",
+    "sortName": "名称",
+    "placeholder": "输入名称、主机、用户名、类型或拼音...",
     "loading": "正在加载连接列表...",
     "emptyHint": "输入任意关键词开始模糊检索服务器，或直接选择最近连接。",
     "noResults": "没有找到与 “{query}” 匹配的服务器。",
-    "footerHint": "支持 SSH / RDP / VNC 全类型快速连接",
+    "footerHint": "支持 SSH / RDP / VNC 与中文拼音检索",
     "footerActions": "↑↓ 切换 · Enter 连接 · Esc 关闭"
   },
   "tabs": {

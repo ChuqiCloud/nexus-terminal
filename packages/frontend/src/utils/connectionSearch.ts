@@ -1,12 +1,16 @@
 import type { ConnectionInfo } from '../stores/connections.store';
+import { createPinyinSearchTerms } from './pinyinSearch';
 
 export interface ConnectionSearchResult {
   connection: ConnectionInfo;
   score: number;
 }
 
+export type ConnectionSearchSortBy = 'recent' | 'name';
+
 export interface ConnectionSearchOptions {
   getAdditionalFields?: (connection: ConnectionInfo) => Array<string | null | undefined>;
+  sortBy?: ConnectionSearchSortBy;
 }
 
 const normalize = (value: string | null | undefined): string => (value ?? '').trim().toLowerCase();
@@ -14,6 +18,43 @@ const normalize = (value: string | null | undefined): string => (value ?? '').tr
 const getDisplayName = (connection: ConnectionInfo): string => connection.name?.trim() || connection.host;
 
 const getEmptyQuerySortValue = (connection: ConnectionInfo): number => connection.last_connected_at ?? 0;
+
+const compareConnectionName = (left: ConnectionInfo, right: ConnectionInfo): number => {
+  const displayDiff = getDisplayName(left).localeCompare(getDisplayName(right), undefined, {
+    numeric: true,
+    sensitivity: 'base',
+  });
+  if (displayDiff !== 0) {
+    return displayDiff;
+  }
+
+  const hostDiff = left.host.localeCompare(right.host, undefined, {
+    numeric: true,
+    sensitivity: 'base',
+  });
+  if (hostDiff !== 0) {
+    return hostDiff;
+  }
+
+  return left.id - right.id;
+};
+
+const compareConnectionRecent = (left: ConnectionInfo, right: ConnectionInfo): number => {
+  const recentDiff = getEmptyQuerySortValue(right) - getEmptyQuerySortValue(left);
+  if (recentDiff !== 0) {
+    return recentDiff;
+  }
+
+  return compareConnectionName(left, right);
+};
+
+const compareConnections = (
+  left: ConnectionInfo,
+  right: ConnectionInfo,
+  sortBy: ConnectionSearchSortBy,
+): number => (sortBy === 'name'
+  ? compareConnectionName(left, right)
+  : compareConnectionRecent(left, right));
 
 const getFieldScore = (text: string, query: string): number => {
   if (!text || !query) {
@@ -62,32 +103,46 @@ const getFieldScore = (text: string, query: string): number => {
   return Math.max(70, 180 - firstMatchIndex * 4 - gapPenalty * 3);
 };
 
+const getSearchTexts = (field: string | null | undefined): string[] => {
+  const normalized = normalize(field);
+  if (!normalized) {
+    return [];
+  }
+
+  return Array.from(new Set([
+    normalized,
+    ...createPinyinSearchTerms(normalized),
+  ]));
+};
+
 const scoreConnection = (
   connection: ConnectionInfo,
   query: string,
   options?: ConnectionSearchOptions,
 ): number => {
-  const fields: Array<[string, number]> = [
-    [normalize(connection.name), 40],
-    [normalize(connection.host), 28],
-    [normalize(connection.username), 16],
-    [normalize(connection.type), 10],
+  const fields: Array<[string[], number]> = [
+    [getSearchTexts(connection.name), 40],
+    [getSearchTexts(connection.host), 28],
+    [getSearchTexts(connection.username), 16],
+    [getSearchTexts(connection.type), 10],
   ];
 
   const additionalFields = options?.getAdditionalFields?.(connection) ?? [];
   additionalFields.forEach((field) => {
-    fields.push([normalize(field), 14]);
+    fields.push([getSearchTexts(field), 14]);
   });
 
   let bestScore = 0;
 
-  for (const [field, weight] of fields) {
-    const fieldScore = getFieldScore(field, query);
-    if (fieldScore <= 0) {
-      continue;
-    }
+  for (const [fieldTexts, weight] of fields) {
+    for (const fieldText of fieldTexts) {
+      const fieldScore = getFieldScore(fieldText, query);
+      if (fieldScore <= 0) {
+        continue;
+      }
 
-    bestScore = Math.max(bestScore, fieldScore + weight);
+      bestScore = Math.max(bestScore, fieldScore + weight);
+    }
   }
 
   return bestScore;
@@ -100,17 +155,11 @@ export const searchConnections = (
   options?: ConnectionSearchOptions,
 ): ConnectionSearchResult[] => {
   const query = normalize(rawQuery);
+  const sortBy = options?.sortBy ?? 'recent';
 
   if (!query) {
     return [...connections]
-      .sort((left, right) => {
-        const recentDiff = getEmptyQuerySortValue(right) - getEmptyQuerySortValue(left);
-        if (recentDiff !== 0) {
-          return recentDiff;
-        }
-
-        return getDisplayName(left).localeCompare(getDisplayName(right));
-      })
+      .sort((left, right) => compareConnections(left, right, sortBy))
       .slice(0, limit)
       .map((connection) => ({ connection, score: 0 }));
   }
@@ -122,16 +171,16 @@ export const searchConnections = (
     }))
     .filter((item) => item.score > 0)
     .sort((left, right) => {
+      const sortDiff = compareConnections(left.connection, right.connection, sortBy);
+      if (sortDiff !== 0) {
+        return sortDiff;
+      }
+
       if (right.score !== left.score) {
         return right.score - left.score;
       }
 
-      const recentDiff = getEmptyQuerySortValue(right.connection) - getEmptyQuerySortValue(left.connection);
-      if (recentDiff !== 0) {
-        return recentDiff;
-      }
-
-      return getDisplayName(left.connection).localeCompare(getDisplayName(right.connection));
+      return left.connection.id - right.connection.id;
     })
     .slice(0, limit);
 };

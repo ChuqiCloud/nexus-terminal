@@ -1533,54 +1533,79 @@ const handleQuickCommandMenuAction = async (action: QuickCommandContextAction, c
 }
 
 .qc-context-menu {
+  --qc-menu-bg: #1a1a1a;
+  --qc-menu-bg-edge: #0b0b0b;
+  --qc-menu-border: #5e5e5e;
+  --qc-menu-border-soft: rgba(167, 167, 167, 0.14);
+  --qc-menu-text: #ffffff;
+  --qc-menu-muted: #a7a7a7;
+  --qc-menu-accent: #76b900;
+  --qc-menu-accent-soft: rgba(118, 185, 0, 0.14);
+  --qc-menu-danger: #e52020;
+  --qc-menu-danger-soft: rgba(229, 32, 32, 0.14);
   position: fixed;
   z-index: 50;
   min-width: 220px;
-  border: 1px solid var(--qc-border);
+  border: 1px solid var(--qc-menu-border);
   border-radius: 2px;
-  background: var(--qc-surface-muted);
+  background-color: var(--qc-menu-bg);
+  background-image: linear-gradient(180deg, var(--qc-menu-bg) 0%, var(--qc-menu-bg-edge) 100%);
   box-shadow: rgba(0, 0, 0, 0.3) 0 0 5px 0;
-  color: var(--qc-text);
+  color: var(--qc-menu-text);
+  overflow: hidden;
   padding: 6px;
+}
+
+.qc-context-menu__list {
+  border-radius: 1px;
+  background: var(--qc-menu-bg);
 }
 
 .qc-context-menu__item {
   display: flex;
+  min-height: 32px;
   align-items: center;
   gap: 12px;
   border-radius: 2px;
-  color: var(--qc-text);
+  color: var(--qc-menu-text);
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
   padding: 7px 10px;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
 }
 
 .qc-context-menu__item:hover {
-  background: var(--qc-accent-soft);
-  color: var(--qc-accent);
+  background: var(--qc-menu-accent-soft);
+  color: var(--qc-menu-accent);
+  box-shadow: inset 2px 0 0 var(--qc-menu-accent);
 }
 
 .qc-context-menu__item--separated {
   margin-top: 6px;
-  border-top: 1px solid var(--qc-border-soft);
+  border-top: 1px solid var(--qc-menu-border-soft);
   padding-top: 9px;
 }
 
 .qc-context-menu__item--danger {
-  color: var(--qc-danger);
+  color: var(--qc-menu-danger);
 }
 
 .qc-context-menu__item--danger:hover {
-  background: var(--qc-danger-soft);
-  color: var(--qc-danger);
+  background: var(--qc-menu-danger-soft);
+  color: var(--qc-menu-danger);
+  box-shadow: inset 2px 0 0 var(--qc-menu-danger);
 }
 
 .qc-context-menu__icon {
   width: 16px;
-  color: currentColor;
+  color: var(--qc-menu-muted);
   text-align: center;
+}
+
+.qc-context-menu__item:hover .qc-context-menu__icon,
+.qc-context-menu__item--danger .qc-context-menu__icon {
+  color: currentColor;
 }
 
 @media (max-width: 420px) {
@@ -1633,7 +1658,16 @@ const handleQuickCommandMenuAction = async (action: QuickCommandContextAction, c
 :global(html.light) .qc-context-menu,
 :global(body.light) .qc-context-menu,
 :global([data-theme="light"]) .qc-context-menu {
-  background: #ffffff;
-  box-shadow: rgba(0, 0, 0, 0.22) 3px 5px 30px 0;
+  --qc-menu-bg: #ffffff;
+  --qc-menu-bg-edge: #f5f5f7;
+  --qc-menu-border: rgba(94, 94, 94, 0.42);
+  --qc-menu-border-soft: rgba(0, 0, 0, 0.12);
+  --qc-menu-text: #000000;
+  --qc-menu-muted: #757575;
+  --qc-menu-accent: #76b900;
+  --qc-menu-accent-soft: rgba(118, 185, 0, 0.12);
+  --qc-menu-danger: #e52020;
+  --qc-menu-danger-soft: rgba(229, 32, 32, 0.1);
+  box-shadow: rgba(0, 0, 0, 0.22) 0 4px 18px 0;
 }
 </style>

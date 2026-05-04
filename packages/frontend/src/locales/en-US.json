@@ -1707,11 +1707,14 @@
   "globalConnectionSearch": {
     "shortcut": "Ctrl+Shift+F",
     "title": "Global Server Search",
-    "placeholder": "Search by name, host, username, or type...",
+    "sortLabel": "Sort order",
+    "sortRecent": "Recent",
+    "sortName": "Name",
+    "placeholder": "Search by name, host, username, type, or pinyin...",
     "loading": "Loading connections...",
     "emptyHint": "Type any keyword to fuzzy-search servers, or pick a recent connection directly.",
     "noResults": "No servers matched “{query}”.",
-    "footerHint": "Quick connect for SSH / RDP / VNC",
+    "footerHint": "Quick connect for SSH / RDP / VNC with Chinese pinyin search",
     "footerActions": "↑↓ Navigate · Enter Connect · Esc Close"
   },
   "tabs": {
