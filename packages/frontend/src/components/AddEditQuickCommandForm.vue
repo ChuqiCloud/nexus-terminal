@@ -11,42 +11,44 @@
       }"
     >
       <h2 class="m-0 mb-6 text-center text-xl font-semibold">{{ isEditing ? t('quickCommands.form.titleEdit', '编辑快捷指令') : t('quickCommands.form.titleAdd', '添加快捷指令') }}</h2>
-      <div class="flex-grow flex min-h-0 flex-col gap-4 lg:flex-row lg:gap-6">
+      <div class="qc-form-body flex-grow flex min-h-0 flex-col gap-4 lg:flex-row lg:gap-6">
         <!-- 左侧：变量管理 -->
-        <div class="flex max-h-[38vh] w-full flex-col overflow-y-auto border-b border-border/30 pb-4 lg:max-h-none lg:w-1/3 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-6">
-          <h3 class="text-md font-medium mb-3 text-text-secondary">{{ t('quickCommands.form.variablesTitle', '变量管理') }}</h3>
-          <div ref="variableListRef" class="space-y-3 overflow-y-auto flex-grow pr-1 pb-2">
-            <div v-if="localVariables.length === 0" class="text-sm text-text-tertiary p-2 border border-dashed border-border/30 rounded-md">
-              {{ t('quickCommands.form.noVariables', '暂无变量。点击下方按钮添加。') }}
+        <div class="qc-variable-panel flex w-full flex-col border-b border-border/30 pb-4 lg:w-1/3 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-6">
+          <section class="qc-custom-variable-section">
+            <h3 class="text-md font-medium mb-3 text-text-secondary">{{ t('quickCommands.form.variablesTitle', '变量管理') }}</h3>
+            <div ref="variableListRef" class="qc-variable-list space-y-3 pr-1 pb-2">
+              <div v-if="localVariables.length === 0" class="text-sm text-text-tertiary p-2 border border-dashed border-border/30 rounded-md">
+                {{ t('quickCommands.form.noVariables', '暂无变量。点击下方按钮添加。') }}
+              </div>
+              <div v-for="variable in localVariables" :key="variable.id" class="qc-variable-card p-2.5 border border-border/40 rounded-lg bg-input/30 space-y-2">
+                <input
+                  :ref="(el) => setVariableNameInputRef(el, variable.id)"
+                  type="text"
+                  v-model="variable.name"
+                  :placeholder="t('quickCommands.form.variableNamePlaceholder', '变量名')"
+                  class="qc-variable-name-input w-full px-3 py-1.5 border border-border/50 rounded-md bg-input text-foreground text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary"
+                />
+                <textarea
+                  v-model="variable.value"
+                  :placeholder="t('quickCommands.form.variableValuePlaceholder', '变量值')"
+                  rows="2"
+                  class="qc-variable-value-input w-full px-3 py-1.5 border border-border/50 rounded-md bg-input text-foreground text-xs resize-y shadow-sm focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary"
+                ></textarea>
+                <button
+                  type="button"
+                  @click="deleteVariable(variable.id)"
+                  class="w-full py-1 px-3 text-xs text-error hover:bg-error/10 border border-error/50 rounded-md transition-colors duration-150"
+                >
+                  {{ t('common.delete', '删除') }}
+                </button>
+              </div>
             </div>
-            <div v-for="(variable, index) in localVariables" :key="variable.id" class="p-2.5 border border-border/40 rounded-lg bg-input/30 space-y-2">
-              <input
-                :ref="(el) => setVariableNameInputRef(el, variable.id)"
-                type="text"
-                v-model="variable.name"
-                :placeholder="t('quickCommands.form.variableNamePlaceholder', '变量名')"
-                class="w-full px-3 py-1.5 border border-border/50 rounded-md bg-input text-foreground text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary"
-              />
-              <textarea
-                v-model="variable.value"
-                :placeholder="t('quickCommands.form.variableValuePlaceholder', '变量值')"
-                rows="2"
-                class="w-full px-3 py-1.5 border border-border/50 rounded-md bg-input text-foreground text-xs resize-y min-h-[40px] shadow-sm focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary"
-              ></textarea>
-              <button
-                type="button"
-                @click="deleteVariable(variable.id)"
-                class="w-full py-1 px-3 text-xs text-error hover:bg-error/10 border border-error/50 rounded-md transition-colors duration-150"
-              >
-                {{ t('common.delete', '删除') }}
-              </button>
-            </div>
-          </div>
-          <button type="button" @click="addVariable" class="mt-3 w-full py-2 px-4 border border-primary/50 text-primary text-sm rounded-md hover:bg-primary/10 transition-colors duration-150">
-            {{ t('quickCommands.form.addVariable', '+ 添加变量') }}
-          </button>
+            <button type="button" @click="addVariable" class="qc-add-variable-button mt-3 w-full py-2 px-4 border border-primary/50 text-primary text-sm rounded-md hover:bg-primary/10 transition-colors duration-150">
+              {{ t('quickCommands.form.addVariable', '+ 添加变量') }}
+            </button>
+          </section>
 
-          <div class="mt-5 border-t border-border/40 pt-4 space-y-4">
+          <section class="qc-dynamic-variable-section mt-5 border-t border-border/40 pt-4 space-y-4">
             <div>
               <h3 class="text-md font-medium text-text-secondary">{{ t('quickCommands.form.dynamicVariables.title', '动态变量') }}</h3>
               <p class="mt-1 text-xs leading-5 text-text-tertiary">
@@ -77,7 +79,7 @@
                 </p>
               </button>
             </div>
-          </div>
+          </section>
         </div>
 
         <!-- 右侧：现有表单 -->
@@ -198,12 +200,18 @@ const { width: resizableWidth, height: resizableHeight } = useResizable(modalCon
 
 const isEditing = computed(() => !!props.commandToEdit);
 
+interface LocalVariable {
+  name: string;
+  value: string;
+  id: string;
+}
+
 const formData = reactive({
     name: '',
     command: '',
     tagIds: [] as number[], // +++ 添加标签ID +++
 });
-const localVariables = ref<{ name: string; value: string; id: string }[]>([]);
+const localVariables = ref<LocalVariable[]>([]);
 
 
 const commandError = ref<string | null>(null);
@@ -316,12 +324,7 @@ const handleSubmit = async () => {
   // 处理名称，空字符串视为 null
   const finalName = formData.name.trim().length > 0 ? formData.name.trim() : null;
 
-  const variablesToSave: Record<string, string> = localVariables.value.reduce((acc, curr) => {
-    if (curr.name.trim()) { // 只保存带有名称的变量
-      acc[curr.name.trim()] = curr.value;
-    }
-    return acc;
-  }, {} as Record<string, string>);
+  const variablesToSave = buildVariablesToSave();
 
   if (isEditing.value && props.commandToEdit) {
     success = await quickCommandsStore.updateQuickCommand(props.commandToEdit.id, finalName, formData.command.trim(), formData.tagIds, variablesToSave);
@@ -350,7 +353,7 @@ const setVariableNameInputRef = (el: unknown, variableId: string) => {
 
 //向 localVariables 数组添加一个新变量
 const addVariable = async () => {
-  const nextVariable = {
+  const nextVariable: LocalVariable = {
     name: '',
     value: '',
     id: `var-${Date.now()}-${Math.random().toString(36).substring(7)}` // 生成唯一ID
@@ -370,13 +373,17 @@ const deleteVariable = (variableId: string) => {
   localVariables.value = localVariables.value.filter(v => v.id !== variableId);
 };
 
-const collectCurrentVariables = () => {
+const buildVariablesToSave = (): Record<string, string> | undefined => {
   return localVariables.value.reduce((acc, curr) => {
     if (curr.name.trim()) {
       acc[curr.name.trim()] = curr.value;
     }
     return acc;
   }, {} as Record<string, string>);
+};
+
+const collectCurrentVariables = () => {
+  return buildVariablesToSave() ?? {};
 };
 
 const notifyTemplateWarnings = (undefinedVariables: string[], warnings: QuickCommandTemplateWarning[]) => {
@@ -450,5 +457,91 @@ const handleExecute = async () => {
   closeForm(); 
 };
 </script>
+
+<style scoped>
+.qc-form-body {
+  overflow-y: auto;
+}
+
+.qc-variable-panel {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.qc-custom-variable-section {
+  display: flex;
+  min-height: 230px;
+  max-height: min(330px, 52vh);
+  flex: 0 0 auto;
+  flex-direction: column;
+}
+
+.qc-variable-list {
+  min-height: 146px;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.qc-variable-card {
+  min-height: 132px;
+  flex-shrink: 0;
+}
+
+.qc-variable-name-input,
+.qc-variable-value-input {
+  display: block;
+}
+
+.qc-variable-value-input {
+  min-height: 54px;
+}
+
+.qc-add-variable-button {
+  flex-shrink: 0;
+}
+
+.qc-dynamic-variable-section {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+@media (min-width: 1024px) {
+  .qc-form-body {
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 1023px) {
+  .qc-variable-panel {
+    overflow: visible;
+  }
+
+  .qc-custom-variable-section {
+    max-height: 340px;
+  }
+
+  .qc-dynamic-variable-section {
+    max-height: 260px;
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-height: 620px) {
+  .qc-custom-variable-section {
+    min-height: 198px;
+  }
+
+  .qc-variable-list {
+    min-height: 120px;
+  }
+
+  .qc-variable-card {
+    min-height: 120px;
+  }
+}
+</style>
 
 
