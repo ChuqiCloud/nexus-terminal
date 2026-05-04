@@ -15,12 +15,13 @@
         <!-- 左侧：变量管理 -->
         <div class="flex max-h-[38vh] w-full flex-col overflow-y-auto border-b border-border/30 pb-4 lg:max-h-none lg:w-1/3 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-6">
           <h3 class="text-md font-medium mb-3 text-text-secondary">{{ t('quickCommands.form.variablesTitle', '变量管理') }}</h3>
-          <div class="space-y-3 overflow-y-auto flex-grow pr-1 pb-2">
+          <div ref="variableListRef" class="space-y-3 overflow-y-auto flex-grow pr-1 pb-2">
             <div v-if="localVariables.length === 0" class="text-sm text-text-tertiary p-2 border border-dashed border-border/30 rounded-md">
               {{ t('quickCommands.form.noVariables', '暂无变量。点击下方按钮添加。') }}
             </div>
             <div v-for="(variable, index) in localVariables" :key="variable.id" class="p-2.5 border border-border/40 rounded-lg bg-input/30 space-y-2">
               <input
+                :ref="(el) => setVariableNameInputRef(el, variable.id)"
                 type="text"
                 v-model="variable.name"
                 :placeholder="t('quickCommands.form.variableNamePlaceholder', '变量名')"
@@ -181,6 +182,8 @@ const isSubmitting = ref(false);
 
 const modalContentRef = ref<HTMLElement | null>(null);
 const commandTextareaRef = ref<HTMLTextAreaElement | null>(null);
+const variableListRef = ref<HTMLElement | null>(null);
+const variableNameInputRefs = ref(new Map<string, HTMLInputElement>());
 const R_MIN_WIDTH = 580; // 可调整大小的最小宽度 (像素)
 const R_MIN_HEIGHT = 440; // 可调整大小的最小高度 (像素)
 const MODAL_DEFAULT_WIDTH_RATIO = 0.6;
@@ -336,13 +339,30 @@ const closeForm = () => {
   emit('close');
 };
 
+const setVariableNameInputRef = (el: unknown, variableId: string) => {
+  if (el instanceof HTMLInputElement) {
+    variableNameInputRefs.value.set(variableId, el);
+    return;
+  }
+
+  variableNameInputRefs.value.delete(variableId);
+};
+
 //向 localVariables 数组添加一个新变量
-const addVariable = () => {
-  localVariables.value.push({
+const addVariable = async () => {
+  const nextVariable = {
     name: '',
     value: '',
     id: `var-${Date.now()}-${Math.random().toString(36).substring(7)}` // 生成唯一ID
-  });
+  };
+
+  localVariables.value = [...localVariables.value, nextVariable];
+
+  await nextTick();
+  variableListRef.value?.scrollTo({ top: variableListRef.value.scrollHeight, behavior: 'smooth' });
+  const nameInput = variableNameInputRefs.value.get(nextVariable.id);
+  nameInput?.focus();
+  nameInput?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 };
 
 // 通过 ID 从 localVariables 数组中删除变量

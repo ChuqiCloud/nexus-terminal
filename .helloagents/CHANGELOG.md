@@ -129,6 +129,9 @@
   - 方案: [202603250614_terminal-ansi-color-effects](archive/2026-03/202603250614_terminal-ansi-color-effects/)
 
 ### 快速修改
+- **[frontend]**: 修复快捷指令编辑弹窗点击“添加变量”后新增项不可见的问题，新增变量后会刷新变量列表、滚动到新增项并聚焦变量名输入框 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/components/AddEditQuickCommandForm.vue:18,24,185-186,342-366
 - **[frontend]**: 修复快捷指令右键菜单背景透明导致日夜主题下文字不清的问题，按 NVIDIA 设计规范补充菜单专用实体背景、绿色 hover 强调和危险项高对比样式 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/views/QuickCommandsView.vue:1535-1666
