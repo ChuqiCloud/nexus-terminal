@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+- **[frontend]**: 将共享 WebSocket 连接失败后的自动重连限制为最多 3 次，并在工作区显示重连状态、尝试次数和等待时间 — by yinjianm
+  - 方案: [202605131759_websocket-reconnect-limit-and-status](archive/2026-05/202605131759_websocket-reconnect-limit-and-status/)
+  - 决策: websocket-reconnect-limit-and-status#D001(在共享 WebSocket 管理器中统一限制重连并暴露状态)
+
+- **[frontend]**: 为连接管理页批量工具条新增“更改凭证”快捷入口，选中或全选连接后可直接将同类型连接批量改绑到指定登录凭证，也支持清空已保存凭证 — by yinjianm
+  - 方案: [202605131758_bulk-credential-shortcut](archive/2026-05/202605131758_bulk-credential-shortcut/)
+  - 决策: bulk-credential-shortcut#D001(使用前端快捷入口复用现有连接更新链路)
+
 - **[frontend]**: 为全局服务器检索补充“最近连接 / 名称”排序切换，默认最近连接，并新增中文拼音全拼与首字母模糊搜索索引 — by yinjianm
   - 方案: [202605042126_global-connection-search-sort-pinyin](archive/2026-05/202605042126_global-connection-search-sort-pinyin/)
   - 决策: global-connection-search-sort-pinyin#D001(使用本地轻量拼音索引扩展现有搜索)

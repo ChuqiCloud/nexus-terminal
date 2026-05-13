@@ -6,6 +6,20 @@ import type { ConnectionStatus as WsConnectionStatusType, MessagePayload, WebSoc
 // 导出类型别名，以便其他模块可以使用
 export type WsConnectionStatus = WsConnectionStatusType;
 
+export interface ReconnectState {
+    attempt: number;
+    maxAttempts: number;
+    nextDelaySeconds: number;
+    isScheduled: boolean;
+}
+
+interface ConnectOptions {
+    retry?: boolean;
+}
+
+const RECONNECT_DELAYS_MS = [10_000, 30_000, 30_000];
+const MAX_RECONNECT_ATTEMPTS = RECONNECT_DELAYS_MS.length;
+
 /**
  * 创建并管理单个 WebSocket 连接实例。
  * 每个实例对应一个会话 (Session)。
@@ -30,12 +44,17 @@ export function createWebSocketConnectionManager(
     const connectionStatus = ref<WsConnectionStatus>('disconnected'); // 连接状态 (使用导出的类型)
     const statusMessage = ref<string>(''); // 状态描述文本
     const isSftpReady = ref<boolean>(false); // SFTP 是否就绪
+    const reconnectState = ref<ReconnectState>({
+        attempt: 0,
+        maxAttempts: MAX_RECONNECT_ATTEMPTS,
+        nextDelaySeconds: 0,
+        isScheduled: false,
+    });
     const messageHandlers = new Map<string, Set<MessageHandler>>(); // 此实例的消息处理器注册表
     const instanceSessionId = sessionId; // 保存会话 ID 用于日志
     const instanceDbConnectionId = dbConnectionId; // 保存数据库连接 ID
     const getIsMarkedForSuspend = options?.getIsMarkedForSuspend; // +++ 获取回调函数 +++
     let reconnectAttempts = 0; // 重连尝试次数
-    const maxReconnectAttempts = 5; // 最大重连次数
     let reconnectTimeoutId: ReturnType<typeof setTimeout> | null = null; // 重连定时器 ID
     let lastUrl = ''; // 保存上次连接的 URL
     let intentionalDisconnect = false; // 标记是否为用户主动断开
@@ -55,6 +74,20 @@ export function createWebSocketConnectionManager(
             console.warn(`[WebSocket ${instanceSessionId}] i18n 错误 (键: workspace.status.${statusKey}):`, e);
             return statusKey;
         }
+    };
+
+    const updateReconnectState = (nextDelayMs = 0, isScheduled = false) => {
+        reconnectState.value = {
+            attempt: reconnectAttempts,
+            maxAttempts: MAX_RECONNECT_ATTEMPTS,
+            nextDelaySeconds: Math.ceil(nextDelayMs / 1000),
+            isScheduled,
+        };
+    };
+
+    const resetReconnectState = () => {
+        reconnectAttempts = 0;
+        updateReconnectState();
     };
 
     /**
@@ -83,30 +116,40 @@ export function createWebSocketConnectionManager(
             return; // 如果是主动断开，则不重连
         }
 
+        if (reconnectTimeoutId) {
+            return; // 已有重连排程，避免 onerror/onclose 重复增加尝试次数
+        }
+
         // +++ 检查是否标记为待挂起 +++
         if (getIsMarkedForSuspend && getIsMarkedForSuspend()) {
-            statusMessage.value = getStatusText('markedForSuspendNoReconnect'); // 可以为此添加新的i18n文本
+            statusMessage.value = getStatusText('markedForSuspendNoReconnect');
             connectionStatus.value = 'disconnected'; // 保持断开状态或设为特定状态
+            updateReconnectState();
             return;
         }
 
-        if (reconnectAttempts >= maxReconnectAttempts) {
-            statusMessage.value = getStatusText('reconnectFailed');
+        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            statusMessage.value = getStatusText('reconnectFailed', { max: MAX_RECONNECT_ATTEMPTS });
             connectionStatus.value = 'error'; // 标记为错误状态
+            updateReconnectState();
             return;
         }
 
         reconnectAttempts++;
-        // 指数退避延迟 (例如: 2s, 4s, 8s, 16s, 32s)
-        const delay = Math.pow(2, reconnectAttempts) * 1000;
-        statusMessage.value = getStatusText('reconnecting', { attempt: reconnectAttempts, delay: delay / 1000 });
+        const delay = RECONNECT_DELAYS_MS[reconnectAttempts - 1] ?? RECONNECT_DELAYS_MS[RECONNECT_DELAYS_MS.length - 1];
+        statusMessage.value = getStatusText('reconnecting', {
+            attempt: reconnectAttempts,
+            max: MAX_RECONNECT_ATTEMPTS,
+            delay: delay / 1000,
+        });
         connectionStatus.value = 'connecting'; // 更新状态为正在连接
-
-        if (reconnectTimeoutId) clearTimeout(reconnectTimeoutId); // 清除旧的定时器
+        updateReconnectState(delay, true);
 
         reconnectTimeoutId = setTimeout(() => {
+            reconnectTimeoutId = null;
+            updateReconnectState();
             if (!intentionalDisconnect && lastUrl) { // 再次检查是否主动断开
-                connect(lastUrl);
+                connect(lastUrl, { retry: true });
             }
         }, delay);
     };
@@ -115,12 +158,17 @@ export function createWebSocketConnectionManager(
      * 建立 WebSocket 连接
      * @param {string} url - WebSocket 服务器 URL
      */
-    const connect = (url: string) => {
+    const connect = (url: string, connectOptions: ConnectOptions = {}) => {
+        const isAutoRetry = connectOptions.retry === true;
         lastUrl = url; // 保存 URL 以便重连
         intentionalDisconnect = false; // 重置主动断开标记
+        if (!isAutoRetry) {
+            resetReconnectState();
+        }
         if (reconnectTimeoutId) {
             clearTimeout(reconnectTimeoutId); // 清除可能存在的重连定时器
             reconnectTimeoutId = null;
+            updateReconnectState();
         }
 
         // --- 修改后的检查逻辑 ---
@@ -161,7 +209,9 @@ export function createWebSocketConnectionManager(
         }
         // 如果 ws.value 存在且 readyState 是 CLOSED，它应该已经在 onclose 中被设为 null
 
-        statusMessage.value = getStatusText('connectingWs', { url });
+        statusMessage.value = reconnectAttempts > 0
+            ? getStatusText('reconnectingNow', { attempt: reconnectAttempts, max: MAX_RECONNECT_ATTEMPTS })
+            : getStatusText('connectingWs', { url });
         connectionStatus.value = 'connecting'; // 确保状态设置为 connecting
         isSftpReady.value = false; // 重置 SFTP 状态
 
@@ -178,7 +228,6 @@ export function createWebSocketConnectionManager(
             ws.value = new WebSocket(secureUrl);
 
             ws.value.onopen = () => {
-                reconnectAttempts = 0; // 连接成功，重置尝试次数
                 statusMessage.value = getStatusText('wsConnected');
                 // 状态保持 'connecting' 直到收到 ssh:connected
                 if (!isResumeFlow) {
@@ -203,6 +252,7 @@ export function createWebSocketConnectionManager(
                             connectionStatus.value = 'connected';
                             statusMessage.value = getStatusText('connected');
                         }
+                        resetReconnectState();
                     } else if (message.type === 'ssh:disconnected') {
                         if (connectionStatus.value !== 'disconnected') {
                             connectionStatus.value = 'disconnected';
@@ -248,6 +298,13 @@ export function createWebSocketConnectionManager(
             };
 
             ws.value.onclose = (event) => {
+                if (reconnectTimeoutId) {
+                    dispatchMessage('internal:closed', { code: event.code, reason: event.reason }, { type: 'internal:closed' });
+                    isSftpReady.value = false;
+                    ws.value = null;
+                    return;
+                }
+
                 // 只有在非错误状态下才更新为 disconnected
                 if (connectionStatus.value !== 'error' && connectionStatus.value !== 'disconnected') { // Avoid redundant sets or overriding 'error'
                     connectionStatus.value = 'disconnected';
@@ -272,6 +329,9 @@ export function createWebSocketConnectionManager(
              statusMessage.value = getStatusText('wsError');
              isSftpReady.value = false;
              ws.value = null;
+             if (!intentionalDisconnect) {
+                scheduleReconnect();
+             }
         }
     };
 
@@ -284,9 +344,10 @@ export function createWebSocketConnectionManager(
             clearTimeout(reconnectTimeoutId); // 清除重连定时器
             reconnectTimeoutId = null;
         }
+        resetReconnectState();
         if (ws.value) {
             if (connectionStatus.value !== 'disconnected') {
-                 connectionStatus.value = 'disconnected';
+                connectionStatus.value = 'disconnected';
                  statusMessage.value = getStatusText('disconnected', { reason: '手动断开' });
             }
              ws.value.close(1000, '客户端主动断开'); // 使用标准代码和原因
@@ -353,6 +414,7 @@ export function createWebSocketConnectionManager(
         isSftpReady: readonly(isSftpReady),
         connectionStatus: readonly(connectionStatus),
         statusMessage: readonly(statusMessage),
+        reconnectState: readonly(reconnectState),
 
         // 方法
         connect,

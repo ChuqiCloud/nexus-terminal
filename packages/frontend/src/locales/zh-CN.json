@@ -219,6 +219,18 @@
       "noChange": "保持不变",
       "savedCredentialMixedType": "批量应用已保存凭证前，请先只选择同一种连接类型。",
       "savedCredentialTypeHint": "仅支持同类型连接批量应用",
+      "changeCredential": "更改凭证",
+      "changeCredentialTitle": "更改所选连接的登录凭证",
+      "credentialSelectionSummary": "已选择 {count} 个连接",
+      "selectedTypes": "已选类型",
+      "credentialRequired": "请选择要应用的登录凭证。",
+      "applyCredential": "应用凭证",
+      "noSelectionForCredential": "请至少选择一个连接后再更改凭证。",
+      "noCredentialForType": "当前类型暂无可用登录凭证。",
+      "successAppliedCredential": "已将 {count} 个连接更改为 {credential}。",
+      "successClearedCredential": "已清除 {count} 个连接的已保存凭证。",
+      "partialCredentialUpdate": "已更新 {successCount}/{total} 个连接，请检查失败项。",
+      "errorApplyCredential": "批量更改凭证失败: {error}",
       "deleteSelectedButton": "删除选中",
       "deleteSelectedTooltip": "删除选中的连接",
       "confirmMessage": "您确定要删除选中的 {count} 个连接吗？此操作无法撤销。",
@@ -1412,6 +1424,31 @@
     },
     "workspace": {
       "noActiveSession": "没有活动的会话",
+      "terminal": {
+        "reconnectingMsg": "正在尝试重新连接..."
+      },
+      "status": {
+        "connectingWs": "正在建立 WebSocket 连接...",
+        "wsConnected": "WebSocket 已连接，正在打开 SSH 会话...",
+        "connected": "连接已建立",
+        "disconnected": "连接已断开: {reason}",
+        "error": "连接错误: {message}",
+        "wsError": "WebSocket 连接失败",
+        "wsClosedWillRetry": "WebSocket 已断开，准备重连（代码 {code}）",
+        "wsClosed": "WebSocket 已关闭（代码 {code}）",
+        "reconnecting": "第 {attempt}/{max} 次重连将在 {delay} 秒后开始",
+        "reconnectingNow": "正在执行第 {attempt}/{max} 次重连",
+        "reconnectFailed": "已重连 {max} 次，停止自动重连",
+        "markedForSuspendNoReconnect": "会话已标记为挂起，不再自动重连"
+      },
+      "statusBar": {
+        "connected": "已连接",
+        "connecting": "连接中",
+        "reconnecting": "重连中",
+        "failed": "重连失败",
+        "disconnected": "已断开",
+        "retryDetail": "第 {attempt}/{max} 次，{delay} 秒后重试"
+      },
       "workbench": {
         "title": "Workbench",
         "label": "工作台",

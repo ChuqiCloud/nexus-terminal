@@ -62,6 +62,52 @@ const activeEditorTabId = computed(() => {
   }
 });
 
+const activeWsConnectionStatus = computed(() => activeSession.value?.wsManager.connectionStatus.value ?? 'disconnected');
+const activeWsStatusMessage = computed(() => activeSession.value?.wsManager.statusMessage.value ?? '');
+const activeWsReconnectState = computed(() => activeSession.value?.wsManager.reconnectState.value ?? null);
+const isActiveWsRetrying = computed(() => {
+  const reconnectState = activeWsReconnectState.value;
+  return Boolean(reconnectState && reconnectState.attempt > 0);
+});
+const shouldShowConnectionStatusBar = computed(() => {
+  if (!activeSession.value || activeWsConnectionStatus.value === 'connected') {
+    return false;
+  }
+
+  return Boolean(activeWsStatusMessage.value) || activeWsConnectionStatus.value === 'connecting' || activeWsConnectionStatus.value === 'error';
+});
+const connectionStatusLabel = computed(() => {
+  if (activeWsConnectionStatus.value === 'connecting') {
+    return isActiveWsRetrying.value
+      ? t('workspace.statusBar.reconnecting')
+      : t('workspace.statusBar.connecting');
+  }
+  if (activeWsConnectionStatus.value === 'error') {
+    return t('workspace.statusBar.failed');
+  }
+  if (activeWsConnectionStatus.value === 'disconnected') {
+    return t('workspace.statusBar.disconnected');
+  }
+  return t('workspace.statusBar.connected');
+});
+const connectionStatusDetail = computed(() => {
+  const reconnectState = activeWsReconnectState.value;
+  if (reconnectState?.isScheduled && reconnectState.attempt > 0) {
+    return t('workspace.statusBar.retryDetail', {
+      attempt: reconnectState.attempt,
+      max: reconnectState.maxAttempts,
+      delay: reconnectState.nextDelaySeconds,
+    });
+  }
+
+  return activeWsStatusMessage.value;
+});
+const connectionStatusAriaLabel = computed(() => {
+  return connectionStatusDetail.value
+    ? `${connectionStatusLabel.value}: ${connectionStatusDetail.value}`
+    : connectionStatusLabel.value;
+});
+
 // +++ Add computed property for mobile terminal layout node +++
 const mobileLayoutNodeForTerminal = computed((): LayoutNode | null => {
   return {
@@ -730,6 +776,23 @@ const closeFileManagerModal = () => {
         @close-sessions-to-left="handleCloseSessionsToLeft"
     />
 
+    <div
+      v-if="shouldShowConnectionStatusBar"
+      class="workspace-connection-status"
+      :class="`is-${activeWsConnectionStatus}`"
+      :title="activeWsStatusMessage"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      :aria-label="connectionStatusAriaLabel"
+    >
+      <span class="workspace-connection-status__dot" aria-hidden="true"></span>
+      <span class="workspace-connection-status__label">{{ connectionStatusLabel }}</span>
+      <span v-if="connectionStatusDetail" class="workspace-connection-status__message">
+        {{ connectionStatusDetail }}
+      </span>
+    </div>
+
     <!-- --- 桌面端布局 --- -->
     <template v-if="!isMobile">
       <div class="main-content-area">
@@ -879,6 +942,70 @@ const closeFileManagerModal = () => {
     padding: var(--base-padding); /* Use base padding variable */
 }
 
+.workspace-connection-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 34px;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border-color, #ccc);
+  border-top: none;
+  background: var(--header-bg-color, #111827);
+  background: color-mix(in srgb, var(--header-bg-color, #111827) 92%, transparent);
+  color: var(--text-color-secondary);
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.workspace-connection-status__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.workspace-connection-status.is-connecting .workspace-connection-status__dot {
+  color: #f59e0b;
+  animation: workspace-status-pulse 1.2s ease-in-out infinite;
+}
+
+.workspace-connection-status.is-error .workspace-connection-status__dot,
+.workspace-connection-status.is-disconnected .workspace-connection-status__dot {
+  color: #ef4444;
+}
+
+.workspace-connection-status__label {
+  flex: 0 0 auto;
+  font-weight: 650;
+  color: var(--text-color, var(--foreground-color, currentColor));
+}
+
+.workspace-connection-status__message {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes workspace-status-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-connection-status.is-connecting .workspace-connection-status__dot {
+    animation: none;
+  }
+}
+
 
 /* --- Mobile Layout Styles --- */
 .workspace-view.is-mobile {
@@ -891,6 +1018,12 @@ const closeFileManagerModal = () => {
 .workspace-view.is-mobile .main-content-area {
   /* Hide the desktop content area in mobile view */
   display: none;
+}
+
+.workspace-view.is-mobile .workspace-connection-status {
+  border-left: none;
+  border-right: none;
+  padding-inline: 0.65rem;
 }
 
 .mobile-content-area {

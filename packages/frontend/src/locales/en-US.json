@@ -217,6 +217,18 @@
       "noChange":"No change",
       "savedCredentialMixedType": "Select only one connection type before applying a saved credential in batch.",
       "savedCredentialTypeHint": "Batch apply works only for the same connection type",
+      "changeCredential": "Change Credential",
+      "changeCredentialTitle": "Change login credential for selected connections",
+      "credentialSelectionSummary": "{count} connections selected",
+      "selectedTypes": "Selected types",
+      "credentialRequired": "Select a login credential to apply.",
+      "applyCredential": "Apply Credential",
+      "noSelectionForCredential": "Select at least one connection before changing credentials.",
+      "noCredentialForType": "No login credentials are available for this type.",
+      "successAppliedCredential": "{count} connections changed to {credential}.",
+      "successClearedCredential": "Saved credential cleared from {count} connections.",
+      "partialCredentialUpdate": "Updated {successCount}/{total} connections. Check the failed items.",
+      "errorApplyCredential": "Failed to batch change credential: {error}",
       "selectedItems":"{count} items selected",
       "deleteSelectedButton": "Delete Selected",
       "deleteSelectedTooltip": "Delete selected connections",
@@ -1408,6 +1420,31 @@
     },
     "workspace": {
       "noActiveSession": "No active session",
+      "terminal": {
+        "reconnectingMsg": "Attempting to reconnect..."
+      },
+      "status": {
+        "connectingWs": "Opening WebSocket connection...",
+        "wsConnected": "WebSocket connected. Opening SSH session...",
+        "connected": "Connection established",
+        "disconnected": "Connection disconnected: {reason}",
+        "error": "Connection error: {message}",
+        "wsError": "WebSocket connection failed",
+        "wsClosedWillRetry": "WebSocket disconnected. Preparing to reconnect (code {code})",
+        "wsClosed": "WebSocket closed (code {code})",
+        "reconnecting": "Reconnect {attempt}/{max} starts in {delay}s",
+        "reconnectingNow": "Running reconnect {attempt}/{max}",
+        "reconnectFailed": "Reconnected {max} times. Automatic reconnect stopped",
+        "markedForSuspendNoReconnect": "Session is marked for suspend. Automatic reconnect stopped"
+      },
+      "statusBar": {
+        "connected": "Connected",
+        "connecting": "Connecting",
+        "reconnecting": "Reconnecting",
+        "failed": "Reconnect failed",
+        "disconnected": "Disconnected",
+        "retryDetail": "Attempt {attempt}/{max}, retrying in {delay}s"
+      },
       "workbench": {
         "title": "Workbench",
         "label": "Workspace",

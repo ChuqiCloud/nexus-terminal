@@ -127,6 +127,20 @@
             "title": "接続の一括編集",
             "editSelected": "選択した項目を編集",
             "noChange": "変更なし",
+            "savedCredentialMixedType": "保存済み認証情報を一括適用する前に、同じ接続タイプだけを選択してください。",
+            "savedCredentialTypeHint": "同じ接続タイプにのみ一括適用できます",
+            "changeCredential": "認証情報を変更",
+            "changeCredentialTitle": "選択した接続のログイン認証情報を変更",
+            "credentialSelectionSummary": "{count} 件の接続を選択中",
+            "selectedTypes": "選択タイプ",
+            "credentialRequired": "適用するログイン認証情報を選択してください。",
+            "applyCredential": "認証情報を適用",
+            "noSelectionForCredential": "認証情報を変更する前に、少なくとも 1 件の接続を選択してください。",
+            "noCredentialForType": "このタイプで利用できるログイン認証情報はありません。",
+            "successAppliedCredential": "{count} 件の接続を {credential} に変更しました。",
+            "successClearedCredential": "{count} 件の接続から保存済み認証情報を解除しました。",
+            "partialCredentialUpdate": "{successCount}/{total} 件の接続を更新しました。失敗した項目を確認してください。",
+            "errorApplyCredential": "認証情報の一括変更に失敗しました: {error}",
             "selectedItems": "{count} 件選択済み",
             "deleteSelectedButton": "選択した項目を削除",
             "deleteSelectedTooltip": "選択した接続を削除します",
@@ -1658,6 +1672,28 @@
       "workspace": {
         "terminal": {
             "reconnectingMsg": "再接続を試行中..."
+        },
+        "status": {
+          "connectingWs": "WebSocket 接続を開始しています...",
+          "wsConnected": "WebSocket に接続しました。SSH セッションを開始しています...",
+          "connected": "接続しました",
+          "disconnected": "接続が切断されました: {reason}",
+          "error": "接続エラー: {message}",
+          "wsError": "WebSocket 接続に失敗しました",
+          "wsClosedWillRetry": "WebSocket が切断されました。再接続を準備しています（コード {code}）",
+          "wsClosed": "WebSocket が閉じられました（コード {code}）",
+          "reconnecting": "{delay} 秒後に {attempt}/{max} 回目の再接続を開始します",
+          "reconnectingNow": "{attempt}/{max} 回目の再接続を実行中",
+          "reconnectFailed": "{max} 回再接続しました。自動再接続を停止しました",
+          "markedForSuspendNoReconnect": "セッションは一時停止にマークされています。自動再接続を停止しました"
+        },
+        "statusBar": {
+          "connected": "接続済み",
+          "connecting": "接続中",
+          "reconnecting": "再接続中",
+          "failed": "再接続失敗",
+          "disconnected": "切断済み",
+          "retryDetail": "{attempt}/{max} 回目、{delay} 秒後に再試行"
         }
     },
     "workspaceConnectionList": {

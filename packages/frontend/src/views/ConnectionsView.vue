@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AddConnectionForm from '../components/AddConnectionForm.vue';
+import BatchCredentialShortcutModal from '../components/BatchCredentialShortcutModal.vue';
 import BatchEditConnectionForm from '../components/BatchEditConnectionForm.vue';
 import LoginCredentialManagementModal from '../components/LoginCredentialManagementModal.vue';
 import ManageConnectionTagsModal from '../components/ManageConnectionTagsModal.vue';
@@ -43,6 +44,8 @@ interface ConnectionTestState {
   latency?: number;
   latencyColor?: string;
 }
+
+type BatchCredentialSelection = 'unset' | 'clear' | number;
 
 const { t, locale } = useI18n();
 const { showConfirmDialog } = useConfirmDialog();
@@ -103,6 +106,9 @@ const showTagManagement = ref(false);
 const isBatchEditMode = ref(false);
 const selectedConnectionIdsForBatch = ref<Set<number>>(new Set());
 const showBatchEditForm = ref(false);
+const showBatchCredentialShortcut = ref(false);
+const batchCredentialSelection = ref<BatchCredentialSelection>('unset');
+const isApplyingBatchCredential = ref(false);
 const isDeletingSelectedConnections = ref(false);
 const expandedTreeNodes = ref<Record<string, boolean>>({});
 const draggingTreeNodeId = ref<ScopeId | null>(null);
@@ -542,6 +548,31 @@ const typeCounts = computed(() => {
 });
 
 const selectedResultCount = computed(() => selectedConnectionIdsForBatch.value.size);
+const selectedBatchConnections = computed(() => connections.value.filter((conn) => selectedConnectionIdsForBatch.value.has(conn.id)));
+const selectedBatchConnectionTypes = computed(() => Array.from(new Set(selectedBatchConnections.value.map((conn) => conn.type))));
+const hasMixedBatchConnectionTypes = computed(() => selectedBatchConnectionTypes.value.length > 1);
+const availableBatchLoginCredentials = computed(() => {
+  if (selectedBatchConnectionTypes.value.length !== 1) {
+    return [];
+  }
+
+  return loginCredentials.value.filter((credential) => credential.type === selectedBatchConnectionTypes.value[0]);
+});
+const selectedBatchCredentialName = computed(() => {
+  if (typeof batchCredentialSelection.value !== 'number') {
+    return '';
+  }
+
+  const credential = availableBatchLoginCredentials.value.find((item) => item.id === batchCredentialSelection.value);
+  return credential ? `${credential.name} (${credential.username})` : `#${batchCredentialSelection.value}`;
+});
+const canApplyBatchCredentialShortcut = computed(() => {
+  if (selectedResultCount.value === 0 || batchCredentialSelection.value === 'unset' || isApplyingBatchCredential.value) {
+    return false;
+  }
+
+  return batchCredentialSelection.value === 'clear' || !hasMixedBatchConnectionTypes.value;
+});
 const isAscending = computed(() => localSortOrder.value === 'asc');
 
 const dateFnsLocales: Record<string, Locale> = {
@@ -861,6 +892,8 @@ const toggleBatchEditMode = () => {
   isBatchEditMode.value = !isBatchEditMode.value;
   if (!isBatchEditMode.value) {
     selectedConnectionIdsForBatch.value.clear();
+    showBatchCredentialShortcut.value = false;
+    batchCredentialSelection.value = 'unset';
   }
 };
 
@@ -920,6 +953,98 @@ const openBatchEditModal = () => {
   }
 
   showBatchEditForm.value = true;
+};
+
+const openBatchCredentialShortcut = async () => {
+  if (selectedConnectionIdsForBatch.value.size === 0) {
+    showAlertDialog({
+      title: t('common.alert', '提示'),
+      message: t('connections.batchEdit.noSelectionForCredential', '请至少选择一个连接后再更改凭证。'),
+    });
+    return;
+  }
+
+  batchCredentialSelection.value = 'unset';
+  showBatchCredentialShortcut.value = true;
+
+  if (loginCredentials.value.length === 0 && !loginCredentialsStore.isLoading) {
+    await loginCredentialsStore.fetchLoginCredentials();
+  }
+};
+
+const closeBatchCredentialShortcut = () => {
+  if (isApplyingBatchCredential.value) {
+    return;
+  }
+
+  showBatchCredentialShortcut.value = false;
+  batchCredentialSelection.value = 'unset';
+};
+
+const openLoginCredentialManagerFromShortcut = () => {
+  showBatchCredentialShortcut.value = false;
+  showLoginCredentialManagement.value = true;
+};
+
+const applyBatchCredentialShortcut = async () => {
+  if (!canApplyBatchCredentialShortcut.value) {
+    if (hasMixedBatchConnectionTypes.value && batchCredentialSelection.value !== 'clear') {
+      showAlertDialog({
+        title: t('common.alert', '提示'),
+        message: t('connections.batchEdit.savedCredentialMixedType', '批量应用已保存凭证前，请先只选择同一种连接类型。'),
+      });
+      return;
+    }
+
+    showAlertDialog({
+      title: t('common.alert', '提示'),
+      message: t('connections.batchEdit.credentialRequired', '请选择要应用的登录凭证。'),
+    });
+    return;
+  }
+
+  const credentialId: number | null = batchCredentialSelection.value === 'clear'
+    ? null
+    : Number(batchCredentialSelection.value);
+  const targetIds = Array.from(selectedConnectionIdsForBatch.value);
+  isApplyingBatchCredential.value = true;
+
+  try {
+    let successCount = 0;
+    for (const id of targetIds) {
+      const success = await connectionsStore.updateConnection(id, { login_credential_id: credentialId });
+      if (success) {
+        successCount += 1;
+      }
+    }
+
+    await connectionsStore.fetchConnections();
+    if (successCount === targetIds.length) {
+      showAlertDialog({
+        title: t('common.success', '成功'),
+        message: credentialId === null
+          ? t('connections.batchEdit.successClearedCredential', { count: successCount }, `已清除 ${successCount} 个连接的已保存凭证。`)
+          : t('connections.batchEdit.successAppliedCredential', { count: successCount, credential: selectedBatchCredentialName.value }, `已将 ${successCount} 个连接更改为 ${selectedBatchCredentialName.value}。`),
+      });
+      selectedConnectionIdsForBatch.value.clear();
+      showBatchCredentialShortcut.value = false;
+      batchCredentialSelection.value = 'unset';
+      return;
+    }
+
+    showAlertDialog({
+      title: t('common.alert', '提示'),
+      message: t('connections.batchEdit.partialCredentialUpdate', { successCount, total: targetIds.length }, `已更新 ${successCount}/${targetIds.length} 个连接，请检查失败项。`),
+    });
+  } catch (error: any) {
+    console.error('Batch credential update error:', error);
+    showAlertDialog({
+      title: t('common.error', '错误'),
+      message: t('connections.batchEdit.errorApplyCredential', { error: error.message || connectionsStore.error || '未知错误' }, `批量更改凭证失败: ${error.message || connectionsStore.error || '未知错误'}`),
+    });
+  } finally {
+    isApplyingBatchCredential.value = false;
+  }
 };
 
 const handleBatchEditSaved = async () => {
@@ -1450,6 +1575,15 @@ onBeforeUnmount(() => {
               <i class="fas fa-edit mr-1"></i>{{ t('connections.batchEdit.editSelected', '编辑选中') }}
             </button>
             <button
+              @click="openBatchCredentialShortcut"
+              :disabled="selectedResultCount === 0"
+              class="px-4 py-1.5 text-sm bg-button text-button-text rounded-lg hover:bg-button-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+              :title="t('connections.batchEdit.changeCredentialTitle', '更改所选连接的登录凭证')"
+            >
+              <i class="fas fa-key"></i>
+              <span>{{ t('connections.batchEdit.changeCredential', '更改凭证') }}</span>
+            </button>
+            <button
               @click="handleBatchDeleteConnections"
               :disabled="selectedResultCount === 0 || isDeletingSelectedConnections"
               class="px-4 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1668,6 +1802,20 @@ onBeforeUnmount(() => {
         :connection-ids="Array.from(selectedConnectionIdsForBatch)"
         @update:visible="handleBatchEditFormClose"
         @saved="handleBatchEditSaved"
+      />
+
+      <BatchCredentialShortcutModal
+        v-if="showBatchCredentialShortcut"
+        :selected-count="selectedResultCount"
+        :selected-types="selectedBatchConnectionTypes"
+        :credentials="availableBatchLoginCredentials"
+        :selection="batchCredentialSelection"
+        :is-loading="loginCredentialsStore.isLoading"
+        :is-submitting="isApplyingBatchCredential"
+        @update:selection="batchCredentialSelection = $event"
+        @close="closeBatchCredentialShortcut"
+        @manage="openLoginCredentialManagerFromShortcut"
+        @apply="applyBatchCredentialShortcut"
       />
 
       <LoginCredentialManagementModal

@@ -7,6 +7,9 @@
 
 | 时间戳 | 名称 | 类型 | 涉及模块 | 决策 | 结果 |
 |--------|------|------|---------|------|------|
+| 202605131912 | code-review | - | - | - | ✅完成 |
+| 202605131759 | websocket-reconnect-limit-and-status | implementation | frontend | websocket-reconnect-limit-and-status#D001 | ✅完成 |
+| 202605131758 | bulk-credential-shortcut | - | - | - | ✅完成 |
 | 202605042126 | global-connection-search-sort-pinyin | implementation | frontend | global-connection-search-sort-pinyin#D001 | ✅完成 |
 | 202605041950 | quick-commands-panel-status-monitor-theme | - | - | - | ✅完成 |
 | 202604210531 | ssh-terminal-runtime-state-machine | - | - | - | ✅完成 |
