@@ -334,8 +334,8 @@ export const closeSession = (sessionId: string) => {
 
   // 3. 切换活动标签页
   if (activeSessionId.value === sessionId) {
-    const remainingSessions = Array.from(sessions.value.keys());
-    const nextActiveId = remainingSessions.length > 0 ? remainingSessions[remainingSessions.length - 1] : null;
+    const remainingSessions = getOrderedSessionIds();
+    const nextActiveId = remainingSessions.length > 0 ? remainingSessions[0] : null;
     activeSessionId.value = nextActiveId;
     console.log(`[SessionActions] 关闭活动会话后，切换到: ${nextActiveId}`);
   }

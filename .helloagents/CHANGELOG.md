@@ -137,6 +137,9 @@
   - 方案: [202603250614_terminal-ansi-color-effects](archive/2026-03/202603250614_terminal-ansi-color-effects/)
 
 ### 快速修改
+- **[frontend]**: 修复关闭当前活动终端后的自动选中规则，改为切换到剩余终端列表中最前的终端，而不是最后的终端 — by yinjianm
+  - 类型: 快速修改（无方案包）
+  - 文件: packages/frontend/src/stores/session/actions/sessionActions.ts:335-340
 - **[frontend]**: 为快捷指令自定义变量卡片补充“添加到指令”按钮，支持把 `${变量名}` 插入右侧指令输入框当前光标位置，并补齐中英日三套界面文案 — by yinjianm
   - 类型: 快速修改（无方案包）
   - 文件: packages/frontend/src/components/AddEditQuickCommandForm.vue:37-58,430-458,526-566; packages/frontend/src/locales/zh-CN.json:1472-1475; packages/frontend/src/locales/en-US.json:1468-1471; packages/frontend/src/locales/ja-JP.json:840-843
